@@ -130,7 +130,40 @@ runs:
       shell: bash
       run: |
         # Fail here, with a readable message, rather than midway through a deploy.
-        if ! ssh -o BatchMode=yes -o ConnectTimeout=15 vps 'echo connected as $(id -un) to $(hostname)'; then
-          echo "::error::cannot reach the VPS over SSH — check VPS_HOST, VPS_USER, VPS_SSH_KEY and VPS_KNOWN_HOSTS"
-          exit 1
-        fi
+        #
+        # Retried, because the first connection of a run fails outright often
+        # enough to matter — observed roughly one run in three, always as a
+        # connect timeout rather than an auth error, and always succeeding on a
+        # later attempt from a different runner. The cause is somewhere between
+        # GitHub's egress and the host, not in the credentials; whatever it is,
+        # a single 15s attempt turns it into a failed deploy that someone has to
+        # notice and re-dispatch. That cost is real when the person dispatching
+        # is on a phone.
+        #
+        # Auth failures are not retried: a wrong key fails identically five
+        # times and only delays the message that says so.
+        for attempt in 1 2 3 4 5; do
+          out=$(ssh -o BatchMode=yes -o ConnectTimeout=20 vps \
+                    'echo connected as $(id -un) to $(hostname)' 2>&1) && {
+            echo "${out}"
+            exit 0
+          }
+          echo "${out}"
+          case "${out}" in
+            *"Permission denied"*|*"Too many authentication failures"*|*"Host key verification failed"*)
+              echo "::error::the VPS refused our credentials — check VPS_USER, VPS_SSH_KEY and VPS_KNOWN_HOSTS"
+              exit 1
+              ;;
+          esac
+          if [ "${attempt}" -lt 5 ]; then
+            delay=$((attempt * 10))
+            echo "attempt ${attempt} did not connect; retrying in ${delay}s"
+            sleep "${delay}"
+          fi
+        done
+
+        echo "::error::cannot reach the VPS over SSH after 5 attempts."
+        echo "The key parsed and was never rejected, so this is reachability, not credentials:"
+        echo "  * is the VPS running? check the Hostinger panel"
+        echo "  * has something started filtering port 22 — a provider firewall, or fail2ban?"
+        exit 1

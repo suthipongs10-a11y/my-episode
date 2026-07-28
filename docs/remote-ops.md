@@ -227,8 +227,26 @@ one tap needs the destructive entries to cost more than one tap.
 ## If it stops working
 
 **`cannot reach the VPS over SSH`** — the connection check failed before
-anything ran. One of the four secrets is wrong, the VPS is down, or its host key
-changed (rebuilt the box? regenerate `VPS_KNOWN_HOSTS`).
+anything ran, five times over about a minute. One of the four secrets is wrong,
+the VPS is down, or its host key changed (rebuilt the box? regenerate
+`VPS_KNOWN_HOSTS`).
+
+The message distinguishes two cases, and they point in different directions:
+
+- *the VPS refused our credentials* — the box answered and said no. A secret is
+  wrong. Fix the secret; retrying will not help.
+- *cannot reach the VPS after 5 attempts* — nothing answered at all. The key was
+  never rejected, so this is reachability: the host, the provider's firewall, or
+  something filtering port 22.
+
+**Occasional single connect timeouts are expected and absorbed.** On 2026-07-28
+roughly one dispatch in three failed on the first attempt with
+`ssh: connect to host ... port 22: Connection timed out`, always succeeding
+later from a different runner, never with an auth error. The connect step now
+retries five times (10s, 20s, 30s, 40s), so this class of blip no longer costs a
+re-dispatch. If a run reports several attempts failing before it succeeds, that
+is this — not a configuration problem. If it becomes constant rather than
+occasional, look at the host rather than the secrets.
 
 **`Permission denied (publickey)` while cloning on the VPS** — the repository
 went private but `REPO_URL` is still the HTTPS one, or the deploy key is
