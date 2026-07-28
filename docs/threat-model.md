@@ -78,6 +78,12 @@ Rules, to be enforced in Phase 8:
 - **The raw game ports stay closed.** `GAME_PORTS_BIND=127.0.0.1` is the
   production setting; the Phase 1 gate is the only time it is `0.0.0.0`, and it
   goes back immediately after.
+  This is the rule the downloadable PC client would have broken. A stock RO
+  client speaks raw TCP, so shipping one normally means publishing those ports
+  and with them the origin address — one open door that bypasses everything
+  else on this page. CLAUDE.md §3a resolves it: the PC client ships with a
+  launcher that tunnels localhost TCP to the same WSS endpoint the browser
+  uses, so both clients arrive through Cloudflare and the ports stay shut.
 - **Nothing else on the box answers on the public IP.** Anything that does — a
   panel agent, a mail server, a status page — will happily tell an attacker
   where you live.

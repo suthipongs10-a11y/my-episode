@@ -9,16 +9,26 @@
 ## 1. What we are building
 
 A pre-renewal Ragnarok Online server (Episode 4.0 / War of Emperium content
-baseline) that is playable **in a mobile browser** as an installable PWA — no
-app store, no client download, works on iOS and Android.
+baseline), playable **two ways, both first-class**:
 
-Three layers:
+1. **Mobile browser** — installable PWA, no app store, no download, iOS+Android.
+2. **PC client** — downloaded as a zip, extract and play, no installer.
+
+Players are on both, so neither is the "real" client and neither is a fallback.
+The PC path is not just the Phase 1 test harness; it ships.
 
 | Layer | What it is | Status |
 |---|---|---|
 | Game server | rAthena, pre-renewal build, Ep4 content cut | to build |
 | Bridge | WebSocket ↔ TCP proxy (browser can't open raw TCP) | to build |
-| Client | roBrowser-Legacy + custom mobile UI overlay + PWA shell | to build |
+| Browser client | roBrowser-Legacy + custom mobile UI overlay + PWA shell | to build |
+| PC client | diffed ragexe + GRF + launcher, distributed as a zip | to build |
+
+**Both clients use the same transport.** The PC client does not connect to the
+raw game ports over the internet; a small launcher in its folder tunnels
+localhost TCP to the same WSS endpoint the browser uses. See §3a — this is the
+decision the whole network design depends on, and it is not negotiable without
+giving up the DDoS position.
 
 **Target: real multiplayer, many concurrent players.** Not a single-player
 hobby setup. Every decision below assumes we will need to scale and to move
@@ -87,6 +97,55 @@ Design implications, from day one:
 
 ---
 
+## 3a. One ingress for both clients
+
+Supporting a downloadable PC client and surviving a DDoS pull in opposite
+directions, and the conflict has to be resolved deliberately.
+
+**The problem.** A stock RO client speaks raw TCP on 6900 / 6121 / 5121. Raw TCP
+cannot go behind Cloudflare's free tier. So publishing those ports means
+publishing the origin address, and an attacker simply aims there and ignores
+Cloudflare entirely. Every protection in `docs/threat-model.md` is bypassed by
+the one open door. This is exactly why traditional RO servers go down.
+
+**The decision: tunnel the PC client too.**
+
+Ship a small launcher in the client folder. It listens on `127.0.0.1:6900`, and
+forwards that TCP stream to `wss://<host>/ws` — the same endpoint the browser
+uses. `clientinfo.xml` points at `127.0.0.1`, so the game client is unmodified
+and unaware.
+
+```
+browser  ──── WSS/443 ──┐
+                        ├──► Cloudflare ──► Caddy ──► wsProxy ──► rAthena
+PC + launcher ─ WSS/443 ┘
+```
+
+What this buys, beyond DDoS:
+
+- **`GAME_PORTS_BIND=127.0.0.1` stays true in production.** Phase 8's "only
+  80/443 public" survives contact with a PC client.
+- **One chokepoint, not two.** Rate limiting, connection metadata and the
+  anti-bot logging in `docs/anti-bot.md` all live in one place and cover every
+  player, instead of being duplicated and drifting.
+- **Moving hosts stays a DNS change** for PC players as well as browser ones.
+
+Costs, honestly:
+
+- Players must run the launcher rather than the exe directly. This is already
+  the norm — most RO private servers ship a patcher/launcher anyway.
+- An unsigned binary draws antivirus false positives. It is GPL and the source
+  is in this repo, which helps; code signing is the real fix and costs money.
+- One more component to build and keep working.
+
+**Alternatives considered and rejected:** publishing the raw ports and accepting
+the exposure (what everyone else does, and why they fall over); Cloudflare
+Spectrum for TCP (Enterprise pricing); moving the origin to a host with included
+L3/L4 protection such as OVH (viable and worth revisiting if the launcher proves
+unworkable, but it fragments the ingress and loses the single-chokepoint win).
+
+---
+
 ## 4. Environment
 
 - **Current host:** Hostinger KVM2 (2 vCPU / 8GB / 100GB NVMe). Test box only.
@@ -110,6 +169,7 @@ Design implications, from day one:
 /client         roBrowser-Legacy fork/submodule + our plugins
 /ui             mobile overlay (own layer, talks to client via event bus)
 /pwa            manifest, service worker, icons
+/launcher       PC client launcher: localhost TCP -> WSS tunnel (§3a)
 /assets-build   GRF extraction + content-hashing pipeline (no assets committed)
 /tools          content-cut scripts (Ep4 filtering), migration, ops scripts
 /docs           per-phase audit reports
@@ -153,6 +213,9 @@ next phase now assumes.
   Comodo + their dungeons; 1st and 2nd jobs; WoE and guild system
 - Level cap 99/50
 - Script must be **idempotent and re-runnable** against a fresh upstream pull
+- **Both clients must see the same content.** The cut is server-side, but the
+  PC client ships its own data (item descriptions, map list). Mismatches show
+  as items with wrong names rather than as errors, so check both
 - **Gate:** cut is reproducible from clean upstream; audit lists exactly what
   was removed and what was kept
 
@@ -166,8 +229,12 @@ next phase now assumes.
   player passes through
 - **Record connection metadata** (source IP, connection id, open/close, packet
   counts). Once Cloudflare is in front, nothing else sees per-IP behaviour
-- **Gate:** log in and play in a desktop browser. Mobile comes later — do not
-  chase mobile until desktop browser play is solid.
+- **PC launcher**: localhost TCP -> WSS tunnel (§3a). Same transport as the
+  browser, so it is built here, not bolted on later. Small static binary,
+  cross-platform, no runtime for the player to install
+- **Gate:** log in and play in a desktop browser, **and** through the launcher
+  with a stock PC client, with `GAME_PORTS_BIND=127.0.0.1`. Mobile comes later
+  — do not chase mobile until desktop browser play is solid.
 
 ### Phase 4 — Asset pipeline + CDN
 - GRF extraction → content-hashed static files
@@ -179,8 +246,12 @@ next phase now assumes.
 - Put Cloudflare in front of the game traffic too, so the origin stops being
   directly reachable (see `docs/threat-model.md`)
 - Measure: first-load size, repeat-load size
+- **PC client download**: zip of diffed ragexe + GRF + launcher + clientinfo,
+  versioned and hosted on R2 alongside the browser assets. Extract and play,
+  no installer
 - **Gate:** second load is served from cache; origin bandwidth per player
-  measured and documented
+  measured and documented; the PC zip downloads, extracts and connects on a
+  clean Windows machine
 
 ### Phase 5 — Mobile UI layer
 - Own UI layer in `/ui`, communicating with roBrowser via an event bus

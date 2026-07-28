@@ -4,6 +4,15 @@
 walks around. Not a browser. The browser layer is Phase 3, and chasing it before
 this passes means debugging two unknowns at once.
 
+> **The PC client is not only a test harness — it ships** (CLAUDE.md §1). What
+> changes after Phase 1 is how it connects, not whether it exists. For this gate
+> it dials the game ports directly, which is why they are opened temporarily.
+> In production it goes through the launcher instead: `clientinfo.xml` points at
+> `127.0.0.1`, a small tunnel in the client folder carries the stream to the same
+> WSS endpoint the browser uses, and the game ports stay shut (§3a). So treat
+> everything below about diffing and `clientinfo.xml` as work that carries
+> forward — only the `<address>` changes.
+
 This document is what to have ready. It is written against the build that is
 already compiled and in CI, so the version numbers here are facts about our
 binaries, not suggestions.
