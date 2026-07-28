@@ -64,10 +64,11 @@ class MockServers:
     """One login, one char and one map server on ephemeral ports."""
 
     def __init__(self, *, account_exists=True, has_character=False,
-                 always_refuse=False):
+                 always_refuse=False, online_for_first=0):
         self.account_exists = account_exists
         self.has_character = has_character
         self.always_refuse = always_refuse
+        self.online_for_first = online_for_first
         self.seen = []
         self.socks = {}
         self.ports = {}
@@ -121,6 +122,15 @@ class MockServers:
         assert int.from_bytes(packet[0:2], "little") == 0x0064
         user = packet[6:30].split(b"\x00")[0].decode()
         self.seen.append(("login", user, int.from_bytes(packet[2:6], "little")))
+
+        if self.online_for_first > 0:
+            # SC_NOTIFY_BAN code 8: the account is still flagged online from an
+            # earlier session. rAthena kicks it and expects the client to ask
+            # again, so this is a retry signal, not a failure.
+            self.online_for_first -= 1
+            conn.sendall(struct.pack("<HB", 0x0081, 8))
+            self.seen.append(("already-online",))
+            return
 
         creating = user.endswith("_M") or user.endswith("_F")
         if self.always_refuse:
@@ -374,10 +384,31 @@ def case_packetver_mismatch_is_loud():
           "a packetver mismatch is called out rather than silently assumed")
 
 
+def case_stale_session_is_waited_out():
+    print("\nan account still flagged online from a previous session:")
+    servers = MockServers(account_exists=True, has_character=True,
+                          online_for_first=1).start()
+    try:
+        result = run_smoke(servers)
+    finally:
+        servers.stop()
+
+    check(("already-online",) in servers.seen,
+          "the ban packet is delivered")
+    check(result.returncode == 0,
+          f"the run recovers rather than failing (got {result.returncode})")
+    check("still marked online" in result.stdout,
+          "the reason is stated instead of surfacing as a read timeout")
+    if result.returncode != 0:
+        print(result.stdout)
+        print(result.stderr)
+
+
 def main():
     print("\033[1msmoke-play.py against mock rAthena servers\033[0m")
     case_fresh_account()
     case_existing_character()
+    case_stale_session_is_waited_out()
     case_wrong_password()
     case_packetver_mismatch_is_loud()
 

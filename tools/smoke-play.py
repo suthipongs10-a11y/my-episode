@@ -103,6 +103,14 @@ LOGIN_ERRORS = {
     7: "server is full",
 }
 
+# SC_NOTIFY_BAN, src/login/loginclif.cpp logclif_sent_auth_result().
+BAN_REASONS = {
+    1: "the server is closing",
+    2: "someone else logged in with this account",
+    8: "the account is still marked online from an earlier session",
+}
+ALREADY_ONLINE = 8
+
 MAKECHAR_ERRORS = {
     0x00: "that character name is taken",
     0x01: "you are underage (birthdate restriction)",
@@ -346,24 +354,33 @@ def stage_login(host, port, user, password, packetver, verbose):
     conn.send(packet)
 
     def seen(buf):
-        if len(buf) < 4:
+        if len(buf) < 3:
             return None
         pid = int.from_bytes(buf[0:2], "little")
+        if pid == SC_NOTIFY_BAN:
+            return ("banned", bytes(buf[:3]))
+        if len(buf) < 4:
+            return None
         if pid == AC_REFUSE_LOGIN:
             return ("refused", bytes(buf[:23])) if len(buf) >= 23 else None
         if pid == AC_ACCEPT_LOGIN:
             size = int.from_bytes(buf[2:4], "little")
             return ("accepted", bytes(buf[:size])) if len(buf) >= size else None
-        die(f"the login-server answered with 0x{pid:04x}, which is neither "
-            "accept (0x0ac4) nor refuse (0x083e)",
+        die(f"the login-server answered with 0x{pid:04x}, which is none of "
+            "accept (0x0ac4), refuse (0x083e) or ban (0x0081)",
             hexdump(buf))
 
     kind, data = conn.wait_for(seen, 10.0, "a login response")
 
+    if kind == "banned":
+        code = data[2]
+        conn.close()
+        return None, (code, BAN_REASONS.get(code, f"ban code {code}"))
+
     if kind == "refused":
         code = int.from_bytes(data[2:6], "little")
         conn.close()
-        return None, LOGIN_ERRORS.get(code, f"error {code}")
+        return None, (None, LOGIN_ERRORS.get(code, f"error {code}"))
 
     # PACKETVER >= 20170315 layout, src/common/packets.hpp:
     #   type 2, length 2, login_id1 4, AID 4, login_id2 4, last_ip 4,
@@ -580,6 +597,47 @@ def stage_map(host, port, auth, zone, verbose):
     return {"map": zone["map"], "from": (x, y), "to": target}
 
 
+def login_with_retries(args, login_port, packetver):
+    """Log in, creating the account and waiting out a stale session if needed.
+
+    Two refusals are not failures:
+
+    * "unregistered ID" on the first ever run. `new_account: yes` means a _M
+      suffix creates the account and authenticates in the same exchange.
+    * "still marked online" after a run that died mid-session — including a
+      failed run of this script. rAthena does not simply refuse: it broadcasts
+      a kick (0x2734) to every char-server and arms a 30-second AUTH_TIMEOUT,
+      so the right response is to wait and ask again. A real player retrying
+      after "Server still recognizes your last login" is doing the same thing.
+    """
+    attempt_user = args.user
+    for attempt in range(4):
+        auth, refusal = stage_login(args.host, login_port, attempt_user,
+                                    args.password, packetver, args.verbose)
+        if auth:
+            return auth
+
+        code, reason = refusal
+        if code == ALREADY_ONLINE and attempt < 3:
+            delay = 8 * (attempt + 1)
+            log(f"  {reason}")
+            log(f"  rAthena has kicked it; waiting {delay}s and trying again")
+            time.sleep(delay)
+            continue
+        if reason == LOGIN_ERRORS[0] and attempt_user == args.user:
+            log(f"  login refused ({reason}) — creating the account")
+            attempt_user = args.user + "_M"
+            continue
+        die(f"login failed: {reason}",
+            "  'client version does not match' means PACKETVER in .env and the\n"
+            "  compiled server disagree — rebuild with rebuild=true.\n"
+            "  'unregistered ID' means new_account is off in login_athena.conf.\n"
+            "  'still marked online' that outlasts 30s means a session is stuck:\n"
+            "  VPS ops -> restart, service char.")
+    die("login kept being refused because the account is still marked online",
+        "  Something is holding the session open. VPS ops -> restart, service char.")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Log in, create a character and walk it, over the real protocol.")
@@ -614,19 +672,7 @@ def main():
             "They are shuffled per version,\n       so a mismatch here is a real "
             "problem, not a warning to ignore.")
 
-    auth, refusal = stage_login(args.host, login_port, args.user, args.password,
-                                packetver, args.verbose)
-    if refusal:
-        # new_account is on, so a _M suffix both creates the account and logs
-        # in, in one exchange. Only worth trying when the account is unknown.
-        log(f"  login refused ({refusal}) — creating the account")
-        auth, refusal = stage_login(args.host, login_port, args.user + "_M",
-                                    args.password, packetver, args.verbose)
-        if refusal:
-            die(f"login failed: {refusal}",
-                "  'client version does not match' means PACKETVER in .env and the\n"
-                "  compiled server disagree — rebuild with rebuild=true.\n"
-                "  'unregistered ID' means new_account is off in login_athena.conf.")
+    auth = login_with_retries(args, login_port, packetver)
 
     # The addresses the servers hand out are what a real client would dial.
     # We deliberately connect to --host instead, so this works with the game
