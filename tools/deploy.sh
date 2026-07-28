@@ -55,10 +55,25 @@ log "Checking map groups"
 log "Building images"
 # rAthena is a long compile on 2 vCPU. Expect 10-20 minutes the first time;
 # afterwards the layer cache makes it near-instant unless the submodule moved.
-./tools/compose.sh build --pull
+build_args=(--pull)
+if [[ "${RO_REBUILD:-}" == "true" ]]; then
+    log "  --no-cache requested: rAthena will recompile from scratch"
+    build_args+=(--no-cache)
+fi
+./tools/compose.sh build "${build_args[@]}"
 
 log "Starting"
-./tools/compose.sh up -d --remove-orphans
+# RO_SERVICES lets a caller bring up a subset — Phase 1 needs only the game
+# servers and the database, and starting Caddy before Phase 3 would just fight
+# whatever already owns port 80 on the host.
+if [[ -n "${RO_SERVICES:-}" ]]; then
+    read -r -a wanted <<< "${RO_SERVICES}"
+    log "  services: ${wanted[*]}"
+    # No --remove-orphans with a subset: it would stop everything not named.
+    ./tools/compose.sh up -d "${wanted[@]}"
+else
+    ./tools/compose.sh up -d --remove-orphans
+fi
 
 log "Waiting for health"
 

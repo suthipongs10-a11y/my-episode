@@ -25,17 +25,57 @@ log() { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[fatal]\033[0m %s\n' "$*" >&2; exit 1; }
 
 [[ -f .env ]] || die ".env not found"
-# shellcheck disable=SC1091
-set -a; source .env; set +a
 
-: "${DB_NAME:?}"; : "${DB_LOG_NAME:?}"; : "${DB_USER:?}"; : "${DB_PASSWORD:?}"
-: "${RO_INTER_USER:?}"; : "${RO_INTER_PASS:?}"
+# Read .env rather than sourcing it.
+#
+# `source` *executes* the file, so a perfectly valid Compose line whose value
+# contains spaces — BACKUP_CRON=0 */6 * * * — is parsed as an assignment
+# followed by a command, and the script dies on "*/6: No such file or
+# directory". Sourcing also means anything in .env runs with this script's
+# privileges, which is not a property we want from a credentials file.
+#
+# Compose takes everything after the first '=' verbatim and strips one layer of
+# surrounding quotes. Match that.
+env_get() {
+    local key="$1" line value
+    line="$(grep -m1 -E "^[[:space:]]*${key}=" .env)" || return 1
+    value="${line#*=}"
+    if (( ${#value} >= 2 )) && [[ ( "${value}" == \"*\" ) || ( "${value}" == \'*\' ) ]]; then
+        value="${value:1:${#value}-2}"
+    fi
+    [[ -n "${value}" ]] || return 1
+    printf '%s' "${value}"
+}
+
+# `set -e` aborts on the failing command substitution, after die's message.
+need_env() {
+    local key="$1" value
+    value="$(env_get "${key}")" || die "${key} is missing or empty in .env"
+    printf '%s' "${value}"
+}
+
+DB_NAME="$(need_env DB_NAME)"
+DB_LOG_NAME="$(need_env DB_LOG_NAME)"
+DB_USER="$(need_env DB_USER)"
+DB_PASSWORD="$(need_env DB_PASSWORD)"
+RO_INTER_USER="$(need_env RO_INTER_USER)"
+RO_INTER_PASS="$(need_env RO_INTER_PASS)"
 
 SQL_DIR="server/rathena/sql-files"
 [[ -d "${SQL_DIR}" ]] || die "no ${SQL_DIR} — run: git submodule update --init --recursive"
 
 FORCE=0
-[[ "${1:-}" == "--force" ]] && FORCE=1
+ASSUME_YES=0
+for arg in "$@"; do
+    case "${arg}" in
+        --force) FORCE=1 ;;
+        # For CI, which has no terminal to answer a prompt on. Deliberately a
+        # separate flag from --force: skipping the question is not the same
+        # decision as choosing to destroy an existing database.
+        --yes|-y) ASSUME_YES=1 ;;
+        *) die "unknown argument '${arg}' (expected --force and/or --yes)" ;;
+    esac
+done
 
 # Everything goes through the db container so this works identically whether
 # or not a mariadb client is installed on the host.
@@ -61,7 +101,8 @@ if [[ "${existing}" == "1" && "${FORCE}" -eq 0 ]]; then
   Re-importing DROPs and recreates every table, which deletes every account
   and character. If that is really what you want:
 
-      ./tools/db-init.sh --force
+      ./tools/db-init.sh --force          # will still ask you to confirm
+      ./tools/db-init.sh --force --yes    # no prompt (CI)
 
 EOF
     exit 1
@@ -70,8 +111,12 @@ fi
 if [[ "${existing}" == "1" ]]; then
     echo
     echo "  This will DESTROY all accounts and characters in '${DB_NAME}'."
-    read -r -p "  Type the database name to confirm: " confirm
-    [[ "${confirm}" == "${DB_NAME}" ]] || die "confirmation did not match — nothing changed"
+    if (( ASSUME_YES )); then
+        echo "  --yes given, proceeding without a prompt."
+    else
+        read -r -p "  Type the database name to confirm: " confirm
+        [[ "${confirm}" == "${DB_NAME}" ]] || die "confirmation did not match — nothing changed"
+    fi
 fi
 
 import() {

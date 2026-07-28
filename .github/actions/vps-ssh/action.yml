@@ -1,0 +1,68 @@
+name: Set up SSH to the VPS
+description: >
+  Writes the deploy key and known_hosts, adds a `vps` host alias, and proves the
+  connection works before any workflow tries to use it.
+
+inputs:
+  host:
+    description: VPS address
+    required: true
+  user:
+    description: Login user on the VPS
+    required: true
+  key:
+    description: Private half of the deploy key
+    required: true
+  known-hosts:
+    description: Output of `ssh-keyscan <host>` — pins the server's identity
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Write credentials
+      shell: bash
+      env:
+        VPS_HOST: ${{ inputs.host }}
+        VPS_USER: ${{ inputs.user }}
+        VPS_KEY: ${{ inputs.key }}
+        VPS_KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        for v in VPS_HOST VPS_USER VPS_KEY VPS_KNOWN_HOSTS; do
+          if [ -z "${!v}" ]; then
+            echo "::error::secret ${v#VPS_} is not set — see docs/remote-ops.md"
+            exit 1
+          fi
+        done
+
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+
+        printf '%s\n' "${VPS_KEY}" > ~/.ssh/id_deploy
+        chmod 600 ~/.ssh/id_deploy
+
+        # Pinning the host key rather than StrictHostKeyChecking=no. Without it
+        # anything that can answer on that address gets handed the deploy key.
+        printf '%s\n' "${VPS_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/known_hosts
+
+        cat > ~/.ssh/config <<EOF
+        Host vps
+          HostName ${VPS_HOST}
+          User ${VPS_USER}
+          IdentityFile ~/.ssh/id_deploy
+          IdentitiesOnly yes
+          StrictHostKeyChecking yes
+          ServerAliveInterval 30
+          ServerAliveCountMax 20
+        EOF
+        chmod 600 ~/.ssh/config
+
+    - name: Verify the connection
+      shell: bash
+      run: |
+        # Fail here, with a readable message, rather than midway through a deploy.
+        if ! ssh -o BatchMode=yes -o ConnectTimeout=15 vps 'echo connected as $(id -un) to $(hostname)'; then
+          echo "::error::cannot reach the VPS over SSH — check VPS_HOST, VPS_USER, VPS_SSH_KEY and VPS_KNOWN_HOSTS"
+          exit 1
+        fi

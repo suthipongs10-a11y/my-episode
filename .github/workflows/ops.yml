@@ -1,0 +1,184 @@
+name: VPS ops
+
+# Day-to-day operations, one named action at a time.
+#
+# Deliberately a fixed menu rather than "run this shell command". Anyone who can
+# dispatch a workflow can already reach the box, but a menu keeps the run
+# history readable and makes an accident require choosing the destructive option
+# by name.
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'What to do'
+        required: true
+        type: choice
+        default: status
+        options:
+          - status
+          - logs
+          - diagnostics
+          - db-init
+          - restart
+          - stop
+          - start
+          - backup-now
+          - prune-docker
+      service:
+        description: 'Service name — for logs, restart, start and stop. Blank = all.'
+        default: ''
+        type: string
+      lines:
+        description: 'Log lines to fetch (logs only).'
+        default: '200'
+        type: string
+      confirm:
+        description: 'Type the operation name again to run a destructive one (db-init, prune-docker).'
+        default: ''
+        type: string
+
+concurrency:
+  group: vps-ops
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: ${{ inputs.operation }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate inputs
+        env:
+          OPERATION: ${{ inputs.operation }}
+          SERVICE: ${{ inputs.service }}
+          LINES: ${{ inputs.lines }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          # Everything below is interpolated into a shell on the VPS. Validate
+          # here so that only the shapes we expect ever get there.
+          if [ -n "${SERVICE}" ] && ! printf '%s' "${SERVICE}" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+            echo "::error::service name may only contain letters, digits, dash and underscore"
+            exit 1
+          fi
+          if ! printf '%s' "${LINES}" | grep -qE '^[0-9]{1,5}$'; then
+            echo "::error::lines must be a number"
+            exit 1
+          fi
+
+          case "${OPERATION}" in
+            db-init|prune-docker)
+              if [ "${CONFIRM}" != "${OPERATION}" ]; then
+                echo "::error::${OPERATION} changes or deletes state."
+                echo "Re-run it and type '${OPERATION}' in the confirm box."
+                exit 1
+              fi
+              ;;
+          esac
+
+      - name: Connect
+        uses: ./.github/actions/vps-ssh
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          user: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          known-hosts: ${{ secrets.VPS_KNOWN_HOSTS }}
+
+      - name: Run
+        env:
+          OPERATION: ${{ inputs.operation }}
+          SERVICE: ${{ inputs.service }}
+          LINES: ${{ inputs.lines }}
+        run: |
+          ssh vps "OPERATION='${OPERATION}' SERVICE='${SERVICE}' LINES='${LINES}' bash -s" <<'REMOTE'
+          set -uo pipefail
+          cd "${HOME}/ro-ep4" 2>/dev/null || {
+              echo "no checkout at ~/ro-ep4 — run the Deploy workflow first"
+              exit 1
+          }
+
+          case "${OPERATION}" in
+
+            status)
+              echo "===== compose ====="
+              ./tools/compose.sh ps
+              echo
+              echo "===== every container on the host ====="
+              docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+              echo
+              echo "===== commit deployed ====="
+              git log -1 --pretty='%h %ad %s' --date=short
+              ;;
+
+            logs)
+              if [ -n "${SERVICE}" ]; then
+                  ./tools/compose.sh logs --tail "${LINES}" --no-color "${SERVICE}"
+              else
+                  ./tools/compose.sh logs --tail "${LINES}" --no-color
+              fi
+              ;;
+
+            diagnostics)
+              echo "===== host ====="
+              uptime; echo
+              echo "===== memory and swap ====="
+              free -h; echo; swapon --show || echo "(no swap)"; echo
+              echo "===== disk ====="
+              df -h / /var/lib/docker 2>/dev/null | sort -u; echo
+              echo "===== docker ====="
+              docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'; echo
+              docker system df; echo
+              echo "===== listening sockets ====="
+              ours=':(80|443|3306|5121|6121|6900|8888)\s'
+              ss -tlnp 2>/dev/null | grep -E "${ours}" || echo "(none of our ports listening)"
+              echo
+              echo "===== firewall ====="
+              sudo -n ufw status 2>/dev/null || echo "(ufw status needs root; skipped)"
+              echo
+              echo "===== .env sanity (values never printed) ====="
+              ./tools/check-env.sh || true
+              ;;
+
+            db-init)
+              ./tools/db-init.sh --yes
+              ;;
+
+            restart)
+              if [ -n "${SERVICE}" ]; then ./tools/compose.sh restart "${SERVICE}"
+              else ./tools/compose.sh restart; fi
+              echo; ./tools/compose.sh ps
+              ;;
+
+            stop)
+              if [ -n "${SERVICE}" ]; then ./tools/compose.sh stop "${SERVICE}"
+              else ./tools/compose.sh stop; fi
+              echo; ./tools/compose.sh ps
+              ;;
+
+            start)
+              if [ -n "${SERVICE}" ]; then ./tools/compose.sh start "${SERVICE}"
+              else ./tools/compose.sh start; fi
+              echo; ./tools/compose.sh ps
+              ;;
+
+            backup-now)
+              ./tools/compose.sh exec -T backup backup-db
+              ;;
+
+            prune-docker)
+              # Old rAthena image layers are large and every rebuild leaves the
+              # previous set behind. Volumes are never touched — that is the
+              # database.
+              docker image prune -af
+              docker builder prune -af
+              echo; docker system df
+              ;;
+
+            *)
+              echo "unknown operation '${OPERATION}'"
+              exit 1
+              ;;
+          esac
+          REMOTE

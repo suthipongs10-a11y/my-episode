@@ -15,3 +15,4 @@ Also here:
 | Document | |
 |---|---|
 | [`vps-setup.md`](vps-setup.md) | connecting the repository to a VPS, and moving to a new one |
+| [`remote-ops.md`](remote-ops.md) | operating the VPS from GitHub Actions — no terminal needed |

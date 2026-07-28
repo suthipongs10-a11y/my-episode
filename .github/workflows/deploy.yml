@@ -1,0 +1,175 @@
+name: Deploy to VPS
+
+# Manual trigger only. Deploying on every push would put an unreviewed commit
+# straight onto the box; this way a deploy is always a decision.
+#
+# The "Run workflow" button appears on the default branch, so it can be started
+# from the GitHub mobile app as well as the API.
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to start, space separated. Empty = everything in the active profiles.'
+        default: 'db login char map1'
+        type: string
+      rebuild:
+        description: 'Rebuild images from scratch (no layer cache). Slow — rAthena recompiles.'
+        default: false
+        type: boolean
+      public_host:
+        description: 'First-time setup only — PUBLIC_HOST for .env (domain, or leave blank).'
+        default: ''
+        type: string
+      acme_email:
+        description: 'First-time setup only — ACME_EMAIL for .env. Required on the very first run.'
+        default: ''
+        type: string
+
+# One deploy at a time. Two concurrent `docker compose up` runs on one host
+# fight over the same containers.
+concurrency:
+  group: vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Connect
+        uses: ./.github/actions/vps-ssh
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          user: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          known-hosts: ${{ secrets.VPS_KNOWN_HOSTS }}
+
+      - name: Sync the checkout on the VPS
+        env:
+          # SSH URL so the VPS's own read-only deploy key authenticates it.
+          # The repository is private; an HTTPS clone would prompt for a password.
+          REPO_URL: git@github.com:${{ github.repository }}.git
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          ssh vps "REPO_URL='${REPO_URL}' BRANCH='${BRANCH}' bash -s" <<'REMOTE'
+          set -euo pipefail
+          TARGET="${HOME}/ro-ep4"
+
+          if [ ! -d "${TARGET}/.git" ]; then
+              echo "first run — cloning ${BRANCH}"
+              git clone -b "${BRANCH}" --recurse-submodules "${REPO_URL}" "${TARGET}"
+          else
+              cd "${TARGET}"
+              git remote set-url origin "${REPO_URL}"
+              git fetch --prune origin "${BRANCH}"
+              git checkout -q "${BRANCH}" 2>/dev/null || git checkout -qb "${BRANCH}" "origin/${BRANCH}"
+              # Hard reset: the VPS is a deploy target, not a place to edit code.
+              # Untracked files are left alone, so .env survives.
+              git reset --hard "origin/${BRANCH}"
+              git submodule update --init --recursive
+          fi
+
+          cd "${TARGET}"
+          echo "now at $(git rev-parse --short HEAD) — $(git log -1 --pretty=%s)"
+          REMOTE
+
+      - name: Ensure .env is present and complete
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          IN_PUBLIC_HOST: ${{ inputs.public_host }}
+          IN_ACME_EMAIL: ${{ inputs.acme_email }}
+        run: |
+          remote_env="VPS_HOST='${VPS_HOST}' IN_PUBLIC_HOST='${IN_PUBLIC_HOST}'"
+          remote_env="${remote_env} IN_ACME_EMAIL='${IN_ACME_EMAIL}'"
+          ssh vps "${remote_env} bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "${HOME}/ro-ep4"
+
+          first_run=0
+          if [ ! -f .env ]; then
+              echo "no .env — creating it from .env.example"
+              cp .env.example .env
+              ./tools/gen-secrets.sh
+              first_run=1
+          fi
+
+          # Pick up any key a later phase added to .env.example.
+          ./tools/check-env.sh --fix >/dev/null || true
+
+          set_kv() {
+              local key="$1" value="$2"
+              if grep -qE "^${key}=" .env; then
+                  sed -i "s|^${key}=.*|${key}=${value}|" .env
+              else
+                  printf '%s=%s\n' "${key}" "${value}" >> .env
+              fi
+          }
+
+          # What the game client is told to connect to. This is the whole reason
+          # the VPS address is a variable and not a line of code.
+          set_kv RO_ADVERTISE_IP "${VPS_HOST}"
+
+          if [ -n "${IN_PUBLIC_HOST}" ]; then set_kv PUBLIC_HOST "${IN_PUBLIC_HOST}"; fi
+          if [ -n "${IN_ACME_EMAIL}" ]; then set_kv ACME_EMAIL  "${IN_ACME_EMAIL}"; fi
+
+          chmod 600 .env
+
+          if ! ./tools/check-env.sh; then
+              echo
+              echo "::error::.env is incomplete on the VPS."
+              if [ "${first_run}" = "1" ]; then
+                  echo "This was the first run. Re-dispatch this workflow and fill in"
+                  echo "the acme_email input (and public_host if you have a domain)."
+              fi
+              exit 1
+          fi
+          REMOTE
+
+      - name: Deploy
+        env:
+          SERVICES: ${{ inputs.services }}
+          REBUILD: ${{ inputs.rebuild }}
+        run: |
+          # Reject anything that is not a plausible service name before it
+          # reaches a shell on the VPS.
+          if [ -n "${SERVICES}" ] && ! printf '%s' "${SERVICES}" | grep -qE '^[a-zA-Z0-9_ -]+$'; then
+            echo "::error::services input contains unexpected characters"
+            exit 1
+          fi
+
+          ssh vps "RO_SERVICES='${SERVICES}' RO_REBUILD='${REBUILD}' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd "${HOME}/ro-ep4"
+          export RO_SERVICES RO_REBUILD
+          ./tools/deploy.sh --no-pull
+          REMOTE
+
+      - name: Status
+        if: always()
+        run: |
+          ssh vps 'bash -s' <<'REMOTE' || true
+          set -uo pipefail
+          cd "${HOME}/ro-ep4" || exit 0
+          echo "===== compose ====="
+          ./tools/compose.sh ps
+          echo
+          echo "===== all containers on the host ====="
+          docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+          REMOTE
+
+      - name: Logs from anything unhealthy
+        if: failure()
+        run: |
+          ssh vps 'bash -s' <<'REMOTE' || true
+          set -uo pipefail
+          cd "${HOME}/ro-ep4" || exit 0
+          for svc in db login char map1; do
+              echo "########## ${svc}"
+              ./tools/compose.sh logs --tail 60 "${svc}" 2>&1 || true
+              echo
+          done
+          REMOTE
