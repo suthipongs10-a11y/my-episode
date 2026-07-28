@@ -16,3 +16,4 @@ Also here:
 |---|---|
 | [`vps-setup.md`](vps-setup.md) | connecting the repository to a VPS, and moving to a new one |
 | [`remote-ops.md`](remote-ops.md) | operating the VPS from GitHub Actions — no terminal needed |
+| [`phase-1-client.md`](phase-1-client.md) | the PC client the Phase 1 gate needs, and how to diagnose it |

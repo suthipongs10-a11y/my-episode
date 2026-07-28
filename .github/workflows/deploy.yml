@@ -24,6 +24,16 @@ on:
         description: 'First-time setup only — ACME_EMAIL for .env. Required on the very first run.'
         default: ''
         type: string
+      game_ports_bind:
+        description: >
+          Expose the raw game ports? 0.0.0.0 is needed for the Phase 1 PC-client
+          gate; set it back to 127.0.0.1 straight afterwards.
+        default: 'unchanged'
+        type: choice
+        options:
+          - unchanged
+          - '127.0.0.1'
+          - '0.0.0.0'
 
 # One deploy at a time. Two concurrent `docker compose up` runs on one host
 # fight over the same containers.
@@ -86,9 +96,11 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           IN_PUBLIC_HOST: ${{ inputs.public_host }}
           IN_ACME_EMAIL: ${{ inputs.acme_email }}
+          IN_GAME_PORTS_BIND: ${{ inputs.game_ports_bind }}
         run: |
           remote_env="VPS_HOST='${VPS_HOST}' IN_PUBLIC_HOST='${IN_PUBLIC_HOST}'"
           remote_env="${remote_env} IN_ACME_EMAIL='${IN_ACME_EMAIL}'"
+          remote_env="${remote_env} IN_GAME_PORTS_BIND='${IN_GAME_PORTS_BIND}'"
           ssh vps "${remote_env} bash -s" <<'REMOTE'
           set -euo pipefail
           cd "${HOME}/ro-ep4"
@@ -119,6 +131,25 @@ jobs:
 
           if [ -n "${IN_PUBLIC_HOST}" ]; then set_kv PUBLIC_HOST "${IN_PUBLIC_HOST}"; fi
           if [ -n "${IN_ACME_EMAIL}" ]; then set_kv ACME_EMAIL  "${IN_ACME_EMAIL}"; fi
+
+          # 'unchanged' is the default so a routine deploy never quietly opens
+          # or closes the game ports. Only an explicit choice moves them.
+          case "${IN_GAME_PORTS_BIND:-unchanged}" in
+              unchanged|'') ;;
+              0.0.0.0)
+                  set_kv GAME_PORTS_BIND 0.0.0.0
+                  echo "WARNING: raw game ports will be published to the internet."
+                  echo "         Set this back to 127.0.0.1 once the Phase 1 gate passes."
+                  ;;
+              127.0.0.1)
+                  set_kv GAME_PORTS_BIND 127.0.0.1
+                  echo "game ports bound to loopback only"
+                  ;;
+              *)
+                  echo "::error::game_ports_bind must be unchanged, 127.0.0.1 or 0.0.0.0"
+                  exit 1
+                  ;;
+          esac
 
           chmod 600 .env
 

@@ -63,6 +63,7 @@ run_step() {
         VPS_HOST="$1" \
         IN_PUBLIC_HOST="${2:-}" \
         IN_ACME_EMAIL="${3:-}" \
+        IN_GAME_PORTS_BIND="${4:-unchanged}" \
         bash "${WORK}/step.sh" 2>&1 )
 }
 
@@ -147,7 +148,37 @@ else
     bad "step failed when .env.example gained a key:"; printf '%s\n' "${out}" | sed 's/^/       /'
 fi
 
-# --- 5. first run with no acme_email must fail loudly, not silently ---------
+# --- 5. game_ports_bind ------------------------------------------------------
+# Exposing the game ports must take an explicit choice. A routine redeploy that
+# silently published them to the internet would be the worst kind of bug: it
+# works, so nobody notices.
+echo
+echo "game_ports_bind:"
+before_bind="$(get GAME_PORTS_BIND)"
+run_step 198.51.100.25 '' '' >/dev/null
+[[ "$(get GAME_PORTS_BIND)" == "${before_bind}" ]] \
+    && ok "a normal deploy leaves it alone (still ${before_bind})" \
+    || bad "a normal deploy changed it to '$(get GAME_PORTS_BIND)'"
+
+run_step 198.51.100.25 '' '' '0.0.0.0' >/dev/null
+[[ "$(get GAME_PORTS_BIND)" == "0.0.0.0" ]] \
+    && ok "opens on an explicit 0.0.0.0" || bad "did not open: '$(get GAME_PORTS_BIND)'"
+
+out="$(run_step 198.51.100.25 '' '' '0.0.0.0')"
+grep -q 'WARNING' <<<"${out}" \
+    && ok "warns that the ports are public" || bad "opened the ports without warning"
+
+run_step 198.51.100.25 '' '' '127.0.0.1' >/dev/null
+[[ "$(get GAME_PORTS_BIND)" == "127.0.0.1" ]] \
+    && ok "closes again on 127.0.0.1" || bad "did not close: '$(get GAME_PORTS_BIND)'"
+
+if out="$(run_step 198.51.100.25 '' '' 'nonsense')"; then
+    bad "accepted a bogus bind value"
+else
+    ok "rejects a bogus bind value"
+fi
+
+# --- 6. first run with no acme_email must fail loudly, not silently ---------
 echo
 echo "first run with no acme_email (operator forgot the input):"
 rm -rf "${CHECKOUT:?}/.env"
