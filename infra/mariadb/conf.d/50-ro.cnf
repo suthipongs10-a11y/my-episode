@@ -1,0 +1,51 @@
+# =============================================================================
+# MariaDB tuning for rAthena
+# =============================================================================
+# Static settings only. Anything that depends on the host's size is passed as
+# a command flag from docker-compose.yml so it stays env-driven:
+#   --innodb-buffer-pool-size, --max-connections, --long-query-time
+# =============================================================================
+
+[mysqld]
+
+# ---- character set -----------------------------------------------------------
+# rAthena's schema is latin1/utf8. Forcing utf8mb4 here breaks index length
+# assumptions in the upstream .sql files, so we match what rAthena ships.
+character-set-server = utf8mb3
+collation-server     = utf8mb3_general_ci
+skip-character-set-client-handshake
+
+# ---- InnoDB ------------------------------------------------------------------
+innodb_file_per_table = 1
+
+# The DB is the second bottleneck we expect to hit (CLAUDE.md §3). Character
+# saves are frequent and small. Flushing every commit is the safe setting but
+# costs a fsync per save; 2 flushes to the OS every commit and to disk once a
+# second, trading up to one second of writes for a large throughput win. With
+# off-host backups and 60s autosave, that is the right trade for a game server.
+innodb_flush_log_at_trx_commit = 2
+innodb_log_file_size           = 512M
+innodb_flush_method            = O_DIRECT
+
+# Overridden by --innodb-buffer-pool-size from Compose; kept here as the floor
+# so a mis-set env var cannot start MariaDB with the 128M default unnoticed.
+innodb_buffer_pool_instances = 1
+
+# ---- connections -------------------------------------------------------------
+# rAthena keeps long-lived connections and reconnects on demand. Do not let the
+# server reap them mid-session.
+wait_timeout             = 28800
+interactive_timeout      = 28800
+max_allowed_packet       = 64M
+
+# ---- slow query log ----------------------------------------------------------
+# On from day one (CLAUDE.md §3). We want to watch the DB bottleneck approach
+# rather than discover it during a WoE.
+slow_query_log      = 1
+slow_query_log_file = /var/lib/mysql/slow.log
+log_queries_not_using_indexes = 0
+
+# ---- binary log --------------------------------------------------------------
+# Off. Backups are logical dumps shipped off-host; binlogs on the same disk as
+# the data protect against nothing that matters here and eat NVMe.
+skip-log-bin

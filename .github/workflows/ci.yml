@@ -1,0 +1,197 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+# A new push supersedes an in-flight run; rAthena compiles are too slow to
+# queue up behind each other.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # CI never sees a real secret. These exist only so Compose can interpolate
+  # and the containers can start; nothing here reaches a deployed host.
+  CI_DUMMY_ENV: "1"
+
+jobs:
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install linters
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck yamllint
+
+      - name: ShellCheck
+        run: |
+          mapfile -t scripts < <(git ls-files '*.sh')
+          printf 'checking %d scripts\n' "${#scripts[@]}"
+          shellcheck --severity=warning --external-sources "${scripts[@]}"
+
+      - name: yamllint
+        run: yamllint --strict .
+
+      - name: Hadolint
+        run: |
+          for df in $(git ls-files '*Dockerfile'); do
+            echo "== ${df}"
+            docker run --rm -i hadolint/hadolint:latest-alpine \
+              hadolint --failure-threshold warning - < "${df}"
+          done
+
+      - name: Base images are pinned by digest
+        # CLAUDE.md Phase 0. A floating tag means a rebuild six months from now
+        # is a different build, and we would not know which change broke it.
+        run: |
+          unpinned=$(git ls-files '*Dockerfile' | xargs grep -hE '^FROM ' | grep -v '@sha256:' || true)
+          if [ -n "${unpinned}" ]; then
+            echo "FROM lines without a digest:"
+            echo "${unpinned}"
+            exit 1
+          fi
+          echo "all base images pinned"
+
+      - name: No hardcoded addresses or credentials
+        # CLAUDE.md §2.1 — the single most important rule in that file.
+        # Templates and compose read from the environment; a literal IP in a
+        # tracked file means moving VPS becomes a code change.
+        run: bash tools/check-no-hardcoded-config.sh
+
+  proxy:
+    name: Proxy checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: proxy/package-lock.json
+      - run: npm ci
+        working-directory: proxy
+      - run: npm run check
+        working-directory: proxy
+
+  compose:
+    name: Compose config
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Needed for the map-group and entrypoint checks below, which read
+          # rAthena's own map list.
+          submodules: recursive
+
+      - name: Synthesise a .env
+        run: |
+          cp .env.example .env
+          ./tools/gen-secrets.sh
+          sed -i 's|^ACME_EMAIL=.*|ACME_EMAIL=ci@example.invalid|' .env
+          # Anything still unset would fail interpolation; catch it here.
+          # Anchored: the file's header mentions CHANGE_ME in a comment.
+          if grep -qE '^[A-Za-z_][A-Za-z0-9_]*=CHANGE_ME' .env; then
+            echo "unresolved placeholders in .env:"
+            grep -nE '^[A-Za-z_][A-Za-z0-9_]*=CHANGE_ME' .env
+            exit 1
+          fi
+
+      - name: Validate the default stack
+        run: ./tools/compose.sh config --quiet
+
+      - name: Validate with every profile enabled
+        # The scale-out topology must stay valid even while it is dormant,
+        # otherwise "N>1 by config alone" is not true (CLAUDE.md §3).
+        run: |
+          sed -i 's|^COMPOSE_PROFILES=.*|COMPOSE_PROFILES=web,backup,map2,map3|' .env
+          ./tools/compose.sh config --quiet
+          services=$(./tools/compose.sh config --services | sort | tr '\n' ' ')
+          echo "services: ${services}"
+          for expected in db login char map1 map2 map3 web proxy caddy backup; do
+            case " ${services} " in
+              *" ${expected} "*) ;;
+              *) echo "missing service: ${expected}"; exit 1 ;;
+            esac
+          done
+
+      - name: Map group files are valid
+        run: ./tools/check-map-groups.sh
+
+      - name: Entrypoint renders configuration correctly
+        # The riskiest logic in Phase 0: a bad render produces a server that
+        # starts and then misbehaves, which no build check would catch.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gettext-base
+          ./tools/test-entrypoint.sh
+
+  build:
+    name: Build images
+    runs-on: ubuntu-latest
+    # rAthena is a long compile and this is the Phase 0 gate: a clean clone
+    # must build.
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Synthesise a .env
+        run: |
+          cp .env.example .env
+          ./tools/gen-secrets.sh
+          sed -i 's|^ACME_EMAIL=.*|ACME_EMAIL=ci@example.invalid|' .env
+
+      - name: Build
+        run: ./tools/compose.sh build --progress plain
+
+      - name: The rAthena binaries exist and are a pre-renewal build
+        run: |
+          image=$(./tools/compose.sh config --format json \
+            | jq -r '.services.map1.image')
+          echo "image: ${image}"
+          for binary in login-server char-server map-server web-server; do
+            docker run --rm --entrypoint sh "${image}" \
+              -c "test -x /opt/rathena/${binary}" \
+              && echo "  ok ${binary}"
+          done
+
+          # `--version` does not report renewal mode, so check the binary
+          # itself. RENEWAL is a compile-time #ifdef around which script tree
+          # gets loaded, so exactly one of these strings is present.
+          # Getting this wrong is not a build error — it is a server that
+          # quietly runs renewal mechanics.
+          docker run --rm --entrypoint sh "${image}" -c '
+            set -e
+            if ! grep -aq "npc/pre-re/scripts_main.conf" /opt/rathena/map-server; then
+              echo "map-server has no pre-renewal script path — not a PRERE build"
+              exit 1
+            fi
+            if grep -aq "npc/re/scripts_main.conf" /opt/rathena/map-server; then
+              echo "map-server contains the renewal script path — RENEWAL is defined"
+              exit 1
+            fi
+            echo "  ok pre-renewal build confirmed"
+          '
+
+      - name: The entrypoint refuses to start without configuration
+        run: |
+          image=$(./tools/compose.sh config --format json | jq -r '.services.map1.image')
+          if docker run --rm "${image}" map 2>&1 | tee out.txt; then
+            echo "expected a non-zero exit with no environment set"
+            exit 1
+          fi
+          grep -q 'missing required environment variables' out.txt
+          echo "ok — fails loudly"

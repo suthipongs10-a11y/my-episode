@@ -1,0 +1,27 @@
+# yamllint configuration
+#
+# The Compose file carries a lot of explanatory comment, and GitHub Actions
+# wants `on:` as a key. Both are fine; the rules that catch real mistakes
+# (indentation, duplicate keys, trailing whitespace) stay on.
+
+extends: default
+
+ignore: |
+  server/rathena/
+  node_modules/
+
+rules:
+  line-length:
+    max: 120
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    # `on:` in a workflow file.
+    allowed-values: ["true", "false"]
+    check-keys: false
+  document-start: disable
+  # Compose healthchecks and CI steps are naturally long.
+  braces:
+    max-spaces-inside: 1

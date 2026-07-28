@@ -1,0 +1,75 @@
+# =============================================================================
+# Caddy — the only thing on this box facing the internet
+# =============================================================================
+# Everything is driven by environment variables set in docker-compose.yml:
+#   PUBLIC_HOST     the hostname players reach
+#   ACME_EMAIL      Let's Encrypt contact
+#   PROXY_UPSTREAM  wsproxy service:port
+#
+# Caddy gets a certificate automatically. That is not a nicety: iOS refuses to
+# register a service worker over plain HTTP, so the Phase 6 PWA gate depends on
+# TLS working here (CLAUDE.md §6 Phase 6).
+# =============================================================================
+
+{
+	email {$ACME_EMAIL}
+
+	# `localhost` gets Caddy's internal CA instead of a doomed ACME challenge,
+	# so the dev stack comes up without network round trips.
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+{$PUBLIC_HOST} {
+	encode zstd gzip
+
+	log {
+		output stdout
+		format json
+	}
+
+	# ---- WebSocket bridge ----------------------------------------------------
+	# The browser's only way to reach rAthena. Long-lived connections, so the
+	# usual short proxy timeouts are wrong here.
+	@websocket {
+		path /ws/*
+	}
+	handle @websocket {
+		reverse_proxy {$PROXY_UPSTREAM} {
+			transport http {
+				# A player idling in town still holds the socket open.
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+
+	handle /healthz {
+		reverse_proxy {$PROXY_UPSTREAM}
+	}
+
+	# ---- Static client -------------------------------------------------------
+	# Phase 3 puts roBrowser here. Phase 4 moves the heavy assets to Cloudflare
+	# and leaves only the shell on origin — serving GB-scale first loads from
+	# this box is the first thing that breaks (CLAUDE.md §3).
+	handle {
+		root * /srv/client
+		try_files {path} /index.html
+		file_server
+
+		header {
+			# Content-hashed asset filenames make this safe, and it is what
+			# makes the second load free.
+			?Cache-Control "public, max-age=300"
+
+			X-Content-Type-Options nosniff
+			Referrer-Policy strict-origin-when-cross-origin
+			-Server
+		}
+
+		# Hashed filenames never change contents. Cache them forever.
+		@immutable path_regexp \.[0-9a-f]{8,}\.(js|css|png|jpg|webp|bmp|gat|gnd|rsw|spr|act|wav|mp3|ogg)$
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+	}
+}

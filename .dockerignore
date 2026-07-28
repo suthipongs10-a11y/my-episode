@@ -1,0 +1,27 @@
+# Keep build contexts small and reproducible.
+.git
+.github
+docs
+*.md
+!server/rathena/**/*.md
+
+.env
+.env.*
+!.env.example
+
+node_modules
+**/node_modules
+dist
+build
+
+# Never let assets into an image layer.
+*.grf
+*.gpf
+*.rgz
+assets
+assets-build/out
+assets-build/work
+
+infra/data
+backups
+**/*.log

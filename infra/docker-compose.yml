@@ -1,0 +1,367 @@
+# =============================================================================
+# RO Ep4 Mobile Web Server — full stack
+# =============================================================================
+# ALWAYS invoke through the wrapper, from the repository root:
+#
+#     ./tools/compose.sh up -d
+#     ./tools/compose.sh ps
+#
+# The wrapper supplies `--env-file <root>/.env`. Relative paths below resolve
+# against this file's directory (infra/), hence the `../` prefixes.
+#
+# Topology notes — see CLAUDE.md §3 before changing anything here:
+#   * login / char / map are separate services from day one, even at N=1,
+#     because map-server is single-threaded and scaling means adding more of
+#     them, not making one bigger.
+#   * map2 / map3 already exist below, behind Compose profiles. Going from one
+#     map-server to three is an edit to .env, never to this file.
+#   * proxy is stateless and can be replicated freely.
+#   * Only Caddy publishes to the internet by default. Raw game ports bind to
+#     ${GAME_PORTS_BIND}, which defaults to loopback.
+# =============================================================================
+
+x-logging: &default-logging
+  # 100GB NVMe fills faster than you expect once a map-server is chatty.
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+x-rathena-image: &rathena-image
+  build:
+    context: ..
+    dockerfile: infra/rathena/Dockerfile
+    args:
+      PACKETVER: ${PACKETVER:?PACKETVER must be set in .env}
+      RATHENA_PRERE: ${RATHENA_PRERE:-yes}
+      RATHENA_MAXCONN: ${RATHENA_MAXCONN:-16384}
+  image: ${COMPOSE_PROJECT_NAME:-roep4}/rathena:${PACKETVER}-prere${RATHENA_PRERE:-yes}
+
+x-rathena-env: &rathena-env
+  DEPLOY_ENV: ${DEPLOY_ENV:-dev}
+  RO_ADVERTISE_IP: ${RO_ADVERTISE_IP:?RO_ADVERTISE_IP must be set in .env}
+  RO_INTER_USER: ${RO_INTER_USER:?RO_INTER_USER must be set in .env}
+  RO_INTER_PASS: ${RO_INTER_PASS:?RO_INTER_PASS must be set in .env}
+  RO_SERVER_NAME: ${RO_SERVER_NAME:-Episode4}
+  LOGIN_HOST: login
+  LOGIN_PORT: ${LOGIN_PORT:-6900}
+  CHAR_HOST: char
+  CHAR_PORT: ${CHAR_PORT:-6121}
+  DB_HOST: ${DB_HOST:-db}
+  DB_PORT: ${DB_PORT:-3306}
+  DB_NAME: ${DB_NAME:-ragnarok}
+  DB_LOG_NAME: ${DB_LOG_NAME:-ragnarok_log}
+  DB_USER: ${DB_USER:?DB_USER must be set in .env}
+  DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+
+x-rathena-common: &rathena-common
+  restart: unless-stopped
+  logging: *default-logging
+  # rAthena does not reap children; without an init process a crashed
+  # map-server can leave the container hanging instead of restarting.
+  init: true
+  networks: [game]
+  volumes:
+    # Our overrides are copied over the upstream tree at container start.
+    # We never edit rAthena's own files (CLAUDE.md §2.6).
+    - ../server/import:/overlay:ro
+    - ../server/map-groups:/opt/rathena/map-groups:ro
+  depends_on:
+    db:
+      condition: service_healthy
+
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Database
+  # ---------------------------------------------------------------------------
+  db:
+    image: mariadb:11.4@sha256:a794d9eb009e20de605858a11f32f63b4075cbd197c650436f0e3b457e4caed7
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [game]
+    command:
+      # Env-driven tuning knobs. Static settings live in mariadb/conf.d/.
+      - --innodb-buffer-pool-size=${DB_INNODB_BUFFER_POOL_SIZE:-2G}
+      - --max-connections=${DB_MAX_CONNECTIONS:-300}
+      - --long-query-time=${DB_SLOW_QUERY_TIME:-1}
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD must be set in .env}
+      MARIADB_DATABASE: ${DB_NAME:-ragnarok}
+      MARIADB_USER: ${DB_USER:?DB_USER must be set in .env}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      MARIADB_AUTO_UPGRADE: "1"
+      # Consumed by initdb.d/01-log-database.sh — rAthena needs a second
+      # schema for its logs, and MARIADB_DATABASE only creates one.
+      RO_DB_LOG_NAME: ${DB_LOG_NAME:-ragnarok_log}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mariadb/conf.d:/etc/mysql/conf.d:ro
+      - ./mariadb/initdb.d:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Loopback only by default — for `mariadb -h 127.0.0.1` from the host.
+      - "${GAME_PORTS_BIND:-127.0.0.1}:${DB_PORT:-3306}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Game servers
+  # ---------------------------------------------------------------------------
+  login:
+    <<: [*rathena-image, *rathena-common]
+    command: ["login"]
+    environment:
+      <<: *rathena-env
+      RO_ROLE: login
+    volumes:
+      - ../server/import:/overlay:ro
+      - ../server/map-groups:/opt/rathena/map-groups:ro
+      - login_log:/opt/rathena/log
+    ports:
+      - "${GAME_PORTS_BIND:-127.0.0.1}:${LOGIN_PORT:-6900}:${LOGIN_PORT:-6900}"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/tcp-health", "${LOGIN_PORT:-6900}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  char:
+    <<: [*rathena-image, *rathena-common]
+    command: ["char"]
+    environment:
+      <<: *rathena-env
+      RO_ROLE: char
+    volumes:
+      - ../server/import:/overlay:ro
+      - ../server/map-groups:/opt/rathena/map-groups:ro
+      - char_log:/opt/rathena/log
+    ports:
+      - "${GAME_PORTS_BIND:-127.0.0.1}:${CHAR_PORT:-6121}:${CHAR_PORT:-6121}"
+    depends_on:
+      db:
+        condition: service_healthy
+      login:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/tcp-health", "${CHAR_PORT:-6121}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  map1:
+    <<: [*rathena-image, *rathena-common]
+    command: ["map"]
+    environment:
+      <<: *rathena-env
+      RO_ROLE: map
+      MAP_PORT: ${MAP1_PORT:-5121}
+      MAP_GROUP: ${MAP1_GROUP:-all}
+    volumes:
+      - ../server/import:/overlay:ro
+      - ../server/map-groups:/opt/rathena/map-groups:ro
+      - map1_log:/opt/rathena/log
+    ports:
+      - "${GAME_PORTS_BIND:-127.0.0.1}:${MAP1_PORT:-5121}:${MAP1_PORT:-5121}"
+    depends_on:
+      db:
+        condition: service_healthy
+      char:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/tcp-health", "${MAP1_PORT:-5121}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # Loading the whole map cache and NPC set takes a while on 2 vCPU.
+      start_period: 180s
+
+  # Second and third map-servers. Dormant until their name appears in
+  # COMPOSE_PROFILES. This is the "N>1 by config alone" requirement.
+  map2:
+    <<: [*rathena-image, *rathena-common]
+    profiles: ["map2"]
+    command: ["map"]
+    environment:
+      <<: *rathena-env
+      RO_ROLE: map
+      MAP_PORT: ${MAP2_PORT:-5122}
+      MAP_GROUP: ${MAP2_GROUP:-all}
+    volumes:
+      - ../server/import:/overlay:ro
+      - ../server/map-groups:/opt/rathena/map-groups:ro
+      - map2_log:/opt/rathena/log
+    ports:
+      - "${GAME_PORTS_BIND:-127.0.0.1}:${MAP2_PORT:-5122}:${MAP2_PORT:-5122}"
+    depends_on:
+      db:
+        condition: service_healthy
+      char:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/tcp-health", "${MAP2_PORT:-5122}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+  map3:
+    <<: [*rathena-image, *rathena-common]
+    profiles: ["map3"]
+    command: ["map"]
+    environment:
+      <<: *rathena-env
+      RO_ROLE: map
+      MAP_PORT: ${MAP3_PORT:-5123}
+      MAP_GROUP: ${MAP3_GROUP:-all}
+    volumes:
+      - ../server/import:/overlay:ro
+      - ../server/map-groups:/opt/rathena/map-groups:ro
+      - map3_log:/opt/rathena/log
+    ports:
+      - "${GAME_PORTS_BIND:-127.0.0.1}:${MAP3_PORT:-5123}:${MAP3_PORT:-5123}"
+    depends_on:
+      db:
+        condition: service_healthy
+      char:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/tcp-health", "${MAP3_PORT:-5123}"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+  # rAthena web-server: guild emblems and the web auth token newer clients
+  # expect. Off by default; enable with `web` in COMPOSE_PROFILES.
+  web:
+    <<: [*rathena-image, *rathena-common]
+    profiles: ["web"]
+    command: ["web"]
+    environment:
+      <<: *rathena-env
+      RO_ROLE: web
+    volumes:
+      - ../server/import:/overlay:ro
+      - ../server/map-groups:/opt/rathena/map-groups:ro
+      - web_log:/opt/rathena/log
+
+  # ---------------------------------------------------------------------------
+  # WebSocket <-> TCP bridge  (Phase 3)
+  # ---------------------------------------------------------------------------
+  proxy:
+    build:
+      context: ..
+      dockerfile: infra/proxy/Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-roep4}/wsproxy:latest
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [game, edge]
+    environment:
+      NODE_ENV: production
+      DEPLOY_ENV: ${DEPLOY_ENV:-dev}
+      PROXY_PORT: ${PROXY_PORT:-5999}
+      PROXY_ALLOWED_TARGETS: ${PROXY_ALLOWED_TARGETS:?PROXY_ALLOWED_TARGETS must be set in .env}
+      PROXY_MAX_CONNECTIONS: ${PROXY_MAX_CONNECTIONS:-2000}
+      PROXY_TRUST_PROXY: ${PROXY_TRUST_PROXY:-1}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:' + process.env.PROXY_PORT + '/healthz')
+          .then(r => process.exit(r.ok ? 0 : 1))
+          .catch(() => process.exit(1))
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Edge: TLS termination and static hosting
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2.10-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge]
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:?PUBLIC_HOST must be set in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL must be set in .env}
+      PROXY_UPSTREAM: proxy:${PROXY_PORT:-5999}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      # Phase 4 will mount the content-hashed asset build output here.
+      - ../client/public:/srv/client:ro
+    depends_on:
+      proxy:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # Off-host backups  (CLAUDE.md §4 — the host is disposable, the data is not)
+  # ---------------------------------------------------------------------------
+  backup:
+    build:
+      context: ..
+      dockerfile: infra/backup/Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-roep4}/backup:latest
+    profiles: ["backup"]
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [game, egress]
+    environment:
+      DEPLOY_ENV: ${DEPLOY_ENV:-dev}
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_NAME: ${DB_NAME:-ragnarok}
+      DB_LOG_NAME: ${DB_LOG_NAME:-ragnarok_log}
+      DB_USER: ${DB_USER:?DB_USER must be set in .env}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      BACKUP_CRON: ${BACKUP_CRON:-0 */6 * * *}
+      BACKUP_REMOTE: ${BACKUP_REMOTE:?BACKUP_REMOTE must be set in .env}
+      BACKUP_RETENTION: ${BACKUP_RETENTION:-30d}
+      BACKUP_GPG_PASSPHRASE: ${BACKUP_GPG_PASSPHRASE:-}
+    volumes:
+      # Gitignored. Create it from `rclone config` — see docs/vps-setup.md.
+      - ./backup/rclone.conf:/config/rclone/rclone.conf:ro
+      - backup_work:/work
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+networks:
+  # Game traffic and DB. Not published; reachable only through `ports:` above.
+  game:
+    driver: bridge
+  # Caddy <-> proxy. Kept separate so the edge cannot see the database.
+  edge:
+    driver: bridge
+  # Outbound-only path for the backup uploader.
+  egress:
+    driver: bridge
+
+volumes:
+  db_data:
+  login_log:
+  char_log:
+  map1_log:
+  map2_log:
+  map3_log:
+  web_log:
+  caddy_data:
+  caddy_config:
+  backup_work:

@@ -1,0 +1,3 @@
+[submodule "server/rathena"]
+	path = server/rathena
+	url = https://github.com/rathena/rathena.git

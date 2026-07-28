@@ -1,0 +1,41 @@
+# ---- secrets -------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+rclone.conf
+
+# ---- game assets (Gravity copyright, huge) --------------------------------
+# See CLAUDE.md §2.3 — assets live outside the repo, only the pipeline is here.
+*.grf
+*.gpf
+*.rgz
+assets/
+assets-build/out/
+assets-build/work/
+client/assets/
+data/
+
+# ---- runtime state --------------------------------------------------------
+*.log
+log/
+logs/
+infra/data/
+backups/
+
+# ---- build output ---------------------------------------------------------
+node_modules/
+dist/
+build/
+*.o
+*.so
+*.a
+
+# ---- editors / OS ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

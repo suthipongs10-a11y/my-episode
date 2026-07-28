@@ -1,0 +1,16 @@
+{
+  "name": "roep4-wsproxy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WebSocket <-> TCP bridge. Browsers cannot open raw TCP sockets; rAthena speaks nothing else.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js && node src/config.js --selftest"
+  }
+}
