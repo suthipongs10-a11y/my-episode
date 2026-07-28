@@ -6,6 +6,7 @@
 | `vps-bootstrap.sh` | prepare a fresh Ubuntu host: Docker, swap, firewall, fail2ban, `ro` user |
 | `deploy.sh` | pull, validate, build, roll, wait for health |
 | `gen-secrets.sh` | fill every `CHANGE_ME` in `.env`; idempotent |
+| `check-env.sh` | is `.env` complete and filled in? `--fix` appends keys added by a later phase |
 | `db-init.sh` | import the rAthena schema, set the inter-server account (Phase 1) |
 | `backup-db.sh` | dump both schemas, encrypt, upload off-host, prune |
 | `restore-db.sh` | the other half — and the Phase 8 gate |

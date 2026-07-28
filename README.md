@@ -62,9 +62,26 @@ that pairing wrong and half-starts the stack.
 
 ## Configuration
 
-Everything is in `.env`. Nothing in the repository contains an address, a port
-or a credential — that is CLAUDE.md §2.1, the rule the whole design hangs off,
-and `tools/check-no-hardcoded-config.sh` enforces it in CI.
+Everything is in `.env`, at the repository root, gitignored. Nothing in the
+repository contains an address, a port or a credential — that is CLAUDE.md
+§2.1, the rule the whole design hangs off, and
+`tools/check-no-hardcoded-config.sh` enforces it in CI.
+
+`.env` does not travel with the repository. It is created once per host and
+stays there; `git pull` never touches it. `.env.example` is the committed
+contract that documents every key.
+
+```bash
+./tools/check-env.sh          # is .env complete and filled in?
+./tools/check-env.sh --fix    # append keys added by a later phase
+```
+
+`deploy.sh` runs that check after every pull, because a `.env` missing a newly
+added key otherwise shows up as a mysteriously broken deploy.
+
+**Keep a copy of `.env` off the VPS.** `BACKUP_GPG_PASSPHRASE` exists only
+there, and it is what decrypts your backups. Losing the host and `.env`
+together means the dumps in your bucket are useless.
 
 Moving to a bigger VPS is: bootstrap the new host, clone, copy `.env`, change
 `PUBLIC_HOST` and `RO_ADVERTISE_IP`, restore a backup, deploy.

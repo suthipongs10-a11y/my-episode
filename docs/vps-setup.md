@@ -104,6 +104,38 @@ server select works and character select hangs, with nothing useful in the logs.
 Point your domain's A record at the VPS before deploying, or Caddy's
 certificate request will fail and retry on a backoff.
 
+### Where `.env` lives, and why it is not in the repository
+
+`.env` sits at the repository root — beside `README.md` — so on the VPS that is
+`~/ro-ep4/.env`. It is gitignored and always will be. `git pull` never touches
+it, never overwrites it, and never brings it to a new machine.
+
+That is the point: it holds the database password, the inter-server password
+and the backup passphrase, and CLAUDE.md §2.2 says none of those go in git. The
+repository is the same on every host; `.env` is what makes one host different
+from another.
+
+Three consequences worth internalising:
+
+> **Keep a copy of `.env` somewhere safe — a password manager, not the VPS.**
+> `BACKUP_GPG_PASSPHRASE` lives in it and nowhere else. Dumps in your bucket are
+> encrypted with it. Lose the VPS and `.env` together and the backups are
+> undecryptable — you would have done everything else right and still lost the
+> players. Back it up the day you create it.
+
+> **`DB_PASSWORD` is fixed once the database has been initialised.** MariaDB
+> applies it only when it creates an empty data directory. Editing it later
+> changes what rAthena sends while the database still expects the old one, and
+> every game server fails to connect with an authentication error that looks
+> like a permissions problem. To rotate it properly, change it inside MariaDB
+> with `ALTER USER` first, then update `.env`.
+
+> **`.env` can go stale.** When a later phase adds a key to `.env.example`, your
+> `.env` will not have it. `./tools/check-env.sh` reports exactly that, and
+> `--fix` appends the missing keys with their documented defaults. `deploy.sh`
+> runs the check after every pull, so you find out at deploy time rather than
+> from a container that started with a silent default.
+
 ---
 
 ## 5. Deploy

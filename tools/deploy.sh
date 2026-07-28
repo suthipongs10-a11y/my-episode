@@ -18,13 +18,8 @@ PULL=1
 log() { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[fatal]\033[0m %s\n' "$*" >&2; exit 1; }
 
+# Fail before spending minutes on a pull if there is no .env at all.
 [[ -f .env ]] || die ".env not found. cp .env.example .env && ./tools/gen-secrets.sh"
-
-if grep -qE '^[A-Za-z_][A-Za-z0-9_]*=CHANGE_ME' .env; then
-    die ".env still contains placeholders:
-$(grep -nE '^[A-Za-z_][A-Za-z0-9_]*=CHANGE_ME' .env | sed 's/^/    /')
-Run ./tools/gen-secrets.sh, then fill in the rest by hand."
-fi
 
 if (( PULL )); then
     log "Pulling"
@@ -44,6 +39,12 @@ if (( PULL )); then
     # commit, it does not follow upstream master (CLAUDE.md §2.5).
     git submodule update --init --recursive
 fi
+
+log "Checking .env"
+# After the pull, not before: the pull is what can introduce a key that .env
+# does not have yet. A stale .env is the failure mode that looks like a broken
+# deploy but is really one missing line.
+./tools/check-env.sh || die "fix .env, then deploy again"
 
 log "Verifying the Compose configuration"
 ./tools/compose.sh config --quiet
