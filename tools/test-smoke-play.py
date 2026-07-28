@@ -213,7 +213,11 @@ class MockServers:
         assert int.from_bytes(packet[6:10], "little") == CID
         self.seen.append(("map-enter", int.from_bytes(packet[10:14], "little")))
 
-        conn.sendall(struct.pack("<I", AID))
+        # Deliberately NOT the four raw bytes the char-server sends. From
+        # PACKETVER 20070521 the map-server wraps the same value in 0x0283,
+        # and assuming the two behave alike is a mistake that only shows up
+        # against a live server.
+        conn.sendall(struct.pack("<HI", 0x0283, AID))
         time.sleep(0.05)
 
         pos = bytes((

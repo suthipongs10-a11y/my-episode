@@ -70,6 +70,7 @@ CZ_ENTER = 0x0888          # clif_parse_WantToConnection, 19 bytes
 CZ_NOTIFY_ACTORINIT = 0x007D   # clif_parse_LoadEndAck, 2 bytes
 CZ_REQUEST_MOVE = 0x0437       # clif_parse_WalkToXY, 5 bytes
 CZ_REQUEST_QUIT = 0x018A       # clif_parse_QuitGame, 4 bytes
+ZC_AID = 0x0283                # 6 bytes: header + account id
 ZC_ACCEPT_ENTER = 0x02EB
 ZC_REFUSE_ENTER = 0x0074
 ZC_NOTIFY_PLAYERMOVE = 0x0087
@@ -302,11 +303,31 @@ def scan_packets(buf, lengths, wanted):
     return None
 
 
-def expect_id(buf):
-    """The four raw bytes both the char- and map-server send before their first
-    real packet: the account id, with no header. Every RO parser special-cases
-    it, and a parser that does not will desynchronise on the very first read."""
-    return bytes(buf[:4]) if len(buf) >= 4 else None
+def expect_char_id(buf):
+    """The char-server's first reply is four raw bytes — the account id, with no
+    packet header at all. Every RO parser has to special-case this, and one that
+    does not will desynchronise on the very first read."""
+    return int.from_bytes(buf[:4], "little") if len(buf) >= 4 else None
+
+
+def expect_map_id(buf):
+    """The map-server announces the same thing, but wrapped. src/map/clif.cpp:
+
+        #if PACKETVER < 20070521
+            WFIFOL(fd,0) = sd->id;          // four raw bytes, like the char-server
+        #else
+            WFIFOW(fd,0) = 0x283;           // header, then the id
+            WFIFOL(fd,2) = sd->id;
+
+    Ours is well past that cutoff, so it is 0x0283. The bare-four-bytes branch is
+    still handled: it costs two lines and it is what an older packetver sends."""
+    if len(buf) >= 2 and int.from_bytes(buf[:2], "little") == ZC_AID:
+        if len(buf) < 6:
+            return None
+        return int.from_bytes(buf[2:6], "little"), 6
+    if len(buf) >= 4:
+        return int.from_bytes(buf[:4], "little"), 4
+    return None
 
 
 # --- stages -------------------------------------------------------------------
@@ -398,9 +419,9 @@ def stage_char(host, port, auth, char_name, slot, verbose):
         + bytes((auth["sex"],))
     )
 
-    echoed = conn.wait_for(expect_id, 10.0, "the account-id echo")
-    if int.from_bytes(echoed, "little") != auth["account_id"]:
-        die("the char-server echoed a different account id than we sent",
+    echoed = conn.wait_for(expect_char_id, 10.0, "the account-id echo")
+    if echoed != auth["account_id"]:
+        die(f"the char-server echoed account {echoed}, not {auth['account_id']}",
             hexdump(conn.buf))
     del conn.buf[:4]
     ok("account-id echo matches")
@@ -494,11 +515,11 @@ def stage_map(host, port, auth, zone, verbose):
         + bytes((auth["sex"],))
     )
 
-    echoed = conn.wait_for(expect_id, 10.0, "the account-id echo")
-    if int.from_bytes(echoed, "little") != auth["account_id"]:
-        die("the map-server echoed a different account id than we sent",
+    echoed, consumed = conn.wait_for(expect_map_id, 10.0, "the account-id echo")
+    if echoed != auth["account_id"]:
+        die(f"the map-server echoed account {echoed}, not {auth['account_id']}",
             hexdump(conn.buf))
-    del conn.buf[:4]
+    del conn.buf[:consumed]
     ok("account-id echo matches")
 
     # ZC_ACCEPT_ENTER is 13 bytes: type 2, startTime 4, posDir 3, xSize 1,
