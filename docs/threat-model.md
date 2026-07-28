@@ -130,6 +130,31 @@ layer must never become the place a limit lives.
 
 ---
 
+## 3a. The download is a trust boundary
+
+Players in this scene routinely disable antivirus to run a private server's
+launcher. That is normal and it is not ours to argue with — but it means the
+protection has moved off their machine and onto our distribution.
+
+If someone replaces our zip — a compromised bucket, a helpful third-party
+mirror, a plain-HTTP link — they are shipping an executable to people who have
+turned their defences off specifically to run it. That is a far better outcome
+for an attacker than any packet they could send us.
+
+So the download is treated as a release artifact, not a file:
+
+| Rule | Why |
+|---|---|
+| Built by CI from a tagged commit | nobody uploads from a laptop; the binary traces to source |
+| SHA-256 published, on a different page from the file | a tampered file and a tampered checksum should need two compromises |
+| HTTPS, our domain, no mirrors as the primary link | mirrors are where this goes wrong |
+| Code signing when affordable | fixes the warning and the tampering together |
+
+This is cheap to build in at Phase 4 and awkward to add after people are already
+downloading.
+
+---
+
 ## 4. Accounts
 
 rAthena stores passwords either in plaintext or as unsalted MD5

@@ -132,11 +132,25 @@ What this buys, beyond DDoS:
 
 Costs, honestly:
 
-- Players must run the launcher rather than the exe directly. This is already
-  the norm — most RO private servers ship a patcher/launcher anyway.
-- An unsigned binary draws antivirus false positives. It is GPL and the source
-  is in this repo, which helps; code signing is the real fix and costs money.
+- Players must run the launcher rather than the exe directly, and an unsigned
+  binary draws antivirus warnings. **Accepted — this is the norm in this scene**
+  and players who want to play routinely turn the warnings off. Do not spend
+  effort here; keep the launcher small and make it work.
 - One more component to build and keep working.
+
+**What that acceptance obliges us to do.** A player base in the habit of
+disabling antivirus to run our binary is a player base that cannot defend itself
+if our download is ever tampered with. The trust moved from their machine to our
+distribution, so the distribution has to earn it:
+
+- **The release is built by CI from a tagged commit**, never uploaded from
+  somebody's laptop. The artifact is then traceable to source anyone can read.
+- **Publish a SHA-256 next to the download**, and on a different page from the
+  file itself.
+- **HTTPS only, our domain only.** No third-party mirror is ever the primary
+  link — a mirror is exactly where this goes wrong.
+- Code signing when there is money for it. It stops the warning *and* the
+  tampering; until then the checksum covers the half that matters.
 
 **Alternatives considered and rejected:** publishing the raw ports and accepting
 the exposure (what everyone else does, and why they fall over); Cloudflare
@@ -248,7 +262,8 @@ next phase now assumes.
 - Measure: first-load size, repeat-load size
 - **PC client download**: zip of diffed ragexe + GRF + launcher + clientinfo,
   versioned and hosted on R2 alongside the browser assets. Extract and play,
-  no installer
+  no installer. **Built by CI from a tag, published with a SHA-256** — see §3a
+  for why that is not optional given how players will run it
 - **Gate:** second load is served from cache; origin bandwidth per player
   measured and documented; the PC zip downloads, extracts and connects on a
   clean Windows machine

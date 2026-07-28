@@ -26,5 +26,7 @@ Requirements:
 - **Fails loudly.** If it cannot reach the server, the player sees why, rather
   than a game client that hangs at the login screen.
 
-Expect antivirus false positives on an unsigned binary. The source being here
-and GPL helps; code signing is the real fix.
+Expect antivirus warnings on an unsigned binary. This is accepted and normal
+for the scene — do not spend effort working around it. What it does oblige is
+that releases are built by CI from a tag and published with a checksum, so the
+download itself stays trustworthy (CLAUDE.md §3a).
