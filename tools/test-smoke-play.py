@@ -218,7 +218,7 @@ class MockServers:
     # --- map -----------------------------------------------------------------
     def _map(self, conn):
         packet = recvn(conn, 19)
-        assert int.from_bytes(packet[0:2], "little") == 0x0888
+        assert int.from_bytes(packet[0:2], "little") == 0x0436
         assert int.from_bytes(packet[2:6], "little") == AID
         assert int.from_bytes(packet[6:10], "little") == CID
         self.seen.append(("map-enter", int.from_bytes(packet[10:14], "little")))
@@ -243,7 +243,7 @@ class MockServers:
             if pid == 0x007D:                                  # LoadEndAck
                 self.seen.append(("loadend",))
                 conn.sendall(b"\x99" * 800)                    # world state noise
-            elif pid == 0x0437:                                # WalkToXY
+            elif pid == 0x035F:                                # WalkToXY
                 raw = recvn(conn, 3)
                 dest_x = (raw[0] << 2) | (raw[1] >> 6)
                 dest_y = ((raw[1] & 0x3F) << 4) | (raw[2] >> 4)

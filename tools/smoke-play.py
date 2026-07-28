@@ -26,10 +26,27 @@
 #
 # Reading the protocol
 # --------------------
-# Packet IDs are shuffled per packetver — 0x0436 was "enter map" for years and
-# is "add friend" by 2018-06-20. Every ID below was read out of the rAthena
-# source for OUR packetver, not from a wiki. If PACKETVER in .env changes,
-# check PACKETS below against src/map/clif_packetdb.hpp again.
+# Packet IDs are shuffled per packetver, so no wiki value can be trusted. The
+# ids below were derived by preprocessing rAthena's own tables at PACKETVER
+# 20180620 and taking the last registration of each id, which is what
+# packetdb_addpacket() does at runtime.
+#
+# Two files, in this order, and missing the second one costs an afternoon:
+#
+#     packetdb_readdb()  src/map/clif.cpp
+#       #include "clif_packetdb.hpp"    <- the base table
+#       #include "clif_shuffle.hpp"     <- the per-version shuffle, and it WINS
+#
+# clif_packetdb.hpp alone says 0x0437 is CZ_REQUEST_MOVE. The shuffle file
+# overrides that, and the live server proved it by disconnecting us:
+#
+#     clif_parse: Received packet 0x0437 with expected packet length 7,
+#     but only 5 bytes remaining, disconnecting session #9
+#
+# Keep that line. It is the oracle: any regenerated table must still come out
+# with 0x0437 as a 7-byte ActionRequest, or the derivation is wrong again.
+#
+# If PACKETVER in .env changes, regenerate against BOTH files.
 # =============================================================================
 
 import argparse
@@ -46,7 +63,7 @@ import time
 #   CH_MAKE_CHAR        ditto, PACKETVER >= 20151001 branch  -> 0xa39
 #   HC_NOTIFY_ZONESVR   ditto, PACKETVER >= 20170315 branch  -> 0xac5
 #   ZC_ACCEPT_ENTER     src/map/packets.hpp, <20141022||>=20160330 -> 0x2eb
-#   CZ_ENTER / WalkToXY src/map/clif_packetdb.hpp, preprocessed at PACKETVER
+#   CZ_* below           clif_packetdb.hpp + clif_shuffle.hpp, preprocessed
 EXPECTED_PACKETVER = 20180620
 
 CA_LOGIN = 0x0064
@@ -66,9 +83,13 @@ HC_BLOCK_CHARACTER = 0x020D
 HC_NOTIFY_ZONESVR = 0x0AC5
 SC_NOTIFY_BAN = 0x0081
 
-CZ_ENTER = 0x0888          # clif_parse_WantToConnection, 19 bytes
+# These four are the shuffle's final word for 20180620 — what a real client of
+# this version sends, not merely an id the server would also accept. Several
+# stale ids stay registered and would work; using the authentic ones keeps this
+# an honest rehearsal of the traffic the Phase 3 proxy has to carry.
+CZ_ENTER = 0x0436              # clif_parse_WantToConnection, 19 bytes
 CZ_NOTIFY_ACTORINIT = 0x007D   # clif_parse_LoadEndAck, 2 bytes
-CZ_REQUEST_MOVE = 0x0437       # clif_parse_WalkToXY, 5 bytes
+CZ_REQUEST_MOVE = 0x035F       # clif_parse_WalkToXY, 5 bytes
 CZ_REQUEST_QUIT = 0x018A       # clif_parse_QuitGame, 4 bytes
 ZC_AID = 0x0283                # 6 bytes: header + account id
 ZC_ACCEPT_ENTER = 0x02EB
