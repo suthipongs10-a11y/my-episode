@@ -97,22 +97,39 @@ from the host's own public keys rather than `ssh-keyscan`: reading the files is
 exact, and it does not depend on the VPS being able to reach its own public
 address, which some providers' NAT does not allow.
 
+Two separate commands, deliberately. An earlier version printed a
+`detected: <ip>` status line into the same block as the key lines, and it is not
+obvious which of the four lines belongs in the secret — the status line does
+not, and pasting it makes the whole file invalid.
+
+**`VPS_HOST`** — prints one line, the address and nothing else:
+
 ```bash
-IP="$(curl -fsS ifconfig.me)"; echo "detected: ${IP}"
-for f in /etc/ssh/ssh_host_*_key.pub; do
-    echo "${IP} $(cut -d' ' -f1,2 "${f}")"
-done
+curl -fsS ifconfig.me; echo
 ```
 
-Copy every line of that output.
+**`VPS_KNOWN_HOSTS`** — prints only key lines, usually three:
+
+```bash
+IP="$(curl -fsS ifconfig.me)"
+for f in /etc/ssh/ssh_host_*_key.pub; do echo "${IP} $(cut -d' ' -f1,2 "${f}")"; done
+```
+
+Paste all of those lines into the one secret. Every line must start with the
+address and have exactly three space-separated fields:
+
+```
+203.0.113.10 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
+<address>    <key type>  <key>
+```
 
 Add three more secrets:
 
 | Name | Value |
 |---|---|
-| `VPS_HOST` | the address — the same one in the lines above |
-| `VPS_USER` | `ro` |
-| `VPS_KNOWN_HOSTS` | all the lines from the loop above |
+| `VPS_HOST` | the address — one line, digits and dots only |
+| `VPS_USER` | `ro` — two letters, no dash, no quotes |
+| `VPS_KNOWN_HOSTS` | every line from the loop above, together in one secret |
 
 ### Check it before the long one
 
