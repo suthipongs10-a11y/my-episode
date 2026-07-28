@@ -18,3 +18,4 @@ Also here:
 | [`remote-ops.md`](remote-ops.md) | operating the VPS from GitHub Actions — no terminal needed |
 | [`phase-1-client.md`](phase-1-client.md) | the PC client the Phase 1 gate needs, and how to diagnose it |
 | [`threat-model.md`](threat-model.md) | staying up when someone wants you down — DDoS, cheating, accounts |
+| [`anti-bot.md`](anti-bot.md) | what is possible against bots, what is not, and what it costs |

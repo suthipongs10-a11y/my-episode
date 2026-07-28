@@ -135,6 +135,11 @@ next phase now assumes.
 - MariaDB container, schema imported, tuned config
 - login / char / map as three separate services, bound to internal network only
 - Off-host backup job running
+- **Game logging on from day one** — pick, drop, zeny, chat, MVP, trade — into
+  the separate log schema. Anti-bot detection is retrospective: on the day you
+  want to ban one you need its last month of behaviour, and you cannot go back
+  and collect it. An afternoon of config now, impossible to retrofit
+  (`docs/anti-bot.md`)
 - **Gate:** a standard PC client connects, creates a character, walks around.
   Baseline must work *before* we touch the browser layer. Do not skip this.
 
@@ -159,6 +164,8 @@ next phase now assumes.
   disconnect after standing still and nothing logs an error.
 - Per-connection packet rate limiting — the proxy is the only chokepoint every
   player passes through
+- **Record connection metadata** (source IP, connection id, open/close, packet
+  counts). Once Cloudflare is in front, nothing else sees per-IP behaviour
 - **Gate:** log in and play in a desktop browser. Mobile comes later — do not
   chase mobile until desktop browser play is solid.
 
@@ -207,7 +214,11 @@ next phase now assumes.
   permanently archived by third parties. One leak makes everything above moot
 - Fail2ban, rate limiting on login (Cloudflare rules as the outer layer,
   rAthena's `ipban_dynamic_pass_failure_ban_*` as the inner one)
-- Tune `macro_detection_*` — rAthena's bot deterrent, off by default
+- Tune `macro_detection_*` — rAthena's bot deterrent, off by default. Note it
+  streams a BMP captcha over packets `0x0a52`-`0x0a57`; roBrowser likely does
+  not implement them, so confirm before relying on it (`docs/anti-bot.md`)
+- Cloudflare Turnstile on registration — stops mass account creation, which is
+  what feeds bot farms
 - Restore drill: prove a backup actually restores
 - **Gate:** restore drill passes from a wiped host, and the origin address is
   not reachable directly
