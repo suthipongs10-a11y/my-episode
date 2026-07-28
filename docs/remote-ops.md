@@ -45,21 +45,45 @@ box. Traffic goes one direction only:
 
 ## One-time setup
 
+> Repository secrets cannot be added from the GitHub mobile app — it does not
+> expose repository Settings. Use a browser, on a phone or otherwise.
+
 ### 1. Let Actions log in to the VPS
 
-On the VPS, as `ro` (`su - ro` from your root session if you are not already):
+Run as `ro`, not root. The key goes into `ro`'s `authorized_keys`, and
+`VPS_USER` is `ro`:
+
+```bash
+su - ro          # skip if the prompt already says ro@
+whoami           # must print: ro
+```
 
 ```bash
 ssh-keygen -t ed25519 -C "github-actions" -f /tmp/actions_key -N ""
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
 cat /tmp/actions_key.pub >> ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
-cat /tmp/actions_key          # copy this whole block, BEGIN and END lines included
+cat /tmp/actions_key
 ```
 
-Put that private key in **Settings → Secrets and variables → Actions → New
-repository secret**, named `VPS_SSH_KEY`.
+That last command prints the **private** key. Copy all of it, including both
+delimiter lines:
 
-Then delete it from the VPS — GitHub is where it lives now:
+```
+-----BEGIN OPENSSH PRIVATE KEY-----
+...
+-----END OPENSSH PRIVATE KEY-----
+```
+
+Put it in **Settings → Secrets and variables → Actions → New repository
+secret**, named `VPS_SSH_KEY`.
+
+> The commonest mistake here is pasting `actions_key.pub` instead. The public
+> half is one line starting `ssh-ed25519`; the private half is a block starting
+> `-----BEGIN`. Only the block goes in the secret.
+
+Then remove it from the VPS — GitHub holds it now, and a private key sitting in
+`/tmp` is one `cat` away from anyone who gets a shell:
 
 ```bash
 shred -u /tmp/actions_key /tmp/actions_key.pub
@@ -67,17 +91,41 @@ shred -u /tmp/actions_key /tmp/actions_key.pub
 
 ### 2. The remaining secrets
 
+`VPS_KNOWN_HOSTS` pins the server's identity so Actions cannot be tricked into
+handing the deploy key to something else answering on that address. Build it
+from the host's own public keys rather than `ssh-keyscan`: reading the files is
+exact, and it does not depend on the VPS being able to reach its own public
+address, which some providers' NAT does not allow.
+
 ```bash
-ssh-keyscan -H "$(curl -s ifconfig.me)"      # output goes in VPS_KNOWN_HOSTS
+IP="$(curl -fsS ifconfig.me)"; echo "detected: ${IP}"
+for f in /etc/ssh/ssh_host_*_key.pub; do
+    echo "${IP} $(cut -d' ' -f1,2 "${f}")"
+done
 ```
+
+Copy every line of that output.
 
 Add three more secrets:
 
 | Name | Value |
 |---|---|
-| `VPS_HOST` | the address |
+| `VPS_HOST` | the address — the same one in the lines above |
 | `VPS_USER` | `ro` |
-| `VPS_KNOWN_HOSTS` | the `ssh-keyscan` output above |
+| `VPS_KNOWN_HOSTS` | all the lines from the loop above |
+
+### Check it before the long one
+
+Do not verify with a deploy — that compiles rAthena and takes twenty minutes to
+tell you a secret has a typo. Run **VPS ops → `status`** instead. It is seconds,
+read-only, and reaches the box the same way.
+
+| What you see | Meaning |
+|---|---|
+| `no checkout at ~/ro-ep4 — run the Deploy workflow first` | **all four secrets are correct.** SSH worked; there is simply nothing deployed yet |
+| `cannot reach the VPS over SSH` | one of the four is wrong — the step names which are empty |
+| `Host key verification failed` | `VPS_KNOWN_HOSTS` does not match, or `VPS_HOST` is a different address than the one in those lines |
+| `Permission denied (publickey)` | `VPS_SSH_KEY` is not the private half of the key in `ro`'s `authorized_keys`, or `VPS_USER` is wrong |
 
 ### 3. First deploy
 
