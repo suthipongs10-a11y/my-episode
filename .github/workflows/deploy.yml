@@ -50,9 +50,13 @@ jobs:
 
       - name: Sync the checkout on the VPS
         env:
-          # SSH URL so the VPS's own read-only deploy key authenticates it.
-          # The repository is private; an HTTPS clone would prompt for a password.
-          REPO_URL: git@github.com:${{ github.repository }}.git
+          # HTTPS: the repository is public, so the VPS needs no credentials to
+          # read it and there is no key to manage or rotate.
+          #
+          # If it is ever made private this line becomes
+          # git@github.com:${{ github.repository }}.git and the VPS needs a
+          # read-only deploy key — see docs/remote-ops.md.
+          REPO_URL: https://github.com/${{ github.repository }}.git
           BRANCH: ${{ github.ref_name }}
         run: |
           ssh vps "REPO_URL='${REPO_URL}' BRANCH='${BRANCH}' bash -s" <<'REMOTE'

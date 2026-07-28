@@ -26,70 +26,28 @@ once entered:
 | `VPS_SSH_KEY` | private half of a key that exists only to let Actions log in |
 | `VPS_KNOWN_HOSTS` | the VPS's host key, so Actions cannot be tricked into handing the key to an impostor |
 
-## Two keys, two directions
+## Only one key is needed
 
-Easy to conflate, so keep them straight:
+The repository is **public**, so the VPS reads it over HTTPS with no credentials
+at all. Nothing to create, nothing to rotate, nothing that can be stolen off the
+box. Traffic goes one direction only:
 
-| | Direction | Where the private half lives | Purpose |
-|---|---|---|---|
-| **Key A** — deploy key | VPS → GitHub | on the VPS, `~/.ssh/id_deploy_github` | the VPS pulls the code |
-| **Key B** — actions key | GitHub → VPS | GitHub Secrets, `VPS_SSH_KEY` | Actions runs commands |
+| Direction | Private half lives | Purpose |
+|---|---|---|
+| GitHub → VPS | GitHub Secrets, `VPS_SSH_KEY` | Actions runs commands on the VPS |
 
-Key A is **read-only** on the repository: the VPS deploys what has already been
-reviewed and built, it never pushes. A key that can write is a key that can
-rewrite history if the box is taken.
+> **If the repository is ever made private**, the VPS can no longer clone
+> anonymously and needs a read-only deploy key of its own. See *Switching to a
+> private repository* at the end of this document — it is two commands and a
+> one-line change.
 
 ---
 
 ## One-time setup
 
-### 1. Make the repository private
+### 1. Let Actions log in to the VPS
 
-**Settings → General → Danger Zone → Change repository visibility → Private.**
-
-Not required for any of this to work, but it is the recommended posture —
-CLAUDE.md §9 notes the copyright exposure grows with visibility, and going
-public later is easy while un-publishing is not.
-
-> Private repositories draw from the free tier's Actions minutes (2,000/month)
-> where public ones are unlimited. A CI run here is about 6 minutes and a deploy
-> 2–20, so it is comfortable, but it is no longer free-forever the way public is.
-
-### 2. Key A — let the VPS read the repository
-
-On the VPS, as `ro`:
-
-```bash
-su - ro          # from your root session, if you are not already ro
-ssh-keygen -t ed25519 -C "ro-ep4-vps-pull" -f ~/.ssh/id_deploy_github -N ""
-cat ~/.ssh/id_deploy_github.pub
-```
-
-Tell SSH to use it for GitHub:
-
-```bash
-cat >> ~/.ssh/config <<'EOF'
-Host github.com
-  User git
-  IdentityFile ~/.ssh/id_deploy_github
-  IdentitiesOnly yes
-EOF
-chmod 600 ~/.ssh/config
-ssh-keyscan github.com >> ~/.ssh/known_hosts
-```
-
-On GitHub: **Settings → Deploy keys → Add deploy key.** Paste the `.pub` output,
-name it after the host, and leave **"Allow write access" unchecked**.
-
-Check it:
-
-```bash
-ssh -T git@github.com     # "You've successfully authenticated"
-```
-
-### 3. Key B — let Actions log in to the VPS
-
-Still as `ro`:
+On the VPS, as `ro` (`su - ro` from your root session if you are not already):
 
 ```bash
 ssh-keygen -t ed25519 -C "github-actions" -f /tmp/actions_key -N ""
@@ -107,7 +65,7 @@ Then delete it from the VPS — GitHub is where it lives now:
 shred -u /tmp/actions_key /tmp/actions_key.pub
 ```
 
-### 4. The remaining secrets
+### 2. The remaining secrets
 
 ```bash
 ssh-keyscan -H "$(curl -s ifconfig.me)"      # output goes in VPS_KNOWN_HOSTS
@@ -121,7 +79,7 @@ Add three more secrets:
 | `VPS_USER` | `ro` |
 | `VPS_KNOWN_HOSTS` | the `ssh-keyscan` output above |
 
-### 5. First deploy
+### 3. First deploy
 
 **Actions → Deploy to VPS → Run workflow.**
 
@@ -179,8 +137,12 @@ one tap needs the destructive entries to cost more than one tap.
 anything ran. One of the four secrets is wrong, the VPS is down, or its host key
 changed (rebuilt the box? regenerate `VPS_KNOWN_HOSTS`).
 
-**`Permission denied (publickey)` while cloning on the VPS** — key A. Confirm
-the deploy key is on the repository and `ssh -T git@github.com` works as `ro`.
+**`Permission denied (publickey)` while cloning on the VPS** — the repository
+went private but `REPO_URL` is still the HTTPS one, or the deploy key is
+missing. See *Switching to a private repository* below.
+
+**`could not read Username for 'https://github.com'`** — same cause: an
+anonymous HTTPS clone of a repository that is no longer public.
 
 **`.env is incomplete on the VPS`** — a later phase added a key. The deploy
 tries `check-env.sh --fix` itself; if it still fails, the value needs a human.
@@ -194,3 +156,51 @@ on 2 vCPU. The job allows 60.
 Nothing here replaces the manual path. `docs/vps-setup.md` still works, and
 `ssh ro@<host>` with the tools in `tools/` is always available. The automation
 is a convenience layer over the same scripts, not a different system.
+
+---
+
+## Switching to a private repository
+
+Public was chosen deliberately. If that changes, the VPS loses anonymous read
+access and needs its own read-only key. Two commands and a one-line edit:
+
+On the VPS, as `ro`:
+
+```bash
+ssh-keygen -t ed25519 -C "ro-ep4-vps-pull" -f ~/.ssh/id_deploy_github -N ""
+cat >> ~/.ssh/config <<'CONF'
+Host github.com
+  User git
+  IdentityFile ~/.ssh/id_deploy_github
+  IdentitiesOnly yes
+CONF
+chmod 600 ~/.ssh/config
+ssh-keyscan github.com >> ~/.ssh/known_hosts
+cat ~/.ssh/id_deploy_github.pub
+```
+
+On GitHub: **Settings → Deploy keys → Add deploy key**, paste it, and leave
+**"Allow write access" unchecked** — the VPS deploys what has already been built
+and reviewed, it never pushes. A key that can write is a key that can rewrite
+history if the box is taken.
+
+Verify with `ssh -T git@github.com`, then change `REPO_URL` in
+`.github/workflows/deploy.yml`:
+
+```yaml
+REPO_URL: git@github.com:${{ github.repository }}.git
+```
+
+The existing checkout also needs repointing, once:
+
+```bash
+cd ~/ro-ep4 && git remote set-url origin git@github.com:<owner>/<repo>.git
+```
+
+(The deploy workflow sets the remote URL on every run, so this is only needed if
+you want to pull by hand before the next deploy.)
+
+One other thing changes: private repositories draw from the free tier's 2,000
+Actions minutes a month, where public ones are unlimited. A CI run here is about
+six minutes and a deploy two to twenty, which is comfortable, but it stops being
+free-forever.

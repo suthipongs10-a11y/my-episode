@@ -50,8 +50,12 @@ works. Only then consider disabling root SSH login.
 
 ## 3. Give the VPS read access to the repository
 
-The clone needs to work unattended, so use a **deploy key** — read-only, scoped
-to this one repository, not your personal account.
+**The repository is public, so there is nothing to do here** — the VPS clones
+over HTTPS with no credentials. Skip to step 4.
+
+The rest of this section applies only if the repository is later made private.
+Then the clone needs to work unattended, so use a **deploy key** — read-only,
+scoped to this one repository, not your personal account.
 
 On the VPS, as `ro`:
 
@@ -79,7 +83,7 @@ threat model here.
 ## 4. Clone and configure
 
 ```bash
-git clone --recurse-submodules git@github.com:<owner>/<repo>.git ~/ro-ep4
+git clone --recurse-submodules https://github.com/<owner>/<repo>.git ~/ro-ep4
 cd ~/ro-ep4
 
 cp .env.example .env
