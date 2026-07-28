@@ -82,6 +82,20 @@ secret**, named `VPS_SSH_KEY`.
 > half is one line starting `ssh-ed25519`; the private half is a block starting
 > `-----BEGIN`. Only the block goes in the secret.
 
+**If the connection later fails with `error in libcrypto`**, the key text was
+damaged in the copy — usually invisible characters or lost line breaks from
+copying multi-line text out of a terminal window. The workflow strips Windows
+line endings by itself, but it cannot repair missing characters. The reliable
+way to move the key through any clipboard is to make it one line first:
+
+```bash
+base64 -w0 /tmp/actions_key; echo
+```
+
+Copy that single long line into the secret **named `VPS_SSH_KEY_B64`** instead
+of `VPS_SSH_KEY` — the workflow accepts either, and the base64 form survives
+every clipboard and messaging app unharmed.
+
 Then remove it from the VPS — GitHub holds it now, and a private key sitting in
 `/tmp` is one `cat` away from anyone who gets a shell:
 

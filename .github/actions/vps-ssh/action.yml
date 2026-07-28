@@ -11,8 +11,15 @@ inputs:
     description: Login user on the VPS
     required: true
   key:
-    description: Private half of the deploy key
-    required: true
+    description: Private half of the deploy key (plain text)
+    required: false
+    default: ''
+  key-b64:
+    description: >
+      Same key, base64-encoded to one line. Survives any clipboard; takes
+      precedence over `key` when both are set.
+    required: false
+    default: ''
   known-hosts:
     description: Output of `ssh-keyscan <host>` — pins the server's identity
     required: true
@@ -26,14 +33,19 @@ runs:
         VPS_HOST: ${{ inputs.host }}
         VPS_USER: ${{ inputs.user }}
         VPS_KEY: ${{ inputs.key }}
+        VPS_KEY_B64: ${{ inputs.key-b64 }}
         VPS_KNOWN_HOSTS: ${{ inputs.known-hosts }}
       run: |
-        for v in VPS_HOST VPS_USER VPS_KEY VPS_KNOWN_HOSTS; do
+        for v in VPS_HOST VPS_USER VPS_KNOWN_HOSTS; do
           if [ -z "${!v}" ]; then
             echo "::error::secret ${v#VPS_} is not set — see docs/remote-ops.md"
             exit 1
           fi
         done
+        if [ -z "${VPS_KEY}" ] && [ -z "${VPS_KEY_B64}" ]; then
+          echo "::error::neither VPS_SSH_KEY nor VPS_SSH_KEY_B64 is set — see docs/remote-ops.md"
+          exit 1
+        fi
 
         # GitHub-hosted runners have no IPv6 egress. An IPv6 VPS_HOST fails with
         # "Network is unreachable", which reads like a firewall problem and sends
@@ -58,13 +70,49 @@ runs:
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
 
-        printf '%s\n' "${VPS_KEY}" > ~/.ssh/id_deploy
+        # Two accepted forms. The base64 one exists because multi-line keys get
+        # damaged by clipboards; a single base64 line survives anything.
+        if [ -n "${VPS_KEY_B64}" ]; then
+          if ! printf '%s' "${VPS_KEY_B64}" | tr -d ' \n\r' | base64 -d > ~/.ssh/id_deploy 2>/dev/null; then
+            echo "::error::VPS_SSH_KEY_B64 is not valid base64."
+            echo "Re-run 'base64 -w0 /tmp/actions_key' and copy the whole line."
+            exit 1
+          fi
+        else
+          # `tr -d '\r'` matters more than it looks. A key copied through a
+          # Windows clipboard arrives with CRLF line endings, and OpenSSH
+          # rejects it with "error in libcrypto" — which reads like a corrupt
+          # key rather than a whitespace problem, and sends you regenerating a
+          # perfectly good one.
+          printf '%s\n' "${VPS_KEY}" | tr -d '\r' > ~/.ssh/id_deploy
+        fi
         chmod 600 ~/.ssh/id_deploy
 
         # Pinning the host key rather than StrictHostKeyChecking=no. Without it
         # anything that can answer on that address gets handed the deploy key.
-        printf '%s\n' "${VPS_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+        printf '%s\n' "${VPS_KNOWN_HOSTS}" | tr -d '\r' > ~/.ssh/known_hosts
         chmod 600 ~/.ssh/known_hosts
+
+        # Check the key parses before using it, so a bad paste is reported as a
+        # bad paste rather than as "Permission denied".
+        if ! ssh-keygen -y -f ~/.ssh/id_deploy >/dev/null 2>&1; then
+          echo "::error::VPS_SSH_KEY is not a usable private key."
+          if head -n1 ~/.ssh/id_deploy | grep -q '^ssh-'; then
+            echo "It looks like the PUBLIC key (one line, starts with ssh-)."
+            echo "The secret needs the private half: the block from"
+            echo "-----BEGIN OPENSSH PRIVATE KEY----- to -----END OPENSSH PRIVATE KEY-----"
+          elif ! grep -q 'BEGIN OPENSSH PRIVATE KEY' ~/.ssh/id_deploy; then
+            echo "The BEGIN line is missing — the paste was probably incomplete."
+          else
+            echo "The BEGIN and END lines are present but the body did not parse,"
+            echo "so characters were lost or altered in the copy. Re-copy the whole"
+            echo "block, or see docs/remote-ops.md for the base64 method that"
+            echo "survives any clipboard."
+          fi
+          echo "Lines in the secret as received: $(wc -l < ~/.ssh/id_deploy)"
+          exit 1
+        fi
+        echo "private key parses OK"
 
         cat > ~/.ssh/config <<EOF
         Host vps
