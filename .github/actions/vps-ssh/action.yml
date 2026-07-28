@@ -35,6 +35,26 @@ runs:
           fi
         done
 
+        # GitHub-hosted runners have no IPv6 egress. An IPv6 VPS_HOST fails with
+        # "Network is unreachable", which reads like a firewall problem and sends
+        # you looking in the wrong place entirely.
+        case "${VPS_HOST}" in
+          *:*)
+            echo "::error::VPS_HOST looks like an IPv6 address, and GitHub runners cannot route IPv6."
+            echo "Use the IPv4 address: run 'curl -4 ifconfig.me' on the VPS."
+            echo "VPS_KNOWN_HOSTS must be regenerated with that same IPv4 address."
+            exit 1
+            ;;
+        esac
+
+        # A pasted status line or stray label resolves to nothing useful.
+        case "${VPS_HOST}" in
+          *' '*|*detected*)
+            echo "::error::VPS_HOST contains a space or a label — it must be the bare address only."
+            exit 1
+            ;;
+        esac
+
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
 

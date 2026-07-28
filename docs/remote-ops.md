@@ -105,15 +105,25 @@ not, and pasting it makes the whole file invalid.
 **`VPS_HOST`** — prints one line, the address and nothing else:
 
 ```bash
-curl -fsS ifconfig.me; echo
+curl -4 -fsS ifconfig.me; echo
 ```
+
+> **`-4` is not optional.** Without it `curl` returns whichever address family
+> the connection happened to use, and a VPS that prefers IPv6 hands back a
+> `2a02:...` address. GitHub-hosted runners have no IPv6 egress, so an IPv6
+> `VPS_HOST` fails with `Network is unreachable` — which reads like a firewall
+> problem and sends you looking in entirely the wrong place.
 
 **`VPS_KNOWN_HOSTS`** — prints only key lines, usually three:
 
 ```bash
-IP="$(curl -fsS ifconfig.me)"
+IP="$(curl -4 -fsS ifconfig.me)"
 for f in /etc/ssh/ssh_host_*_key.pub; do echo "${IP} $(cut -d' ' -f1,2 "${f}")"; done
 ```
+
+The address here must be the **same one** in `VPS_HOST`. known_hosts entries are
+matched by the host you connect to, so an IPv6 prefix will not match an IPv4
+connection even though the keys themselves are identical.
 
 Paste all of those lines into the one secret. Every line must start with the
 address and have exactly three space-separated fields:
@@ -141,6 +151,9 @@ read-only, and reaches the box the same way.
 |---|---|
 | `no checkout at ~/ro-ep4 — run the Deploy workflow first` | **all four secrets are correct.** SSH worked; there is simply nothing deployed yet |
 | `cannot reach the VPS over SSH` | one of the four is wrong — the step names which are empty |
+| `Network is unreachable` | `VPS_HOST` is an IPv6 address. Runners are IPv4-only — use `curl -4` and regenerate `VPS_KNOWN_HOSTS` to match |
+| `Could not resolve hostname` | `VPS_HOST` has a stray label or space in it, e.g. a pasted `detected:` prefix |
+| `Connection timed out` | the address is right but nothing answered — VPS down, or port 22 filtered upstream |
 | `Host key verification failed` | `VPS_KNOWN_HOSTS` does not match, or `VPS_HOST` is a different address than the one in those lines |
 | `Permission denied (publickey)` | `VPS_SSH_KEY` is not the private half of the key in `ro`'s `authorized_keys`, or `VPS_USER` is wrong |
 
