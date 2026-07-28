@@ -25,32 +25,52 @@ bad() { printf '  \033[1;31mfail\033[0m %s\n' "$*"; status=1; }
 #   package-lock          generated
 #   .github/              CI uses example.invalid and localhost
 #   this script           it contains the patterns it searches for
-#   test-entrypoint.sh    its whole job is to feed a fixture address in and
-#                         assert it comes out the other side; it uses RFC 5737
-#                         TEST-NET, which routes nowhere
 exclude_re='^(.*\.md'
 exclude_re+='|\.env\.example'
 exclude_re+='|proxy/package-lock\.json'
 exclude_re+='|\.github/.*'
-exclude_re+='|tools/check-no-hardcoded-config\.sh'
-exclude_re+='|tools/test-entrypoint\.sh)$'
+exclude_re+='|tools/check-no-hardcoded-config\.sh)$'
 
 mapfile -t files < <(git ls-files | grep -Ev "${exclude_re}")
-echo "scanning ${#files[@]} tracked files"
+
+# Test harnesses feed a fixture address in and assert it comes out the other
+# side, so they must contain one. They are held to a narrower rule rather than
+# exempted: only RFC 5737 documentation ranges, which route nowhere and can
+# never be somebody's real server.
+mapfile -t test_files < <(printf '%s\n' "${files[@]}" | grep -E '^tools/test-.*\.sh$' || true)
+mapfile -t prod_files < <(printf '%s\n' "${files[@]}" | grep -vE '^tools/test-.*\.sh$' || true)
+
+echo "scanning ${#files[@]} tracked files (${#test_files[@]} test harnesses)"
 echo
 
 # --- 1. IPv4 literals --------------------------------------------------------
 # 0.0.0.0 means "every interface in this container's namespace" and 127.0.0.1
 # means "this container". Neither is a deployment detail — they stay correct on
 # any host. Anything else is someone's actual server.
+ANY_IPV4='\b([0-9]{1,3}\.){3}[0-9]{1,3}\b'
+ALWAYS_OK='\b(0\.0\.0\.0|127\.0\.0\.1)\b'
+# RFC 5737 TEST-NET-1/2/3.
+DOC_RANGES='\b(192\.0\.2\.[0-9]{1,3}|198\.51\.100\.[0-9]{1,3}|203\.0\.113\.[0-9]{1,3})\b'
+
 echo "IPv4 literals:"
-hits=$(grep -nE '\b([0-9]{1,3}\.){3}[0-9]{1,3}\b' "${files[@]}" 2>/dev/null \
-    | grep -vE '\b(0\.0\.0\.0|127\.0\.0\.1)\b' || true)
+hits=$(grep -nE "${ANY_IPV4}" "${prod_files[@]}" 2>/dev/null \
+    | grep -vE "${ALWAYS_OK}" || true)
 if [[ -n "${hits}" ]]; then
     bad "found addresses that are not 0.0.0.0 or 127.0.0.1:"
     printf '%s\n' "${hits}" | sed 's/^/       /'
 else
     ok "none outside 0.0.0.0 / 127.0.0.1"
+fi
+
+if (( ${#test_files[@]} )); then
+    test_hits=$(grep -nE "${ANY_IPV4}" "${test_files[@]}" 2>/dev/null \
+        | grep -vE "${ALWAYS_OK}" | grep -vE "${DOC_RANGES}" || true)
+    if [[ -n "${test_hits}" ]]; then
+        bad "test harness uses an address outside RFC 5737 TEST-NET:"
+        printf '%s\n' "${test_hits}" | sed 's/^/       /'
+    else
+        ok "test fixtures stay inside RFC 5737 TEST-NET"
+    fi
 fi
 
 # --- 2. .env is not tracked --------------------------------------------------

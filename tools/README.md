@@ -13,6 +13,8 @@
 | `check-map-groups.sh` | map groups partition the map list exactly |
 | `check-no-hardcoded-config.sh` | enforce CLAUDE.md §2.1 and §2.2 in CI |
 | `test-entrypoint.sh` | exercise config rendering and map splitting without Docker |
+| `check-workflow-scripts.sh` | shellcheck the bash embedded in GitHub Actions, including the parts that run on the VPS |
+| `test-deploy-env.sh` | run the deploy workflow's real .env logic against a sandbox |
 
 Phase 2's Ep4 content-cut scripts land here too. They must be idempotent and
 re-runnable against a fresh upstream pull (CLAUDE.md §6 Phase 2).

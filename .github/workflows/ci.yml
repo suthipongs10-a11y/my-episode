@@ -30,6 +30,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck yamllint
+          python3 -c 'import yaml' 2>/dev/null || pip install --quiet pyyaml
 
       - name: ShellCheck
         run: |
@@ -39,6 +40,18 @@ jobs:
 
       - name: yamllint
         run: yamllint --strict .
+
+      - name: ShellCheck the bash embedded in workflows
+        # The heredocs in deploy.yml and ops.yml run on the VPS. A syntax error
+        # there is not a build failure — it is a half-finished deploy on a
+        # machine nobody is watching.
+        run: ./tools/check-workflow-scripts.sh
+
+      - name: The deploy workflow's .env logic behaves
+        # Exercises the real step, extracted from deploy.yml: creates .env,
+        # generates passwords, is idempotent across redeploys, follows a host
+        # move, and fails loudly when an input is missing.
+        run: ./tools/test-deploy-env.sh
 
       - name: Hadolint
         # Mounted rather than piped on stdin: .hadolint.yaml lives in the
