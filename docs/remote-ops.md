@@ -202,6 +202,7 @@ That run clones the repository to `~/ro-ep4`, creates `.env` from
 | `status` | compose state, every container on the host, deployed commit |
 | `logs` | last N lines, one service or all |
 | `diagnostics` | memory, swap, disk, docker usage, listening ports, `.env` check |
+| `smoke-play` | log in, create a character and walk it over the real protocol — no client needed |
 | `db-init` | import the rAthena schema (Phase 1) — needs `confirm` |
 | `restart` / `stop` / `start` | one service or all |
 | `backup-now` | take an off-host backup immediately |

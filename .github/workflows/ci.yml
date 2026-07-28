@@ -53,6 +53,19 @@ jobs:
         # move, and fails loudly when an input is missing.
         run: ./tools/test-deploy-env.sh
 
+      - name: Python syntax
+        run: |
+          mapfile -t scripts < <(git ls-files '*.py')
+          printf 'checking %d scripts\n' "${#scripts[@]}"
+          python3 -m py_compile "${scripts[@]}"
+
+      - name: The protocol smoke client speaks the right dialect
+        # smoke-play.py's packet ids and field offsets are hand-derived from
+        # rAthena source for our packetver. A wrong offset does not throw — it
+        # reads a plausible number from the wrong place and reports success.
+        # This runs it against mock servers that pin the byte layout.
+        run: ./tools/test-smoke-play.py
+
       - name: Hadolint
         # Mounted rather than piped on stdin: .hadolint.yaml lives in the
         # workspace, and a container reading the Dockerfile from stdin cannot

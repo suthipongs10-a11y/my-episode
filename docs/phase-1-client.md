@@ -21,12 +21,18 @@ binaries, not suggestions.
 
 ## The exact client
 
-**`2018-06-20aRagexeRE`** — the `RE` suffix matters, see below.
+**`2018-06-20`, any letter revision, `RagexeRE`** — the `RE` suffix matters, see
+below; the letter does not.
 
 Our servers are compiled with `PACKETVER=20180620` (`.env`, consumed as a build
 arg). The client's packet layout must match that number exactly. A mismatch is
 not a graceful error: the client connects and is dropped, usually with no useful
 message on either side.
+
+**The letter after the date — `a`, `b`, … `e` — is not part of the match.**
+rAthena's `PACKETVER` is a bare integer date, so `2018-06-20aRagexeRE` and
+`2018-06-20eRagexeRE` are the same client as far as our build is concerned.
+Whichever you have is the right one.
 
 Changing it is a rebuild, not a config edit — `PACKETVER` is a compile-time
 `-D` flag. If you must:
@@ -92,6 +98,34 @@ Three parts. Only the third comes from us.
 Gravity's, CLAUDE.md §2.3 keeps them out of the repo entirely, and §9 is honest
 that running a server on them is the operator's risk to take. Source them from
 your own installation.
+
+### Checking an executable is diffable before you try
+
+Gravity ships `ragexe` wrapped in Themida, and a packed executable cannot be
+diffed — WARP finds none of its byte patterns. What circulates in this scene is
+an *unpacked* copy: dumped from memory, imports rebuilt, then redistributed. So
+the first question about any client file is which of the two you have.
+
+Size is not the answer — an unpacked dump keeps the packer's dead sections and
+stays large. Three things settle it, and all three can be read off the file:
+
+| Check | Packed | Unpacked and diffable |
+|---|---|---|
+| `strings` for `clientinfo.xml`, `data.grf` | absent — encrypted | present in plain text |
+| Import table | a handful of entries (`LoadLibraryA`, `GetProcAddress`) | the real set: `granny2.dll`, `mss32.dll`, `binkw32.dll`, `ijl15.dll`, `ddraw.dll`, `ws2_32.dll` |
+| Entropy of the main code section | ~7.9, indistinguishable from random | ~6.2, ordinary x86 |
+
+A file that passes all three has been unpacked and WARP will work on it. Leftover
+`Themida` / `WinLicense` strings and a random-named high-entropy section are
+expected in a dump and do not contradict this — they are the discarded original,
+still sitting in the file.
+
+One consequence of the import table being real: the executable **statically**
+imports `granny2.dll`, `mss32.dll`, `binkw32.dll`, `ijl15.dll` and `cps.dll`.
+Windows refuses to start it if any of them is missing from the folder, with a
+"code execution cannot proceed" box and nothing in any log. They come from a full
+kRO client — which is also where `data.grf` comes from, so in practice you need
+that download regardless.
 
 ### Diffing
 
@@ -235,10 +269,14 @@ Check what was actually written:
 
 ---
 
-## A cheaper smoke test first
+## Prove the server first, without a client
 
-A full client is a lot of setup to discover the database was not imported. Before
-assembling it, **VPS ops** → `status` should show four healthy services:
+A full client is several GB of download to discover the database was not
+imported. Two checks come first, in order.
+
+### 1. Everything is running
+
+**VPS ops** → `status` should show four healthy services:
 
 ```
 db      healthy
@@ -250,6 +288,41 @@ map1    healthy
 `map1` takes a few minutes on first start — it loads the whole map cache and NPC
 set on a single core. The healthcheck allows 180s before it counts as failed.
 
-If those four are healthy, the servers are talking to each other and to the
-database, and anything that goes wrong afterwards is between the client and the
-login port. That narrows the search a great deal.
+### 2. The protocol actually works
+
+**VPS ops** → `smoke-play`.
+
+This runs `tools/smoke-play.py` on the VPS: it speaks the real RO protocol to
+the real servers and does exactly what the gate describes — logs in, creates a
+character, walks it three cells, logs out. No GRF, no executable, no download.
+
+It dials `127.0.0.1` from the box itself, so the game ports stay closed while it
+runs. Output looks like:
+
+```
+1. login-server
+  ok   authenticated as 'smoketest' (account 2000000, sex M)
+  ok   char-server advertised: 'Episode4' at <RO_ADVERTISE_IP>:6121 (0 online)
+2. char-server
+  ok   character list received (empty)
+  ok   created 'SmokeTest' in slot 0 (Novice)
+  ok   character 150000 selected, starting on new_1-1.gat
+3. map-server
+  ok   entered new_1-1.gat at (53, 111) facing 4
+  ok   walked (53, 111) -> (56, 111)
+```
+
+It is re-runnable: the account and character are created once and reused.
+
+**What it proves:** authentication, the inter-server account, the
+login → char → map handoff, character creation, map cache loading, and movement.
+It also prints the addresses the servers advertise, which is the one setting a
+real client depends on and cannot check for itself.
+
+**What it does not prove:** anything client-side. The GRF, the sprites, the
+client's own item and map tables, and whether the game is playable. That is why
+the gate still wants a real client — this narrows what can be wrong with it to
+the client itself.
+
+If the smoke test passes and the real client then fails, the problem is in the
+diff, the data folder or `clientinfo.xml`, and the table above says which.

@@ -18,6 +18,7 @@ on:
           - status
           - logs
           - diagnostics
+          - smoke-play
           - db-init
           - restart
           - stop
@@ -153,6 +154,17 @@ jobs:
               echo
               echo "===== .env sanity (values never printed) ====="
               ./tools/check-env.sh || true
+              ;;
+
+            smoke-play)
+              # The Phase 1 gate, over the real protocol: log in, create a
+              # character, walk it. Runs on the VPS itself and dials 127.0.0.1,
+              # so the game ports never have to be open to run it.
+              if ! command -v python3 >/dev/null 2>&1; then
+                  echo "python3 is not installed on this host"
+                  exit 1
+              fi
+              python3 ./tools/smoke-play.py
               ;;
 
             db-init)
