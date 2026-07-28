@@ -9,6 +9,7 @@ deferred, and what the next phase now assumes.
 | Report | Phase | Status |
 |---|---|---|
 | [`phase-0-audit.md`](phase-0-audit.md) | 0 — Foundation | gate PASSED |
+| [`phase-1-audit.md`](phase-1-audit.md) | 1 — rAthena baseline | gate PARTIAL — server proven, PC client outstanding |
 
 Also here:
 
