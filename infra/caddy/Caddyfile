@@ -38,7 +38,10 @@
 	handle @websocket {
 		reverse_proxy {$PROXY_UPSTREAM} {
 			transport http {
-				# A player idling in town still holds the socket open.
+				# No timeout here — but this is NOT what keeps an idle player
+				# connected. Cloudflare Free closes an idle WebSocket after 100
+				# seconds no matter what Caddy allows, so wsProxy must send a
+				# keepalive ping well under that (Phase 3, docs/threat-model.md).
 				read_timeout 0
 				write_timeout 0
 			}

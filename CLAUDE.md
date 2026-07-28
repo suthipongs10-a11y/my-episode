@@ -24,6 +24,13 @@ Three layers:
 hobby setup. Every decision below assumes we will need to scale and to move
 hosts.
 
+**And to stay up while someone tries to take it down.** Attacks on competing
+servers are routine in this scene, so surviving them is a design goal, not a
+Phase 8 afterthought. The full analysis is in `docs/threat-model.md`; the part
+that changes early decisions is that a browser client speaking WebSocket over
+443 can sit behind Cloudflare's free tier, which raw TCP game ports cannot.
+That is a second reason for the browser architecture, independent of mobile.
+
 ---
 
 ## 2. Hard constraints — do not violate
@@ -147,12 +154,23 @@ next phase now assumes.
 ### Phase 3 — Browser client (desktop first)
 - wsProxy: WebSocket ↔ TCP, stateless, env-configured
 - roBrowser-Legacy configured, `packetver` matched to server
+- **WebSocket keepalive under 60s.** Cloudflare Free closes an idle WebSocket
+  after 100 seconds, and an idle player sends nothing. Without this, players
+  disconnect after standing still and nothing logs an error.
+- Per-connection packet rate limiting — the proxy is the only chokepoint every
+  player passes through
 - **Gate:** log in and play in a desktop browser. Mobile comes later — do not
   chase mobile until desktop browser play is solid.
 
 ### Phase 4 — Asset pipeline + CDN
 - GRF extraction → content-hashed static files
-- Cloudflare in front, immutable cache headers, IndexedDB caching client-side
+- **Published into Cloudflare R2**, not cached from our origin. Cloudflare's
+  ToS still restricts serving large files hosted *outside* Cloudflare through
+  the CDN; files hosted *on* R2 are explicitly fine, and R2 egress is free.
+  Same account we already use for backups.
+- Immutable cache headers, IndexedDB caching client-side
+- Put Cloudflare in front of the game traffic too, so the origin stops being
+  directly reachable (see `docs/threat-model.md`)
 - Measure: first-load size, repeat-load size
 - **Gate:** second load is served from cache; origin bandwidth per player
   measured and documented
@@ -183,9 +201,16 @@ next phase now assumes.
 
 ### Phase 8 — Hardening
 - Firewall: only 80/443 public; game ports internal only
-- Fail2ban, rate limiting on login
+- **80/443 accepted only from Cloudflare's published IP ranges** — otherwise
+  the protection is a front door with the back door open
+- **Origin-IP leak audit.** Historical DNS records are the usual leak and are
+  permanently archived by third parties. One leak makes everything above moot
+- Fail2ban, rate limiting on login (Cloudflare rules as the outer layer,
+  rAthena's `ipban_dynamic_pass_failure_ban_*` as the inner one)
+- Tune `macro_detection_*` — rAthena's bot deterrent, off by default
 - Restore drill: prove a backup actually restores
-- **Gate:** restore drill passes from a wiped host
+- **Gate:** restore drill passes from a wiped host, and the origin address is
+  not reachable directly
 
 ---
 
@@ -217,6 +242,25 @@ next phase now assumes.
   reach for managed services we can run ourselves on one box.
 - If something in this file turns out to be wrong, say so and propose the fix
   rather than working around it silently.
+- **The client cannot be trusted, and ours less than most.** It is JavaScript
+  built on open-source roBrowser — readable and editable by any player. Every
+  limit must be enforced server-side. A cooldown or range check that only
+  exists in `/ui` does not exist.
+
+## 8a. Reference servers
+
+Not to copy, and nothing here changes our plan. Kept so that "how does anyone
+else do this" has an answer when a question comes up.
+
+| Server | Why noted | Captured? |
+|---|---|---|
+| `eternal-origin.com` | operator's reference for feel and feature set | not yet — the dev environment's network policy blocks the domain |
+
+When one is captured, split the findings in two: settings that are a config
+change under `server/import/conf/local/`, and anything that contradicts the Ep4
+pre-renewal baseline in §6 Phase 2 — third jobs, transcendent classes, renewal
+mechanics, level caps above 99/50. The second kind is a change to this file,
+made deliberately, not absorbed quietly.
 
 ---
 
@@ -229,6 +273,9 @@ next phase now assumes.
   public server on them is copyright exposure, and it is the kind that gets
   pursued. That risk is the operator's decision, but it is real and it grows
   with player count and visibility.
+  **Decided (2026-07-28): the operator accepts this risk. Do not raise it
+  again as a blocker.** What survives the decision is the engineering
+  consequence below, which is a good idea regardless of the reason.
 - Practical consequence for engineering: **the host is disposable and the data
   is not.** Off-host backups from Phase 1, no exceptions.
 - Long-term de-risking path: replace assets with owned/licensed art. The
