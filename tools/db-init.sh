@@ -61,6 +61,32 @@ DB_PASSWORD="$(need_env DB_PASSWORD)"
 RO_INTER_USER="$(need_env RO_INTER_USER)"
 RO_INTER_PASS="$(need_env RO_INTER_PASS)"
 
+# --- inter-server password constraints ---------------------------------------
+# rAthena's char-server keeps this in a char[24] buffer (23 usable) and the
+# login-server compares it as plaintext, so a longer value is truncated on one
+# side and rejected by the varchar column on the other. An early gen-secrets.sh
+# produced 40-character values; repair those here by rotating to a valid one,
+# writing it back to .env so the servers and the database agree.
+if ! [[ "${RO_INTER_PASS}" =~ ^[A-Za-z0-9]{1,23}$ ]]; then
+    echo "  RO_INTER_PASS is invalid for rAthena (must be 1-23 alphanumeric chars)"
+    new_pass=""
+    while (( ${#new_pass} < 23 )); do
+        new_pass+="$(head -c 256 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9')"
+    done
+    new_pass="${new_pass:0:23}"
+    sed -i "s|^RO_INTER_PASS=.*|RO_INTER_PASS=${new_pass}|" .env
+    RO_INTER_PASS="${new_pass}"
+    echo "  rotated RO_INTER_PASS in .env (23 chars)"
+    echo "  NOTE: running game servers still hold the old value — redeploy"
+    echo "        (docker compose up -d) after this script so they agree."
+fi
+
+# Belt and braces: this value goes into a SQL statement, and MariaDB's client
+# echoes failing statements into logs. The regex above makes the INSERT unable
+# to fail on length or quoting, so the secret can never be echoed.
+[[ "${RO_INTER_PASS}" =~ ^[A-Za-z0-9]{1,23}$ ]] || die "RO_INTER_PASS failed validation"
+[[ "${RO_INTER_USER}" =~ ^[A-Za-z0-9]{1,23}$ ]] || die "RO_INTER_USER must be 1-23 alphanumeric chars"
+
 SQL_DIR="server/rathena/sql-files"
 [[ -d "${SQL_DIR}" ]] || die "no ${SQL_DIR} — run: git submodule update --init --recursive"
 
@@ -93,22 +119,18 @@ existing="$(db --skip-column-names --batch -e \
     "SELECT COUNT(*) FROM information_schema.tables
      WHERE table_schema='${DB_NAME}' AND table_name='login';" 2>/dev/null || echo 0)"
 
+IMPORT=1
 if [[ "${existing}" == "1" && "${FORCE}" -eq 0 ]]; then
-    cat >&2 <<EOF
-
-  '${DB_NAME}' already has a 'login' table — the schema is already imported.
-
-  Re-importing DROPs and recreates every table, which deletes every account
-  and character. If that is really what you want:
-
-      ./tools/db-init.sh --force          # will still ask you to confirm
-      ./tools/db-init.sh --force --yes    # no prompt (CI)
-
-EOF
-    exit 1
+    # Schema already there. Not an error: skip the import but still (re)set the
+    # inter-server account below, so a run that failed between the two steps —
+    # or a deliberate account reset — is fixed by simply running this again.
+    log "'${DB_NAME}' already has its schema — skipping the import"
+    echo "  (a full DROP-and-reimport, which deletes every account and"
+    echo "   character, is: ./tools/db-init.sh --force)"
+    IMPORT=0
 fi
 
-if [[ "${existing}" == "1" ]]; then
+if [[ "${existing}" == "1" && "${FORCE}" -eq 1 ]]; then
     echo
     echo "  This will DESTROY all accounts and characters in '${DB_NAME}'."
     if (( ASSUME_YES )); then
@@ -126,10 +148,12 @@ import() {
     db "${schema}" < "${SQL_DIR}/${file}"
 }
 
-log "Importing the schema"
-import main.sql "${DB_NAME}"
-import logs.sql "${DB_LOG_NAME}"
-import web.sql  "${DB_NAME}"
+if (( IMPORT )); then
+    log "Importing the schema"
+    import main.sql "${DB_NAME}"
+    import logs.sql "${DB_LOG_NAME}"
+    import web.sql  "${DB_NAME}"
+fi
 
 log "Setting the inter-server account"
 # sex='S' is what marks an account as a server rather than a player.

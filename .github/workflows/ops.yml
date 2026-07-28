@@ -92,13 +92,26 @@ jobs:
           OPERATION: ${{ inputs.operation }}
           SERVICE: ${{ inputs.service }}
           LINES: ${{ inputs.lines }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          ssh vps "OPERATION='${OPERATION}' SERVICE='${SERVICE}' LINES='${LINES}' bash -s" <<'REMOTE'
+          remote_env="OPERATION='${OPERATION}' SERVICE='${SERVICE}'"
+          remote_env="${remote_env} LINES='${LINES}' BRANCH='${BRANCH}'"
+          ssh vps "${remote_env} bash -s" <<'REMOTE'
           set -uo pipefail
           cd "${HOME}/ro-ep4" 2>/dev/null || {
               echo "no checkout at ~/ro-ep4 — run the Deploy workflow first"
               exit 1
           }
+
+          # Ops runs the tools from this checkout, so bring them up to date
+          # first — otherwise a just-pushed fix silently doesn't run and the
+          # op re-fails the same way. Containers are untouched: this moves
+          # files, not services, and .env is untracked so it survives.
+          git fetch --prune origin "${BRANCH}" 2>/dev/null \
+              && git reset --hard "origin/${BRANCH}" >/dev/null 2>&1 \
+              && git submodule update --init --recursive >/dev/null 2>&1 \
+              && echo "tools synced to $(git rev-parse --short HEAD)" \
+              || echo "warning: could not sync tools; running existing checkout"
 
           case "${OPERATION}" in
 

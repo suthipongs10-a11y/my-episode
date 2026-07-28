@@ -29,6 +29,17 @@ gen() {
     printf '%s' "${out:0:want}"
 }
 
+# Per-key lengths. RO_INTER_PASS is not ours to size: rAthena's char-server
+# stores it in a char[24] buffer (23 usable) and login compares plaintext, so
+# anything longer is silently truncated on one side and rejected by the
+# `user_pass` column on the other. 23 exactly, no more.
+length_for() {
+    case "$1" in
+        RO_INTER_PASS) echo 23 ;;
+        *)             echo 40 ;;
+    esac
+}
+
 changed=0
 for key in DB_PASSWORD DB_ROOT_PASSWORD RO_INTER_PASS BACKUP_GPG_PASSPHRASE; do
     current="$(grep -E "^${key}=" "${ENV_FILE}" | head -n1 | cut -d= -f2- || true)"
@@ -42,7 +53,7 @@ for key in DB_PASSWORD DB_ROOT_PASSWORD RO_INTER_PASS BACKUP_GPG_PASSPHRASE; do
         continue
     fi
 
-    value="$(gen 40)"
+    value="$(gen "$(length_for "${key}")")"
     # `|` as the sed delimiter, and the value is alphanumeric, so no escaping.
     sed -i "s|^${key}=.*|${key}=${value}|" "${ENV_FILE}"
     echo "  set  ${key}"
