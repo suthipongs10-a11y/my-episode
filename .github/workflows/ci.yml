@@ -155,7 +155,9 @@ jobs:
           sed -i 's|^ACME_EMAIL=.*|ACME_EMAIL=ci@example.invalid|' .env
 
       - name: Build
-        run: ./tools/compose.sh build --progress plain
+        # --progress is a top-level compose flag, not a build flag, so it goes
+        # before the subcommand.
+        run: ./tools/compose.sh --progress plain build
 
       - name: The rAthena binaries exist and are a pre-renewal build
         run: |

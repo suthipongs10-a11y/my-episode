@@ -60,13 +60,22 @@ log "Starting"
 ./tools/compose.sh up -d --remove-orphans
 
 log "Waiting for health"
+
+# `compose ps --format json` emits a JSON array on some versions and one
+# object per line on others. `[.] | flatten` normalises both to a stream of
+# objects, so this does not silently report everything healthy after an
+# upgrade changes the shape.
+services_matching() {
+    ./tools/compose.sh ps --format json 2>/dev/null \
+        | jq -r "[.] | flatten | .[] | select(${1}) | .Service" \
+        | tr '\n' ' ' || true
+}
+
 deadline=$(( SECONDS + 600 ))
 while (( SECONDS < deadline )); do
-    unhealthy="$(./tools/compose.sh ps --format json 2>/dev/null \
-        | jq -r 'select(.Health == "starting" or .Health == "unhealthy") | .Service' \
-        | tr '\n' ' ' || true)"
-    [[ -z "${unhealthy// /}" ]] && break
-    printf '\r  waiting on: %-60s' "${unhealthy}"
+    pending="$(services_matching '.Health == "starting"')"
+    [[ -z "${pending// /}" ]] && break
+    printf '\r  waiting on: %-60s' "${pending}"
     sleep 5
 done
 printf '\r%-70s\r' ''
@@ -74,8 +83,7 @@ printf '\r%-70s\r' ''
 log "Status"
 ./tools/compose.sh ps
 
-failed="$(./tools/compose.sh ps --format json 2>/dev/null \
-    | jq -r 'select(.Health == "unhealthy") | .Service' | tr '\n' ' ' || true)"
+failed="$(services_matching '.Health == "unhealthy"')"
 if [[ -n "${failed// /}" ]]; then
     echo
     die "unhealthy after deploy: ${failed}
