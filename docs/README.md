@@ -8,7 +8,7 @@ deferred, and what the next phase now assumes.
 
 | Report | Phase | Status |
 |---|---|---|
-| [`phase-0-audit.md`](phase-0-audit.md) | 0 — Foundation | gate half-verified; build job outstanding |
+| [`phase-0-audit.md`](phase-0-audit.md) | 0 — Foundation | gate PASSED |
 
 Also here:
 

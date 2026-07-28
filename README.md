@@ -7,7 +7,8 @@ Read [`CLAUDE.md`](CLAUDE.md) first. It is the project's contract: constraints,
 scaling model, phase plan, and the legal boundary. This file only covers how to
 run what exists today.
 
-**Current status: Phase 0 complete.** Foundation and deployment machinery.
+**Current status: Phase 0 complete, gate passed.** Foundation and deployment
+machinery; rAthena compiles and is verified pre-renewal in CI.
 The game servers build and start; the Ep4 content cut, browser client, assets,
 mobile UI and PWA shell are Phases 2–6 and are not written yet.
 

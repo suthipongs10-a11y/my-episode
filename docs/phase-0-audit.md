@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-28
 **Gate (CLAUDE.md §6):** `docker compose config` valid; clean clone → build succeeds
-**Result:** first half verified here; second half not verifiable in this environment — see *What was not tested*.
+**Result: PASSED.** Both halves verified — the second in CI, on a clean checkout.
 
 ---
 
@@ -163,17 +163,48 @@ addressing correctly.
 
 ---
 
+## The gate, in CI
+
+No Docker daemon was available in the authoring environment, so the build was
+verified on a GitHub runner from a clean checkout with submodules — which is a
+better test of "clean clone → build succeeds" than a local build would have
+been.
+
+Run 2 (`6ecfbdc`), job *Build images*:
+
+```
+Build .......................................... success (3m 15s)
+image: roep4/rathena:20180620-prereyes
+  ok login-server
+  ok char-server
+  ok map-server
+  ok web-server
+  ok pre-renewal build confirmed
+```
+
+So: rAthena compiles, the Ubuntu 24.04 package set is right (`libpcre3` and
+`libmariadb3` both resolve — the two I flagged as most likely to break), all
+four binaries are produced, and the binary really is pre-renewal.
+
+**Two CI steps failed, neither of them a defect in the stack:**
+
+1. *The entrypoint refuses to start without configuration.* The container did
+   exactly the right thing:
+   ```
+   [entrypoint] FATAL: missing required environment variables: DB_HOST DB_PORT DB_NAME DB_LOG_NAME DB_USER DB_PASSWORD
+   ```
+   The check was wrong. `docker run … | tee out.txt` reports `tee`'s exit
+   status, not `docker`'s, so the `if` always saw success and the assertion
+   tested nothing. Fixed by capturing the status directly.
+
+2. *Hadolint.* DL3018 "pin versions in apk add". Declined and documented in
+   `.hadolint.yaml`: Alpine and Ubuntu drop superseded package versions from
+   their archives, so a pinned version builds today and fails with "no
+   candidate version" in a few months — the opposite of what the rule wants.
+   Reproducibility is held where it actually works, by pinning every base image
+   by digest, which CI enforces separately.
+
 ## What was not tested
-
-**The image builds.** No Docker daemon in this environment. `docker compose
-config` is valid and the Dockerfiles are written against a verified rAthena
-tree — the configure flags, `make server` targets, CLI options and config
-import chain were all read from the pinned commit rather than recalled — but
-**nobody has run `docker compose build` yet.** The Phase 0 gate is only half
-verified until CI's `build` job goes green or you run `./tools/deploy.sh`.
-
-Most likely failure if it does break: an Ubuntu 24.04 package name. `libpcre3`
-and `libmariadb3` are the two worth checking first.
 
 **Everything runtime.** No server has started, no schema has been imported, no
 client has connected. That is Phase 1 and is correctly out of scope.

@@ -41,11 +41,15 @@ jobs:
         run: yamllint --strict .
 
       - name: Hadolint
+        # Mounted rather than piped on stdin: .hadolint.yaml lives in the
+        # workspace, and a container reading the Dockerfile from stdin cannot
+        # see it — the config would be silently ignored.
         run: |
           for df in $(git ls-files '*Dockerfile'); do
             echo "== ${df}"
-            docker run --rm -i hadolint/hadolint:latest-alpine \
-              hadolint --failure-threshold warning - < "${df}"
+            docker run --rm -v "${PWD}:/repo:ro" -w /repo \
+              hadolint/hadolint:latest-alpine \
+              hadolint --config .hadolint.yaml "${df}"
           done
 
       - name: Base images are pinned by digest
@@ -196,9 +200,19 @@ jobs:
       - name: The entrypoint refuses to start without configuration
         run: |
           image=$(./tools/compose.sh config --format json | jq -r '.services.map1.image')
-          if docker run --rm "${image}" map 2>&1 | tee out.txt; then
-            echo "expected a non-zero exit with no environment set"
+
+          # Capture the status directly. `docker run ... | tee` reports tee's
+          # exit status, not docker's, so piping here would assert nothing and
+          # the check would fail against a container that behaved correctly.
+          set +e
+          out=$(docker run --rm "${image}" map 2>&1)
+          rc=$?
+          set -e
+
+          printf '%s\n' "${out}"
+          if [ "${rc}" -eq 0 ]; then
+            echo "expected a non-zero exit with no environment set, got 0"
             exit 1
           fi
-          grep -q 'missing required environment variables' out.txt
-          echo "ok — fails loudly"
+          printf '%s\n' "${out}" | grep -q 'missing required environment variables'
+          echo "ok — exits ${rc} and says which variables are missing"

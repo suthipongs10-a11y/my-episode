@@ -1,0 +1,23 @@
+# hadolint configuration
+#
+# Anything that would make a rebuild non-reproducible, leak a secret into a
+# layer, or leave the container running as root is worth failing on. Two rules
+# are not.
+
+failure-threshold: warning
+
+ignored:
+  # DL3008 "Pin versions in apt-get install"
+  # DL3018 "Pin versions in apk add"
+  #
+  # Both are counterproductive on a rolling archive. Ubuntu and Alpine remove
+  # superseded package versions, so a pinned `libmariadb-dev=3.3.x` builds
+  # today and fails with "no candidate version" in three months — the exact
+  # opposite of the reproducibility the rule is reaching for.
+  #
+  # We get that reproducibility where it actually holds: every base image is
+  # pinned by digest (CI enforces it), so a rebuild starts from a byte-identical
+  # filesystem. Pinning the packages on top would trade a real guarantee for a
+  # brittle one.
+  - DL3008
+  - DL3018
