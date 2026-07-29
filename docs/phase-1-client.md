@@ -99,6 +99,32 @@ Gravity's, CLAUDE.md §2.3 keeps them out of the repo entirely, and §9 is hones
 that running a server on them is the operator's risk to take. Source them from
 your own installation.
 
+### Game data newer than the executable
+
+The data does **not** have to be from 2018. A recent kRO full client — the
+operator has `kRO_FullClient_20210406` — supplies data for a 2018 executable
+fine, and that pairing (newest full client, older diffed `ragexe`) is the normal
+way this is assembled. Newer data is additive: extra sprites, extra job ids and
+extra item entries are simply never referenced by an older exe.
+
+Do not be tempted to raise `PACKETVER` to match the newer data instead. The
+executable is what must match `PACKETVER`, not the GRF, and the diffable exe we
+have is the 2018 one — an official 2021 `ragexe` ships Themida-packed and cannot
+be diffed.
+
+The one thing that can genuinely misbehave is `msgstringtable.txt`, which the
+client indexes **by line number**. Lines appended at the end are harmless; lines
+inserted in the middle shift every string after them, and the symptom is UI text
+that is wrong rather than missing — a skill description where a menu label
+should be. It is cosmetic, it does not block this gate, and if it shows up the
+fix is to use an older `msgstringtable.txt` in `data/`.
+
+Data that is *older* than the executable is the combination that does not work,
+and it fails hard rather than cosmetically. A 2005-era `data.grf` predates the
+Lua data system (`lua files/`, `System/itemInfo.lub`) that a 2018 client
+requires, so the client exits at startup. That rules out reusing the data from
+an old Thai or EP5-era installation, even though its DLLs are fine.
+
 ### Checking an executable is diffable before you try
 
 Gravity ships `ragexe` wrapped in Themida, and a packed executable cannot be
