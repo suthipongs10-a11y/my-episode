@@ -159,18 +159,36 @@ The client has to be patched before it will talk to anything other than
 Gravity's servers. **WARP** is the current tool (NEMO, which older guides name,
 is no longer maintained).
 
-The patches that matter for this gate:
+Patch names below are the exact titles WARP shows, taken from its own
+`Patches/*.yml` on the `rock` branch. WARP groups them into categories; the
+category is given because the search box matches titles, not categories.
 
-| Patch | Why |
+**Required — the client will not reach our server without these:**
+
+| Patch (WARP title) | Category | Why |
+|---|---|---|
+| Restore Login Window | CLIENT | 2018 clients use Gravity's token login and show no username/password box at all. This restores one. Without it there is nothing to type into |
+| Restore the use of clientinfo xml | DATA CUSTOMIZATION | **Disables the hardcoded server address.** Verified present in our exe: a table of kRO addresses at file offset `0x90f068` (`112.175.128.30`, `211.172.247.115`, …). Without this, `clientinfo.xml` is ignored and the client dials Gravity |
+| Read data folder first | DATA CUSTOMIZATION | gives loose `data/clientinfo.xml` priority over the copy inside `data.grf`, which a kRO full client ships pointing at Gravity |
+| Disable filename check | ENVIRONMENT | the client quits unless it is named something official, and diffing renames it |
+| Disable HShield | DATA CUSTOMIZATION | our exe statically imports `cps.dll`; this removes the dependency on Gravity's anti-cheat actually working |
+
+**Worth having, not required:**
+
+| Patch | Category | Why |
+|---|---|---|
+| Skip service selection screen | UI | removes the kRO/Sakray chooser |
+| Cancel to Login Window | WINDOW | Cancel returns to login instead of exiting |
+| No Help Message on Login | UI | quieter |
+
+**Deliberately NOT needed — each of these is a plausible-looking trap:**
+
+| Patch | Why not |
 |---|---|
-| Read Data Folder First | so `data/clientinfo.xml` is used instead of the one inside the GRF |
-| Always Call SelectKoreaClientInfo | makes the client read `clientinfo.xml` at all |
-| Disable Ragexe Filename Check | the executable gets renamed when you diff it |
-| Skip Service Select Screen | removes the kRO/Sakray chooser |
-| Enable Title Bar Menu | convenience while testing |
-| Use Custom Aura Sprites / Increase Zoom Out | optional, ignore for the gate |
-
-You do **not** need "Disable Packet Encryption" for `20180620` — see above.
+| Disable Map packet encryption *(a.k.a. Skip Packet Obfuscation)* | `clif_obfuscation.hpp` gives every `PACKETVER > 20180307` the keys `0,0,0`, so obfuscation is already a no-op on both sides |
+| Disable Login/Char packet encryption | same reason |
+| Disable Login password encryption | only affects langtypes 4 and 7; `clientinfo.xml` below uses langtype 1 |
+| Use Old Login Packet | only for clients that cannot restore the login window. Ours can, and rAthena registers the SSO handler anyway (`logclif_parse_reqauth_sso`) |
 
 ### `clientinfo.xml`
 
