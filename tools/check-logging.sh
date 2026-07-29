@@ -88,9 +88,16 @@ for table in picklog zenylog chatlog mvplog branchlog atcommandlog npclog cashlo
     fi
 done
 
-# picklog is the one that must never be empty after any real activity: creating
-# a character and walking does not trade or chat, but the server hands out the
-# starting equipment, and that is a pick.
+# --- what the row counts can and cannot prove --------------------------------
+# Only loginlog is written by simply connecting. Everything else needs a player
+# to do the specific thing — and notably NOT character creation: the starting
+# equipment is inserted into `inventory` by the char-server directly, so it never
+# passes through the map-server's pick log. An empty picklog after a smoke test
+# is correct, not a fault. This script asserted otherwise once and was wrong.
+#
+# So the counts answer "does logging reach the database", and the rendered
+# config answers "will the rest be recorded when it happens". Both are needed;
+# neither is sufficient.
 log "Verdict"
 if (( status != 0 )); then
     echo "  a log table is missing — the log schema did not import."
@@ -103,21 +110,47 @@ if [[ " ${empty[*]} " == *" loginlog "* ]]; then
     echo "  run ./tools/smoke-play.py first, then this again."
     exit 1
 fi
+ok_msg() { printf '  \033[1;32mok\033[0m   %s\n' "$*"; }
+bad_msg() { printf '  \033[1;31mfail\033[0m %s\n' "$*"; }
 
-echo "  loginlog has rows, so logging reaches the database."
-if [[ " ${empty[*]} " == *" picklog "* ]]; then
-    echo
-    echo "  \033[1;31mpicklog is empty\033[0m despite a login having happened."
-    echo "  enable_logs or sql_logs is wrong in conf/import/log_conf.txt."
+ok_msg "loginlog has rows — the log path to MariaDB works"
+
+# The settings rAthena ships OFF. If these are not in the running container's
+# config, the corresponding history is being thrown away right now.
+log "Settings on the running map-server"
+conf="$(./tools/compose.sh exec -T map1 cat conf/import/log_conf.txt 2>/dev/null || true)"
+if [[ -z "${conf}" ]]; then
+    bad_msg "conf/import/log_conf.txt not found in the map1 container"
+    echo "       the entrypoint did not render it — redeploy"
     exit 1
 fi
 
-echo "  picklog has rows, so item logging is recording."
+want=( "sql_logs: yes|logs go to the database, not flat files"
+       "enable_logs: 0xFFFFFFFF|item movement: pick, drop, trade, vending, storage"
+       "log_filter: 1|every item, not just valuable ones"
+       "log_zeny: 1|zeny movement  (rAthena default: off)"
+       "log_chat: 63|chat incl. whisper  (rAthena default: off)"
+       "log_mvpdrop: yes|MVP kills  (rAthena default: off)" )
+for entry in "${want[@]}"; do
+    line="${entry%%|*}"; why="${entry#*|}"
+    if grep -qx "${line}" <<<"${conf}"; then
+        ok_msg "$(printf '%-28s %s' "${line}" "${why}")"
+    else
+        bad_msg "$(printf '%-28s %s' "${line}" "MISSING — ${why}")"
+        status=1
+    fi
+done
+
+echo
+if (( status != 0 )); then
+    echo "  Logging is incomplete. History not recorded now cannot be recovered."
+    exit 1
+fi
+echo "  Configured for everything CLAUDE.md Phase 1 requires."
 if (( ${#empty[@]} )); then
     echo
-    echo "  Still empty, which is expected until a player does these things:"
+    echo "  Empty so far, which is expected until a player does the thing:"
     printf '    %s\n' "${empty[@]}"
-    echo
-    echo "  Empty is only meaningful once the matching activity has happened."
-    echo "  chatlog stays empty until somebody talks; mvplog until an MVP dies."
+    echo "  chatlog fills when somebody talks, picklog when an item moves,"
+    echo "  mvplog when an MVP dies. Empty here is not evidence of a fault."
 fi
