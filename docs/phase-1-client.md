@@ -394,3 +394,118 @@ the client itself.
 
 If the smoke test passes and the real client then fails, the problem is in the
 diff, the data folder or `clientinfo.xml`, and the table above says which.
+
+---
+
+## Assembling a client from parts — what a full day of it taught us
+
+The gate stalled here, so this is the record of how far it got and exactly
+where. It is written for whoever picks it up next, which may be us in a month.
+
+**None of it is a server problem.** Across every attempt the login-server saw
+zero connections from the client — only its own healthcheck. The client dies at
+startup, before any socket is opened.
+
+### Three packages tried, and why each stopped
+
+| Package | Outcome |
+|---|---|
+| `kRO_FullClient_20210406` | Gravity's own `RagexeRE.exe` failed identically in it. Not a working standalone install; the official patcher ran to completion and it still would not start |
+| EternalRO | Real, playable install — got much further. But its `data`/GRFs are custom 2022-era renewal content |
+| Grimoire RO | Gepard Shield: *"The client executable is invalid"*. GRFs encrypted, foreign exe refused. Dead end by design |
+
+**Any live server's client is locked to that server's exe.** That is the point of
+the protection, and it is not something to work around. The path that made
+progress was assembling a clean folder from parts.
+
+### The parts a working client needs
+
+1. A diffed `ragexe` — ours is fine (see above)
+2. GRF assets — `data.grf` from any kRO-derived client
+3. **A `data` folder and a `System` folder matched to the client date** — this is
+   the piece that was missing for most of the day
+
+Part 3 comes from **ROenglishRE** (`llchrisll/ROenglishRE`). Do **not** hand-copy
+its `Translation/` subfolders — it ships `Tools\ClientGenerator.bat`, which takes
+mode (Pre-Renewal) and client date (2018-06-20) and assembles the right set. Its
+setup docs are at `llchrisll.github.io/ROTPDocs`; reading them first would have
+saved most of this.
+
+### Two traps that cost the most time
+
+**ROenglishRE renames files.** The client asks for `Achievement_list.lub`, the
+project ships `achievements.lub`; `itemInfo.lub` vs `itemInfo.lua`;
+`OngoingQuestInfoList*.lub` vs `OngoingQuests.lub`. WARP's `Customize ... lub`
+patches exist to bridge exactly this, which is why the docs tell you to load a
+session file. Copying to the expected names works just as well and needs no
+re-diff.
+
+**A `RagexeRE` wants `_sak` / `_Sakray` suffixes**, and which suffix varies per
+file. Generating every variant of every name in one pass is far cheaper than
+discovering them one error at a time.
+
+### The client tells you what it wants — read it out of the binary
+
+The decisive technique. Every path and manager name is a plain string in the exe:
+
+```python
+re.finditer(rb'[A-Za-z0-9_./\\\- ]{3,80}\.(?:lub|lua)', open(exe,'rb').read())
+re.finditer(rb'C[A-Za-z]{3,30}Mgr', ...)
+```
+
+That produced the complete list of `System` files for `2018-06-20eRagexeRE`:
+
+```
+System/CheckAttendance.lub          System/Towninfo.lub
+System/iteminfo_Sak.lub             System/monster_size_effect_sak_new.lub
+System/tipbox.lub                   System\PrivateAirplane_Sakray.lub
+system\Achievement_list.lub         system\PetEvolutionCln_sak.lub
+```
+
+Searching near a manager's name also reveals the Lua functions it calls
+(`InsertEvolutionRecipeLGU`, `InsertPetAutoFeeding`, …), which is how the
+PetEvolution stub was worked out without ever having the real file.
+
+### The stub contract for a System lub
+
+The client loads the file and calls `main()`, expecting **two** return values,
+the second a string. An empty table alone gives *"attempt to call a nil value"*;
+returning only `true` gives *"second return value is not string"*. This works:
+
+```lua
+PetEvolutionCln = {}
+
+function main()
+	return true, ""
+end
+```
+
+Useful for any renewal-only subsystem a pre-renewal server will never use.
+
+### Where it stands
+
+Fixed in order, each confirmed by the error changing: missing `cps.dll` (a
+readable Windows error, unlike everything after it) → `_sak` filenames →
+ROenglishRE's renamed files → `CAchievementMgr` → `CPrivateAirplaneMgr` →
+`CCheckAttendanceMgr` → `CPetEvolutionMgr`.
+
+**Remaining: one message box titled `Error` with no text**, after which the
+client exits. It has been present since the first attempt and survives every
+change, so it is not caused by anything fixed above.
+
+What is already ruled out, with evidence rather than assumption:
+
+- **No missing files.** Process Monitor filtered to `NAME NOT FOUND` showed 707
+  events, all Windows DLL probing and DirectX registry lookups — not one game
+  file. It also showed the client reaching graphics initialisation, which is late
+  in startup
+- Not the patches, `clientinfo.xml`, PACKETVER, admin rights, or compatibility
+  mode — each tested and eliminated
+- The empty text means the message index is absent from `msgstringtable.txt`,
+  so the client cannot say what is wrong; that is the whole difficulty
+
+**Next thing to try:** WARP's `Disable MessageBoxes` (UI → MSGBOX
+CUSTOMIZATIONS). Suppressing errors was rightly resisted while we were blind,
+but ProcMon has since shown nothing is missing, so if these are non-fatal
+warnings the client may simply proceed. If it still exits, the error is fatal
+and the cause is below the file layer.
