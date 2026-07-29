@@ -125,7 +125,9 @@ render inter_conf.txt
 case "${ROLE}" in
     login) render login_conf.txt ;;
     char)  render char_conf.txt ;;
-    map)   render map_conf.txt ;;
+    # log_conf is the map-server's alone: conf/log_athena.conf is only read
+    # there, and it is where every logged event originates.
+    map)   render map_conf.txt; render log_conf.txt ;;
     web)   render web_conf.txt ;;
 esac
 

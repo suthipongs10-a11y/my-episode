@@ -104,6 +104,21 @@ grep -q '^char_ip: char$'              "${mapc}"  && ok "internal char host is t
 grep -q '^map_port: 5121$'             "${mapc}"  && ok "map port substituted"    || bad "map port wrong"
 grep -q '^passwd: interpw$'            "${mapc}"  && ok "inter-server password substituted" || bad "inter password wrong"
 
+# Logging is the one Phase 1 requirement that cannot be retrofitted — anti-bot
+# work needs history nobody thought to collect. rAthena ships zeny, chat and MVP
+# logging OFF, so these three are the difference between a log that answers
+# questions later and one that is quietly empty.
+logc="${HOME_DIR}/conf/import/log_conf.txt"
+if [[ -f "${logc}" ]]; then
+    ok "log_conf.txt rendered for the map role"
+    grep -q '^sql_logs: yes$'     "${logc}" && ok "logs go to the database"  || bad "sql_logs not set"
+    grep -q '^log_zeny: 1$'       "${logc}" && ok "zeny logging on"          || bad "zeny logging off"
+    grep -q '^log_chat: 63$'      "${logc}" && ok "chat logging on"          || bad "chat logging off"
+    grep -q '^log_mvpdrop: yes$'  "${logc}" && ok "MVP logging on"           || bad "MVP logging off"
+else
+    bad "log_conf.txt was not rendered — game logging falls back to upstream defaults"
+fi
+
 # Nothing may survive as a literal placeholder — envsubst silently leaves
 # unknown variables alone and rAthena would then parse '${FOO}' as a value.
 if grep -rq '\${' "${HOME_DIR}/conf/import/"; then

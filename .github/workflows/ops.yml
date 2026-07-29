@@ -165,6 +165,10 @@ jobs:
                   exit 1
               fi
               python3 ./tools/smoke-play.py
+              echo
+              # Logging is the one Phase 1 requirement that cannot be added
+              # later, so prove it records rather than trusting the config.
+              ./tools/check-logging.sh || true
               ;;
 
             db-init)
