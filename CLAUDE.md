@@ -1,45 +1,47 @@
-# CLAUDE.md — RO Ep4 Mobile Web Server
+# CLAUDE.md — RO Server, PC + Mobile
 
 > Project context file for Claude Code. Read this fully before any task.
 > Written in English for token efficiency; the human operator works in Thai —
 > respond to him in Thai, keep code/comments/commits in English.
+>
+> **Revised 2026-07-29.** The original spec targeted Episode 4.0 with a
+> browser-first client and a launcher that tunnelled a stock PC client over
+> WebSocket. That spec cost a full day against a client executable that would
+> not start, and its Phase 1 gate is why. §11 records what changed and why, so
+> the reasoning is not lost. Do not restore the old plan without reading it.
 
 ---
 
 ## 1. What we are building
 
-A pre-renewal Ragnarok Online server (Episode 4.0 / War of Emperium content
-baseline), playable **two ways, both first-class**:
+A Ragnarok Online private server **in the same class as `eternal-origin.com`**,
+playable on **PC and mobile**, with our own rates, content and identity.
 
-1. **Mobile browser** — installable PWA, no app store, no download, iOS+Android.
-2. **PC client** — downloaded as a zip, extract and play, no installer.
-
-Players are on both, so neither is the "real" client and neither is a fallback.
-The PC path is not just the Phase 1 test harness; it ships.
+EternalRO is the reference. Not to clone — to match in capability, then differ
+in gameplay. When a question is "how good does this have to be", the answer is
+"as good as EternalRO", and §8a records what we know about how they built it.
 
 | Layer | What it is | Status |
 |---|---|---|
-| Game server | rAthena, pre-renewal build, Ep4 content cut | to build |
-| Bridge | WebSocket ↔ TCP proxy (browser can't open raw TCP) | to build |
-| Browser client | roBrowser-Legacy + custom mobile UI overlay + PWA shell | to build |
-| PC client | diffed ragexe + GRF + launcher, distributed as a zip | to build |
+| Game server | rAthena, containerised, N map-servers | **working** — §6 Phase 1 passed |
+| Mobile client | **RoPlay** (`roplay-app.com`), a paid native app for iOS+Android | to buy — §3a |
+| PC client | diffed ragexe + GRF, distributed as a zip | **unsolved** — §3b |
+| Anti-cheat | Gepard Shield, if RoPlay requires it | to confirm — §3a |
+| Website | registration, downloads, control panel | later |
 
-**Both clients use the same transport.** The PC client does not connect to the
-raw game ports over the internet; a small launcher in its folder tunnels
-localhost TCP to the same WSS endpoint the browser uses. See §3a — this is the
-decision the whole network design depends on, and it is not negotiable without
-giving up the DDoS position.
+**The operator has decided to pay for the mobile client rather than build it**
+(2026-07-29). That decision is settled; do not reopen it. What is *not* settled
+is everything in §3a's checklist, which must be answered by the vendor before
+money moves.
 
-**Target: real multiplayer, many concurrent players.** Not a single-player
-hobby setup. Every decision below assumes we will need to scale and to move
-hosts.
+**Target: real multiplayer, many concurrent players.** Every decision below
+assumes we will need to scale and to move hosts.
 
 **And to stay up while someone tries to take it down.** Attacks on competing
-servers are routine in this scene, so surviving them is a design goal, not a
-Phase 8 afterthought. The full analysis is in `docs/threat-model.md`; the part
-that changes early decisions is that a browser client speaking WebSocket over
-443 can sit behind Cloudflare's free tier, which raw TCP game ports cannot.
-That is a second reason for the browser architecture, independent of mobile.
+servers are routine in this scene. The full analysis is in
+`docs/threat-model.md`. Read §3c before designing anything network-facing —
+the client decision above **reopened** an exposure the original plan closed,
+and that is now the largest unresolved risk in the project.
 
 ---
 
@@ -49,10 +51,11 @@ That is a second reason for the browser architecture, independent of mobile.
    from environment variables. Moving VPS must be a config change, not a
    code change. This is the single most important rule in this file.
 2. **Never commit secrets.** `.env` is gitignored. `.env.example` is committed
-   with dummy values and every key documented.
-3. **Never commit GRF files or extracted game assets.** They are large and
-   they are Gravity's copyright. Assets live outside the repo; the repo
-   contains only the *pipeline* that processes them.
+   with dummy values and every key documented. **Vendor licence keys (RoPlay,
+   Gepard) are secrets and are covered by this rule.**
+3. **Never commit GRF files or extracted game assets.** They are large and they
+   are Gravity's copyright. Assets live outside the repo; the repo contains
+   only the *pipeline* that processes them.
 4. **Never develop directly against the production database.** Local/staging
    only, then deploy.
 5. **rAthena source is a git submodule or a tracked upstream remote** — never
@@ -60,7 +63,8 @@ That is a second reason for the browser architecture, independent of mobile.
    upstream security fixes.
 6. All modifications to rAthena live in `conf/import/`, `db/import/`, and
    `npc/custom/` — never edit upstream files in place. This keeps merges
-   possible forever.
+   possible forever. `src/custom/defines_pre.hpp` and `defines_post.hpp` are
+   also legitimate: rAthena ships them for this purpose.
 
 ---
 
@@ -75,17 +79,15 @@ single char-server.
 Design implications, from day one:
 
 - **Process split:** `login-server`, `char-server`, and **N × `map-server`**
-  are separate containers from the start. Even if we run N=1 on KVM2 today,
-  the topology must already support N>1 by config alone.
-- **Map grouping is a config file**, not code. Splitting Prontera onto its
-  own map-server later must be a one-line change.
-- **wsProxy is stateless and horizontally scalable.** N instances behind
-  nginx. Never store session state in the proxy.
-- **Assets never come from the VPS in production.** Content-hashed filenames
-  → Cloudflare (free tier) → immutable cache headers. First-load per player
-  is GB-scale; serving that from origin will exhaust bandwidth long before
-  CPU becomes the problem. This is the first thing that breaks. Build the
-  asset pipeline CDN-ready from Phase 4, not later.
+  are separate containers from the start. Even if we run N=1 today, the
+  topology must already support N>1 by config alone. *(Implemented: the
+  entrypoint turns a map-group name into `delmap:` lines.)*
+- **Map grouping is a config file**, not code. Splitting Prontera onto its own
+  map-server later must be a one-line change.
+- **Assets never come from the VPS in production.** Content-hashed filenames →
+  CDN → immutable cache headers. First-load per player is GB-scale; serving
+  that from origin will exhaust bandwidth long before CPU becomes the problem.
+  This is the first thing that breaks.
 - **Database is the second bottleneck.** MariaDB on its own volume, tuned
   `innodb_buffer_pool_size`, slow query log on from day one.
 
@@ -93,83 +95,125 @@ Design implications, from day one:
 1. Bandwidth (asset delivery) — solved by CDN
 2. map-server single-core CPU — solved by splitting maps
 3. DB write throughput — solved by tuning, then by separating the DB host
-4. wsProxy connection count — solved by adding instances
+4. Ingress connection count
 
 ---
 
-## 3a. One ingress for both clients
+## 3a. Mobile client: RoPlay
 
-Supporting a downloadable PC client and surviving a DDoS pull in opposite
-directions, and the conflict has to be resolved deliberately.
+`eternal-origin.com`'s mobile client is **RoPlay** — the string
+`Roplay [v.3.6.48]` is visible on their login screen. It is a commercial
+product, not something they built: a native iOS+Android app that speaks the RO
+protocol to an rAthena server, sold on subscription (published tiers were around
+**$190 / 3 months** and **$250 / 6 months** as of July 2026).
 
-**The problem.** A stock RO client speaks raw TCP on 6900 / 6121 / 5121. Raw TCP
-cannot go behind Cloudflare's free tier. So publishing those ports means
-publishing the origin address, and an attacker simply aims there and ignores
-Cloudflare entirely. Every protection in `docs/threat-model.md` is bypassed by
-the one open door. This is exactly why traditional RO servers go down.
+**We are buying it.** The reasoning is in §11; briefly, every alternative that
+avoids an app install is either unproven (roBrowser) or does not exist, and the
+operator's goal is parity with EternalRO, which requires the thing EternalRO
+actually uses.
 
-**The decision: tunnel the PC client too.**
+### Answer these before paying — every one changes our architecture
 
-Ship a small launcher in the client folder. It listens on `127.0.0.1:6900`, and
-forwards that TCP stream to `wss://<host>/ws` — the same endpoint the browser
-uses. `clientinfo.xml` points at `127.0.0.1`, so the game client is unmodified
-and unaware.
+Do not treat the purchase as settled work until this table is filled in. Each
+row is something that, answered badly, costs more than the subscription.
 
-```
-browser  ──── WSS/443 ──┐
-                        ├──► Cloudflare ──► Caddy ──► wsProxy ──► rAthena
-PC + launcher ─ WSS/443 ┘
-```
+| # | Question | Why it matters |
+|---|---|---|
+| 1 | **Which `packetver`s are supported?** | Decides our rAthena build, our client data, and therefore our whole content baseline. We currently build `PACKETVER=20180620`. |
+| 2 | **Is Gepard Shield required or optional? What does it cost?** | A second subscription. It is also the thing that makes a client un-unpackable, which cuts both ways. |
+| 3 | **How does the app reach the server — raw TCP to 6900/6121/5121, or a proxy/WSS endpoint?** | **This decides §3c entirely.** Raw TCP means the origin address is public and Cloudflare cannot protect it. |
+| 4 | **iOS distribution: App Store, TestFlight, or sideload?** | Android sideloading is routine; iOS is not. If this needs an Apple developer account or a TestFlight slot, that is a hard external dependency with its own review process. |
+| 5 | **What do we supply, and where is it hosted?** GRF? a client build? assets on their CDN or ours? | Decides whether Phase 4's asset pipeline is ours or theirs, and who pays the bandwidth. |
+| 6 | **How much can we rebrand?** Logo, login art, UI colours, app name. | The operator's stated goal is to *differ* from EternalRO, not to look like a second instance of it. |
+| 7 | **Is the server address configurable by us at runtime?** | §2.1. If the address is baked into their build, moving hosts becomes a vendor ticket instead of a DNS change. |
+| 8 | **What happens the day the subscription lapses?** | If the app hard-fails, our entire mobile playerbase is one missed invoice away from gone. This is the biggest business risk in the project and it must be written down, not assumed. |
 
-What this buys, beyond DDoS:
+Ask these on their Discord (`roplayapp`) before money moves. Record the answers
+in `docs/vendor-roplay.md` and update this file where they change a decision.
 
-- **`GAME_PORTS_BIND=127.0.0.1` stays true in production.** Phase 8's "only
-  80/443 public" survives contact with a PC client.
-- **One chokepoint, not two.** Rate limiting, connection metadata and the
-  anti-bot logging in `docs/anti-bot.md` all live in one place and cover every
-  player, instead of being duplicated and drifting.
-- **Moving hosts stays a DNS change** for PC players as well as browser ones.
+### What buying RoPlay does *not* buy
 
-Costs, honestly:
+**It does not solve the PC client.** RoPlay is mobile-only. The PC path is
+still a diffed ragexe, which is exactly what §3b says is unsolved. Budgeting
+for RoPlay and assuming "the client problem is handled" would be the expensive
+version of the mistake we already made once.
 
-- Players must run the launcher rather than the exe directly, and an unsigned
-  binary draws antivirus warnings. **Accepted — this is the norm in this scene**
-  and players who want to play routinely turn the warnings off. Do not spend
-  effort here; keep the launcher small and make it work.
-- One more component to build and keep working.
+---
 
-**What that acceptance obliges us to do.** A player base in the habit of
-disabling antivirus to run our binary is a player base that cannot defend itself
-if our download is ever tampered with. The trust moved from their machine to our
-distribution, so the distribution has to earn it:
+## 3b. PC client: still unsolved, and honestly so
 
-- **The release is built by CI from a tagged commit**, never uploaded from
-  somebody's laptop. The artifact is then traceable to source anyone can read.
-- **Publish a SHA-256 next to the download**, and on a different page from the
-  file itself.
-- **HTTPS only, our domain only.** No third-party mirror is ever the primary
-  link — a mirror is exactly where this goes wrong.
-- Code signing when there is money for it. It stops the warning *and* the
-  tampering; until then the checksum covers the half that matters.
+The PC client is a **diffed ragexe + GRF + `clientinfo.xml`**, distributed as a
+zip. A full day was spent on this and it does not start: an empty `Error`
+message box, after satisfying `CPetEvolutionMgr`, `CCheckAttendanceMgr`,
+`CAchievementMgr` and `CPrivateAirplaneMgr`. The full record, including the
+technique that got that far — extracting required file paths straight out of
+the binary — is in `docs/phase-1-client.md`.
 
-**Alternatives considered and rejected:** publishing the raw ports and accepting
-the exposure (what everyone else does, and why they fall over); Cloudflare
-Spectrum for TCP (Enterprise pricing); moving the origin to a host with included
-L3/L4 protection such as OVH (viable and worth revisiting if the launcher proves
-unworkable, but it fragments the ingress and loses the single-chokepoint win).
+Options, in the order worth trying:
+
+1. **Ask whether Gepard Shield ships a working client build.** Gepard patches
+   clients as part of what it does. If buying it (which §3a Q2 may force
+   anyway) also produces a client that starts, one purchase closes two gaps.
+2. **Buy a client build from the RO dev scene.** People sell this service. It
+   is a known, priced commodity, and given the operator is already investing,
+   it is a proportionate spend.
+3. **WARP's `Disable MessageBoxes`.** The one untried patch. Cheap, and it may
+   turn the empty box into a readable message.
+4. **roBrowser Electron as a fallback PC client.** Free, cross-platform, and
+   `npm run electron:build:win` already exists upstream. Worse-looking than a
+   real client, but it means PC players are never fully blocked.
+
+**Do not let the PC client block mobile again.** That ordering is the mistake
+§11 records. Mobile and PC proceed independently from here.
+
+---
+
+## 3c. The DDoS position has changed — this is the open risk
+
+The original design routed every player over WebSocket on 443 so the whole
+server could sit behind Cloudflare's free tier, and `GAME_PORTS_BIND=127.0.0.1`
+could stay true in production. A launcher tunnelled the PC client's raw TCP into
+the same endpoint so there was exactly one door.
+
+**Both clients we are now shipping speak raw TCP** (RoPlay almost certainly;
+ragexe definitely). Raw TCP cannot go behind Cloudflare free. So:
+
+- Game ports must be publicly reachable.
+- The origin address is therefore public.
+- Everything in `docs/threat-model.md` that depends on Cloudflare fronting the
+  game traffic no longer applies to it.
+
+**This is the exposure the original plan existed to avoid, and we have taken it
+back on deliberately.** It is not a reason to reverse the client decision; it is
+a reason to change how the origin is protected. The honest options:
+
+1. **Move to a host with included L3/L4 DDoS protection** — OVH, and similar.
+   The original spec listed this as "viable and worth revisiting"; it is now the
+   primary answer, not the alternative. Recheck §3a Q3 first — if RoPlay does
+   offer a proxy endpoint, some of this comes back.
+2. **Keep Cloudflare for the website, registration and downloads.** Those are
+   HTTP and still benefit. Do not let that create the illusion the game ports
+   are covered.
+3. **rAthena's own limits still apply** — `ipban_dynamic_pass_failure_ban_*`,
+   connection limits per IP. Inner layer, not outer.
+
+Decide the host before launch, not after the first attack. Until then, treat
+"we are protected" as false.
 
 ---
 
 ## 4. Environment
 
 - **Current host:** Hostinger KVM2 (2 vCPU / 8GB / 100GB NVMe). Test box only.
-- **Host is disposable.** We will move to a bigger VPS. Nothing may assume
-  this specific machine.
+- **Host is disposable.** We will move. Nothing may assume this machine.
+  **§3c may force that move sooner and for a different reason than size.**
 - **Everything runs in Docker Compose.** Bringing the whole stack up on a new
   host must be: clone repo → set `.env` → `docker compose up -d`.
 - **Backups leave the VPS.** DB dumps to off-host storage (Cloudflare R2 or
-  Backblaze B2 free tier) on a schedule, from Phase 1. A DMCA takedown or a
-  provider suspension must not lose player data.
+  Backblaze B2 free tier) on a schedule. A takedown or a provider suspension
+  must not lose player data.
+- **Remote ops go through `.github/workflows/ops.yml`**, a fixed menu of named
+  operations over SSH. See `docs/remote-ops.md`.
 
 ---
 
@@ -179,209 +223,244 @@ unworkable, but it fragments the ingress and loses the single-chokepoint win).
 /infra          docker-compose, Dockerfiles, Caddy/nginx config
 /server         rAthena (upstream tracked) + our import/ overrides
   /import       conf/import, db/import, npc/custom  ← all our changes live here
-/proxy          WebSocket ↔ TCP bridge (Node)
-/client         roBrowser-Legacy fork/submodule + our plugins
-/ui             mobile overlay (own layer, talks to client via event bus)
-/pwa            manifest, service worker, icons
-/launcher       PC client launcher: localhost TCP -> WSS tunnel (§3a)
+  /map-groups   which maps each map-server owns
+/client         PC client build recipe: WARP patch list, data/ layout, stubs
+                (no GRF, no exe — the recipe, not the artifact)
+/proxy          WebSocket <-> TCP bridge. DORMANT — see below.
 /assets-build   GRF extraction + content-hashing pipeline (no assets committed)
-/tools          content-cut scripts (Ep4 filtering), migration, ops scripts
-/docs           per-phase audit reports
+/tools          ops scripts, smoke tests, content scripts
+/docs           audit reports, per-phase and per-decision
 ```
+
+**Removed 2026-07-29:** `/launcher`, `/ui`, `/pwa` — placeholders for the
+browser-client plan (§11), never implemented. Git has them if needed.
+
+**`/proxy` stays, dormant.** It is a Phase-0 skeleton — config validation,
+`/healthz`, and a 501 on WebSocket upgrade — and it is wired into
+`infra/docker-compose.yml`, the Caddyfile and CI. It costs nothing to keep, it
+would cost a working deployment to remove, and §3b.4 keeps roBrowser as the PC
+fallback, which is the one thing that would still need it. **Do not build the
+bridge out unless §3b.4 is actually chosen.**
 
 ---
 
 ## 6. Phase plan
 
-Milestone-gated. **Do not start a phase before the previous phase's gate
-passes and its audit report is written to `/docs`.** Each audit report states:
-what was built, what was tested, what failed, what is deferred, and what the
-next phase now assumes.
+Milestone-gated. **Do not start a phase before the previous phase's gate passes
+and its audit report is written to `/docs`.** Each audit states: what was built,
+what was tested, what failed, what is deferred, what the next phase assumes.
 
-### Phase 0 — Foundation
-- Repo, `.env.example`, gitignore, Docker Compose skeleton
-- Ubuntu base images pinned by digest
-- CI that at minimum lints and builds containers
-- **Gate:** `docker compose config` valid; clean clone → build succeeds
+Phases 0 and 1 are done. The rest were re-ordered on 2026-07-29 so that nothing
+blocks on the PC client.
 
-### Phase 1 — rAthena baseline
-- rAthena as tracked upstream, compiled `PRERE=yes`
-- MariaDB container, schema imported, tuned config
-- login / char / map as three separate services, bound to internal network only
-- Off-host backup job running
-- **Game logging on from day one** — pick, drop, zeny, chat, MVP, trade — into
-  the separate log schema. Anti-bot detection is retrospective: on the day you
-  want to ban one you need its last month of behaviour, and you cannot go back
-  and collect it. An afternoon of config now, impossible to retrofit
-  (`docs/anti-bot.md`)
-- **Gate:** a standard PC client connects, creates a character, walks around.
-  Baseline must work *before* we touch the browser layer. Do not skip this.
+### Phase 0 — Foundation ✅
+Repo, `.env.example`, gitignore, Compose skeleton, pinned base images, CI.
+**Gate passed.** `docs/phase-0-audit.md`.
 
-### Phase 2 — Ep4 content cut
-- Script in `/tools` that filters `item_db.yml`, `mob_db.yml`, mapcache and
-  warps down to Ep4 (2003.05.02) state
-- Remove: Yuno (Ep5), Amatsu/Kunlun (Ep6), Umbala (Ep7), Niflheim/Louyang/
-  Ayothaya (Ep8), **all transcendent/rebirth classes (Ep9)**, Einbroch/
-  Lighthalzen/Hugel (Ep10), Rachel/Veins (Ep11), and everything later
-- Keep: Prontera, Geffen, Payon, Morroc, Alberta, Izlude, Al De Baran, Lutie,
-  Comodo + their dungeons; 1st and 2nd jobs; WoE and guild system
-- Level cap 99/50
-- Script must be **idempotent and re-runnable** against a fresh upstream pull
-- **Both clients must see the same content.** The cut is server-side, but the
-  PC client ships its own data (item descriptions, map list). Mismatches show
-  as items with wrong names rather than as errors, so check both
-- **Gate:** cut is reproducible from clean upstream; audit lists exactly what
-  was removed and what was kept
+### Phase 1 — rAthena baseline ✅
+rAthena tracked upstream, `PRERE=yes`, `PACKETVER=20180620`. MariaDB with the
+schema imported. login / char / N×map as separate services. Off-host backups.
+Game logging on — pick, drop, zeny, chat, MVP, trade — into the log schema.
 
-### Phase 3 — Browser client (desktop first)
-- wsProxy: WebSocket ↔ TCP, stateless, env-configured
-- roBrowser-Legacy configured, `packetver` matched to server
-- **WebSocket keepalive under 60s.** Cloudflare Free closes an idle WebSocket
-  after 100 seconds, and an idle player sends nothing. Without this, players
-  disconnect after standing still and nothing logs an error.
-- Per-connection packet rate limiting — the proxy is the only chokepoint every
-  player passes through
-- **Record connection metadata** (source IP, connection id, open/close, packet
-  counts). Once Cloudflare is in front, nothing else sees per-IP behaviour
-- **PC launcher**: localhost TCP -> WSS tunnel (§3a). Same transport as the
-  browser, so it is built here, not bolted on later. Small static binary,
-  cross-platform, no runtime for the player to install
-- **Gate:** log in and play in a desktop browser, **and** through the launcher
-  with a stock PC client, with `GAME_PORTS_BIND=127.0.0.1`. Mobile comes later
-  — do not chase mobile until desktop browser play is solid.
+> Logging is the one requirement that cannot be retrofitted. Anti-bot work is
+> retrospective: on the day you want to ban an account you need the month of
+> behaviour behind it. rAthena ships zeny, chat and MVP logging **off**; ours
+> are on and verified (`tools/check-logging.sh`). `docs/anti-bot.md`.
 
-### Phase 4 — Asset pipeline + CDN
+**Gate passed** by `tools/smoke-play.py`, which logs in, creates a character and
+walks it over the real wire protocol, run on the VPS against `127.0.0.1`.
+
+> **The original gate here was "a standard PC client connects".** It was
+> replaced. A scripted protocol client tests the same path, runs on every
+> deploy, and does not depend on an artifact we cannot debug. §11.
+
+### Phase 2 — Vendor decisions and the mobile client ← **next**
+- Answer every question in §3a and write `docs/vendor-roplay.md`
+- Decide `packetver` from the answer to Q1 — this may mean rebuilding, and
+  regenerating `tools/smoke-play.py`'s packet table
+- Decide Gepard from Q2
+- Decide the host from Q3 + §3c
+- Purchase, integrate, and get one real device connected
+- **Gate:** a phone logs in to *our* server through RoPlay, creates a
+  character, and walks. The same thing `smoke-play` proves, proven by a human
+  on a real device.
+
+### Phase 3 — PC client
+- §3b, in the order listed there
+- **Gate:** a clean Windows machine downloads the zip, extracts, and connects.
+  **This gate blocks nothing else.** If it stays open, we launch mobile-first
+  and say so publicly.
+
+### Phase 4 — Content and identity
+This is where the server stops being a default rAthena and becomes ours.
+- Rates, drop tables, starting items, custom NPCs — `server/import/` and
+  `npc/custom/`, never upstream files
+- Whatever content baseline the §3a Q1 packetver supports
+- **Episode 4.0 is no longer a gate.** It was the original target and it is now
+  an optional flavour decision, deferred until there is a working client to see
+  it in. The tooling idea survives — a re-runnable filter script in `/tools` —
+  if we ever want it. §11.
+- **Gate:** a player can tell this server apart from stock rAthena
+
+### Phase 5 — Assets and CDN
 - GRF extraction → content-hashed static files
-- **Published into Cloudflare R2**, not cached from our origin. Cloudflare's
-  ToS still restricts serving large files hosted *outside* Cloudflare through
-  the CDN; files hosted *on* R2 are explicitly fine, and R2 egress is free.
-  Same account we already use for backups.
-- Immutable cache headers, IndexedDB caching client-side
-- Put Cloudflare in front of the game traffic too, so the origin stops being
-  directly reachable (see `docs/threat-model.md`)
-- Measure: first-load size, repeat-load size
-- **PC client download**: zip of diffed ragexe + GRF + launcher + clientinfo,
-  versioned and hosted on R2 alongside the browser assets. Extract and play,
-  no installer. **Built by CI from a tag, published with a SHA-256** — see §3a
-  for why that is not optional given how players will run it
-- **Gate:** second load is served from cache; origin bandwidth per player
-  measured and documented; the PC zip downloads, extracts and connects on a
-  clean Windows machine
+- Published into R2 (egress free, same account as backups) or wherever §3a Q5
+  says the vendor expects them
+- Measure first-load and repeat-load size per player
+- **Gate:** origin bandwidth per player measured and documented
 
-### Phase 5 — Mobile UI layer
-- Own UI layer in `/ui`, communicating with roBrowser via an event bus
-- **Never fork roBrowser's own UI components** — use its plugin system, or we
-  will fight merge conflicts forever
-- Virtual joystick, hotkey bar, skill buttons, inventory, quest tracker
-- Touch → engine input mapping
-- **Gate:** playable on a real Android device and a real iOS device
-
-### Phase 6 — PWA shell
-- manifest, service worker, `apple-touch-icon`, `apple-mobile-web-app-capable`
-- HTTPS required (Caddy, auto-TLS) — iOS will not register a service worker
-  without it
-- Landscape handling: iOS ignores `orientation` in the manifest — CSS fallback
-- Audio unlock on first user gesture
-- **Gate:** installs to home screen on both platforms and launches offline-shell
+### Phase 6 — Website
+Registration, downloads, control panel. Cloudflare in front — this part is HTTP
+and genuinely benefits (§3c.2). Turnstile on registration: mass account creation
+is what feeds bot farms.
+- **Gate:** a stranger can register and reach a download without us
 
 ### Phase 7 — Scale-out readiness
-- Split maps across multiple map-servers by config
-- wsProxy horizontal scaling behind nginx
+- Split maps across map-servers by config
 - Metrics: concurrent players, per-map-server CPU, DB slow queries, bandwidth
 - Load test with simulated clients
-- **Gate:** documented concurrent-player ceiling on current hardware, and the
-  specific next bottleneck
+- **Gate:** documented concurrent-player ceiling, and the next bottleneck named
 
 ### Phase 8 — Hardening
-- Firewall: only 80/443 public; game ports internal only
-- **80/443 accepted only from Cloudflare's published IP ranges** — otherwise
-  the protection is a front door with the back door open
-- **Origin-IP leak audit.** Historical DNS records are the usual leak and are
-  permanently archived by third parties. One leak makes everything above moot
-- Fail2ban, rate limiting on login (Cloudflare rules as the outer layer,
-  rAthena's `ipban_dynamic_pass_failure_ban_*` as the inner one)
-- Tune `macro_detection_*` — rAthena's bot deterrent, off by default. Note it
-  streams a BMP captcha over packets `0x0a52`-`0x0a57`; roBrowser likely does
-  not implement them, so confirm before relying on it (`docs/anti-bot.md`)
-- Cloudflare Turnstile on registration — stops mass account creation, which is
-  what feeds bot farms
-- Restore drill: prove a backup actually restores
-- **Gate:** restore drill passes from a wiped host, and the origin address is
-  not reachable directly
+- Host with L3/L4 protection in place (§3c) — **decide before launch**
+- Firewall: only what must be public is public
+- Origin-IP leak audit. Historical DNS records are the usual leak and are
+  permanently archived by third parties
+- Fail2ban; `ipban_dynamic_pass_failure_ban_*` on login
+- `macro_detection_*` — rAthena's bot deterrent, off by default. It streams a
+  BMP captcha over packets `0x0a52`-`0x0a57`; confirm RoPlay implements them
+  before relying on it (`docs/anti-bot.md`)
+- Restore drill: prove a backup actually restores from a wiped host
+- **Gate:** restore drill passes; origin exposure is understood and accepted in
+  writing, not by default
 
 ---
 
 ## 7. Mobile gotchas (do not rediscover these)
 
-- iOS Safari can evict IndexedDB — players may need to re-download assets.
-  Handle this gracefully, don't crash.
-- Audio requires a user gesture before it will play.
-- iOS ignores manifest `orientation: landscape`. Use a CSS rotate fallback.
-- Handle safe areas (notch) with `env(safe-area-inset-*)`.
-- Phones with 4GB RAM can have the browser kill the tab on map changes in
-  crowded areas. Keep a "low graphics" preset: reduced render distance,
-  effects off, shadows off, sprite cap.
-- Chrome/Android outperforms Safari/iOS on WebGL. Test iOS explicitly; it is
-  the constraint, not the afterthought.
+Most of these were written for a browser client. With RoPlay the vendor owns
+them — but they are the questions to *ask* about, and they come straight back
+if roBrowser ever returns as a fallback.
+
+- iOS is the constraint, not the afterthought. Test it explicitly and first.
+- Phones with 4GB RAM can be killed by the OS on map changes in crowded areas.
+  A "low graphics" preset — reduced render distance, effects off, sprite cap —
+  is not optional at scale. Ask whether RoPlay has one.
+- Landscape handling and safe areas (notch) are per-platform and iOS is the
+  awkward one.
+- Audio needs a user gesture before it will play on iOS.
+- Asset storage on iOS can be evicted. Re-downloading GB of assets on a phone
+  data plan is a player-losing event; find out how RoPlay handles it.
 
 ---
 
 ## 8. Working agreements
 
-- Work strictly phase by phase. No jumping ahead.
-- After each phase: run tests, write the audit report to `/docs`, then stop
-  and wait for review.
-- Polish (visual detail, animation, nice-to-haves) is a **separate track**
-  after core functionality — never interleaved.
+- Work phase by phase. **But a blocked phase does not block an unrelated one** —
+  that rule is what cost us a day (§11). If something is stuck, say so, finish
+  what does not depend on it, and move.
+- After each phase: run tests, write the audit report to `/docs`, then stop and
+  wait for review.
+- Polish is a **separate track** after core functionality — never interleaved.
 - When a decision has a cost/benefit tradeoff, state the recommendation
   directly with the reasoning, not a list of options.
-- Prefer cost-effective solutions. Free tier first (Cloudflare, R2/B2). Don't
-  reach for managed services we can run ourselves on one box.
+- **Money is now on the table.** Before recommending a purchase, say what it
+  buys, what it does not buy, and what it costs to reverse. Vendor lock-in is a
+  cost like any other.
 - If something in this file turns out to be wrong, say so and propose the fix
-  rather than working around it silently.
-- **The client cannot be trusted, and ours less than most.** It is JavaScript
-  built on open-source roBrowser — readable and editable by any player. Every
-  limit must be enforced server-side. A cooldown or range check that only
-  exists in `/ui` does not exist.
+  rather than working around it silently. **This file has been wrong before and
+  saying so was the most useful thing done that day.**
+- **The client cannot be trusted.** Every limit must be enforced server-side. A
+  cooldown or range check that exists only in the client does not exist. This is
+  true of a native client too — Gepard raises the cost of cheating, it does not
+  remove it.
 
-## 8a. Reference servers
+## 8a. Reference server: `eternal-origin.com`
 
-Not to copy, and nothing here changes our plan. Kept so that "how does anyone
-else do this" has an answer when a question comes up.
+The target. What we know, captured 2026-07-29 from the operator's own
+screenshots and from public sources:
 
-| Server | Why noted | Captured? |
+| Aspect | What they do | What it means for us |
 |---|---|---|
-| `eternal-origin.com` | operator's reference for feel and feature set | not yet — the dev environment's network policy blocks the domain |
+| Mobile client | **RoPlay**, `[v.3.6.48]` — bought, not built | §3a |
+| PC client | ragexe protected by **Gepard Shield** | why we could not unpack it; §3b.1 |
+| Content era | modern — cash shop, homunculus auto-feed, 30 char slots, achievement UI | **not Episode 4.0**; §6 Phase 4 |
+| Localisation | Thai UI, language switcher on login | ours should match |
+| Registration | in-client `สมัครไอดี` button → their website | §6 Phase 6 |
+| Asset delivery | streamed with a progress bar; client has a "clear cache" button | §6 Phase 5 |
 
-When one is captured, split the findings in two: settings that are a config
-change under `server/import/conf/local/`, and anything that contradicts the Ep4
-pre-renewal baseline in §6 Phase 2 — third jobs, transcendent classes, renewal
-mechanics, level caps above 99/50. The second kind is a change to this file,
-made deliberately, not absorbed quietly.
+Their in-game UI (radial touch skill wheel, scaled RO panels) is RoPlay's, so
+matching it is a purchase, not a build. **Where we differ should be rates,
+content and custom NPCs — the things RoPlay does not own.**
 
 ---
 
 ## 9. Legal boundary — state of play
 
-- rAthena and roBrowser are **GPL-3.0**. Commercial use is allowed, but
-  distributing a modified version obliges us to provide source to recipients
-  under the same terms. We cannot ship this closed-source.
-- **RO's GRF assets, sprites, maps, and trademarks are Gravity's.** Running a
-  public server on them is copyright exposure, and it is the kind that gets
-  pursued. That risk is the operator's decision, but it is real and it grows
-  with player count and visibility.
-  **Decided (2026-07-28): the operator accepts this risk. Do not raise it
-  again as a blocker.** What survives the decision is the engineering
-  consequence below, which is a good idea regardless of the reason.
-- Practical consequence for engineering: **the host is disposable and the data
-  is not.** Off-host backups from Phase 1, no exceptions.
-- Long-term de-risking path: replace assets with owned/licensed art. The
-  architecture should not assume RO assets forever — keep the asset pipeline
-  format-agnostic where it's cheap to do so.
+- rAthena is **GPL-3.0**. Commercial use is allowed, but distributing a modified
+  version obliges us to provide source to recipients under the same terms.
+- **RO's GRF assets, sprites, maps, and trademarks are Gravity's.**
+  **Decided (2026-07-28): the operator accepts this risk. Do not raise it again
+  as a blocker.** What survives the decision is the engineering consequence:
+  **the host is disposable and the data is not.** Off-host backups, no
+  exceptions.
+- Long-term de-risking path: replace assets with owned/licensed art. Keep the
+  asset pipeline format-agnostic where it is cheap to do so.
 
 ---
 
 ## 10. Immediate next action
 
-Phase 0. Do not write game code yet. Set up the repo, Compose skeleton,
-`.env.example`, and CI. Confirm the gate, write the audit, then proceed.
+**Phase 2, step one: ask RoPlay the eight questions in §3a.** Nothing else in
+this file can be planned accurately until Q1 (packetver) and Q3 (transport) are
+answered, and Q8 (what happens when the subscription lapses) is the one that
+should be answered before any money moves.
+
+Write the answers to `docs/vendor-roplay.md` and update this file where they
+change a decision.
+
+---
+
+## 11. What changed on 2026-07-29, and why
+
+Kept so the reasoning is not lost and the same mistake is not made twice. The
+full analysis is `docs/client-strategy.md`.
+
+**What went wrong.** Phase 1's gate read *"a standard PC client connects...
+Baseline must work before we touch the browser layer. Do not skip this."* That
+put a closed-source Gravity binary — one we cannot debug, whose only error
+channel is a message box with no text — in front of every other piece of work.
+A full day went into it and it still does not start. Meanwhile the server had
+been passing a scripted protocol test the whole time.
+
+**Three things were wrong at once:**
+
+1. **The gate was on the wrong artifact.** `tools/smoke-play.py` tests the same
+   protocol path, runs unattended on every deploy, and is debuggable. It is the
+   better gate and it already existed.
+2. **A blocked phase was allowed to block unrelated phases.** Nothing about the
+   Ep4 content cut, the asset pipeline or the website needed a working exe.
+3. **"PC client" was assumed to mean "ragexe".** It does not have to.
+
+**What we learned about the target.** EternalRO's mobile client is RoPlay, a
+paid product. They did not solve mobile RO; they bought it. Almost nobody ships
+browser-based RO — the norm is a native app, either rented (RoPlay) or built as
+an APK (RevivalRO, GemstoneRO). The original spec's "installable PWA, no app
+store, no download" was therefore **more ambitious than the reference server**,
+not a simplification of it.
+
+**What was dropped:**
+
+- *The launcher and the one-ingress design (old §3a).* It existed to tunnel a
+  raw-TCP client over WSS. With a native mobile client that also speaks TCP,
+  it protects nothing. Its consequence — renewed origin exposure — is now §3c
+  and is the largest open risk in the project.
+- *Episode 4.0 as a gate.* The reference server is not pre-renewal, the
+  operator's goal is parity with it, and the content cut never blocked
+  anything. Demoted to §6 Phase 4, optional.
+- *`/proxy`, `/ui`, `/pwa`, `/launcher`.* All four served the browser plan.
+
+**What was kept, deliberately:** the release-integrity rules from the old §3a —
+CI-built from a tagged commit, published SHA-256, HTTPS and our domain only.
+They were written because players in this scene routinely disable antivirus to
+run our binaries, and that is still true of anything we ship.
