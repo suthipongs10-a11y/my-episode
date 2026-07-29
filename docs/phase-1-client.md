@@ -163,15 +163,39 @@ Patch names below are the exact titles WARP shows, taken from its own
 `Patches/*.yml` on the `rock` branch. WARP groups them into categories; the
 category is given because the search box matches titles, not categories.
 
+> **WARP only lists patches that apply to the executable you loaded.** It runs
+> each patch's script against the binary and hides the ones whose target code is
+> not there. So a patch missing from the list is an answer — this client does not
+> need it — not a problem to work around. Do not go hunting for a different WARP
+> build to make one appear.
+
 **Required — the client will not reach our server without these:**
 
 | Patch (WARP title) | Category | Why |
 |---|---|---|
 | Restore Login Window | CLIENT | 2018 clients use Gravity's token login and show no username/password box at all. This restores one. Without it there is nothing to type into |
-| Restore the use of clientinfo xml | DATA CUSTOMIZATION | **Disables the hardcoded server address.** Verified present in our exe: a table of kRO addresses at file offset `0x90f068` (`112.175.128.30`, `211.172.247.115`, …). Without this, `clientinfo.xml` is ignored and the client dials Gravity |
+| Always call SelectKoreaClientInfo() | DATA CUSTOMIZATION | makes the client read `clientinfo.xml` at all |
 | Read data folder first | DATA CUSTOMIZATION | gives loose `data/clientinfo.xml` priority over the copy inside `data.grf`, which a kRO full client ships pointing at Gravity |
 | Disable filename check | ENVIRONMENT | the client quits unless it is named something official, and diffing renames it |
-| Disable HShield | DATA CUSTOMIZATION | our exe statically imports `cps.dll`; this removes the dependency on Gravity's anti-cheat actually working |
+
+**Two that WARP does not offer for this client, and why that is correct:**
+
+*Restore the use of clientinfo xml* — for clients where Gravity removed
+clientinfo loading outright and left only a hardcoded address, which is roughly
+2020 onwards. A 2018-06-20 client still loads `clientinfo.xml` natively, so
+there is nothing to restore, and the pair above is the working recipe.
+
+The executable does contain Gravity's addresses — `112.175.128.30`,
+`211.172.247.115` and others at offset `0x90f068`. That is worth knowing but it
+is **not** evidence the client prefers them: they are the service-select entries
+used when no clientinfo is found. Finding the strings is not the same as finding
+the code path, and WARP's judgement about which patches apply beats a string
+search. This note exists because that inference was made here once already.
+
+*Disable HShield* — this executable uses CPS (`cps.dll`), not AhnLab HackShield,
+so the patch has no target. `cps.dll` being a static import is satisfied simply
+by the file being present in the folder, which a kRO full client provides.
+Nothing to patch.
 
 **Worth having, not required:**
 
