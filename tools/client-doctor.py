@@ -105,6 +105,30 @@ def variants(path: str):
 # printf-style error templates the client uses to complain about a load failure.
 NOISE_PREFIXES = ("fail to load ", "failed to load ", "error loading ")
 
+# Paths whose absence is normal. Reporting these as failures buries the one or
+# two that actually matter, which is how a clean client folder came back with
+# "14 files missing" and looked worse than a broken one.
+OPTIONAL = (
+    # The client CREATES these on first run to persist UI state — window
+    # positions, hotkeys, the option screen. Absent before first launch is
+    # correct; they are outputs, not inputs.
+    ("savedata/", "written by the client on exit, not read at startup"),
+    # Homunculus / mercenary AI. Only loaded once you own one, never at startup.
+    ("ai_sakray/", "homunculus AI — loaded on demand, not at startup"),
+    ("ai/", "homunculus AI — loaded on demand, not at startup"),
+)
+# Bare Lua interpreter bootstrap names, not files shipped with the client.
+OPTIONAL_EXACT = {"init.lua": "Lua bootstrap name, not a shipped file"}
+
+
+def optional_reason(path: str):
+    if path in OPTIONAL_EXACT:
+        return OPTIONAL_EXACT[path]
+    for prefix, reason in OPTIONAL:
+        if path.startswith(prefix):
+            return reason
+    return None
+
 
 def clean_request(raw: str):
     """Return the path the client actually wants, or None if it is not a path."""
@@ -356,8 +380,10 @@ def main():
                 if not reachable(f"data/{want}"):
                     r.bad(f"data/{want} is referenced by the exe but not reachable")
 
-        missing = [w for w in wants if not reachable(w)]
-        found = len(wants) - len(missing)
+        unreachable = [w for w in wants if not reachable(w)]
+        missing = [w for w in unreachable if optional_reason(w) is None]
+        optional = [w for w in unreachable if optional_reason(w) is not None]
+        found = len(wants) - len(unreachable)
 
         if not args.list_missing_only:
             r.info(f"asks for {len(wants)} lua/lub paths; {found} reachable")
@@ -365,19 +391,27 @@ def main():
                 r.info(f"managers: {', '.join(mgrs)}")
 
         if missing:
-            r.bad(f"{len(missing)} file(s) the client asks for cannot be reached:")
+            r.bad(f"{len(missing)} file(s) the client needs and cannot reach:")
             for m in missing:
                 # A near-miss is usually the _sak / _Sakray naming trap, or
                 # ROenglishRE's different spelling. Point at it rather than
-                # letting it be rediscovered one error box at a time.
-                stem = Path(m).stem.lower().replace("_sak", "").replace("_sakray", "")
-                near = [c for c in list(loose) + list(grf_entries)
-                        if stem and stem in c and c.endswith((".lub", ".lua"))][:3]
+                # letting it be rediscovered one error box at a time. Require a
+                # reasonably long stem — matching on "ai" suggests every path
+                # containing those two letters and drowns the real hint.
+                stem = Path(m).stem.lower().replace("_sakray", "").replace("_sak", "")
+                near = ([c for c in list(loose) + list(grf_entries)
+                         if stem in c and c.endswith((".lub", ".lua"))][:3]
+                        if len(stem) >= 4 else [])
                 r.info(f"  {m}")
                 for n in near:
                     r.info(f"      similar name present: {n}")
         else:
-            r.ok("every lua/lub path in the binary is reachable")
+            r.ok("every file the client needs at startup is reachable")
+
+        if optional and not args.list_missing_only:
+            r.info(f"{len(optional)} absent but not needed to start:")
+            for o in optional:
+                r.info(f"  {o}  — {optional_reason(o)}")
 
     # --- 4. the string table -------------------------------------------------
     # An error box with no text means the client looked up a message index that
