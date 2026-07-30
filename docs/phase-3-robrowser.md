@@ -251,9 +251,36 @@ Run on Linux, 2026-07-30, against submodule `e84bfdc`:
 | A relative GRF path follows the app | packaged with `game/data.grf`, launched, logged the resolved path | resolved to `<unpacked>/game/data.grf` |
 | Zip and hash | `--linux --zip` | 116.5 MB zip plus a `.sha256` |
 
+### The server half, confirmed on the live VPS
+
+`Ops → smoke-play`, run 20, 2026-07-30 12:23 UTC, against the deployed stack
+rebuilt at `PACKETVER=20180307` with the zeroed obfuscation keys:
+
+```
+host 127.0.0.1  ports 6900/6121/5121  packetver 20180307
+1. login-server   ok   authenticated as 'smoketest' (account 2000000)
+2. char-server    ok   character 150000 selected, starting on new_1-1.gat
+3. map-server     ok   entered new_1-1.gat at (62, 111)
+                  ok   map data received (1406 bytes of world state)
+                  ok   walked (62, 111) -> (65, 111)
+Phase 1 gate: login, character creation and movement all work.
+```
+
+**The before-and-after is the proof, not the pass on its own.** The same test at
+`PACKETVER=20180620`, twenty minutes earlier, printed its own mismatch warning
+and then died with *"the map-server closed the connection while we waited for
+the account-id echo"* — at exactly the packet `check-client-protocol.mjs` said
+would not reach a handler. The two ids that changed, `0x07E4` for map enter and
+`0x0877` for movement, are the ones roBrowser sends. So the server now accepts
+the client's dialect, measured end to end on the real thing.
+
+That does not make the client work. It removes the reason it could not.
+
 **Not verified, and these are the real risks:**
 
-- **Nobody has logged in.** No account, no character, no map. That is the gate.
+- **Nobody has logged in with the client.** `smoke-play` is a Python script
+  speaking the protocol; it exercises no GRF, no sprite and no renderer. That is
+  still the gate.
 - **Windows.** Everything above ran on Linux. Electron is cross-platform and
   the build is the same, but `--win` has not been executed on Windows.
 - **Our GRF.** roBrowser reads GRF 0x200 and 0x300. `tools/client-doctor.py`
