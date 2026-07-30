@@ -41,6 +41,42 @@ from pathlib import Path
 LUA_RE = re.compile(rb"[A-Za-z0-9_./\\:\- ]{3,80}\.(?:lub|lua)", re.IGNORECASE)
 MGR_RE = re.compile(rb"C[A-Za-z]{3,30}Mgr")
 INFO_RE = re.compile(rb"s?clientinfo\.xml", re.IGNORECASE)
+DLL_RE = re.compile(rb"[A-Za-z0-9_\-]{2,40}\.dll", re.IGNORECASE)
+
+# Where a 32-bit client can find a system DLL. SysWOW64 holds the 32-bit copies
+# on 64-bit Windows and is the one that matters — System32 is 64-bit there.
+SYSTEM_DLL_DIRS = (
+    r"C:\Windows\SysWOW64",
+    r"C:\Windows\System32",
+)
+
+# DLLs a client loads through LoadLibrary at runtime rather than importing, so a
+# missing one is caught by the client instead of by Windows — no named error
+# box, just whatever the client decides to show. d3dx9_*.dll is the classic:
+# Windows 10 and 11 ship Direct3D 9 itself but NOT these helper libraries, which
+# only arrive with the DirectX End-User Runtime (June 2010).
+DLL_HINTS = {
+    "d3dx9": "DirectX End-User Runtime (June 2010) — NOT included in Windows 10/11",
+    "d3dcompiler_4": "DirectX End-User Runtime (June 2010)",
+    "xinput1_3": "DirectX End-User Runtime (June 2010)",
+    "x3daudio": "DirectX End-User Runtime (June 2010)",
+    "xactengine": "DirectX End-User Runtime (June 2010)",
+    "msvcr100": "Visual C++ 2010 Redistributable (x86)",
+    "msvcp100": "Visual C++ 2010 Redistributable (x86)",
+    "msvcr110": "Visual C++ 2012 Redistributable (x86)",
+    "msvcp110": "Visual C++ 2012 Redistributable (x86)",
+    "mfc110": "Visual C++ 2012 Redistributable (x86)",
+    "msvcr120": "Visual C++ 2013 Redistributable (x86)",
+    "mfc120": "Visual C++ 2013 Redistributable (x86)",
+}
+
+
+def dll_hint(name: str):
+    stem = name.lower()
+    for key, why in DLL_HINTS.items():
+        if stem.startswith(key):
+            return why
+    return None
 
 GRF_SIG = b"Master of Magic"
 GRF_SIG_EH3 = b"Event Horizon"
@@ -412,6 +448,35 @@ def main():
             r.info(f"{len(optional)} absent but not needed to start:")
             for o in optional:
                 r.info(f"  {o}  — {optional_reason(o)}")
+
+        # --- system DLLs -----------------------------------------------------
+        # The blind spot that outlasted every other check: this script only ever
+        # looked at *game* files, so a missing system library was invisible to
+        # it. A DLL the client loads with LoadLibrary and fails to find produces
+        # no Windows error box at all — the client catches it and decides what
+        # to show, which is how you get a message box with no text and a clean
+        # exit code 0.
+        dlls = sorted({m.group().decode("latin-1").lower() for m in DLL_RE.finditer(blob)})
+        search_dirs = [root] + [Path(d) for d in SYSTEM_DLL_DIRS if Path(d).is_dir()]
+        if len(search_dirs) == 1:
+            r.info("(not on Windows — system DLL check skipped)")
+        else:
+            unresolved = []
+            for dll in dlls:
+                if not any((d / dll).is_file() for d in search_dirs):
+                    unresolved.append(dll)
+            named = [(d, dll_hint(d)) for d in unresolved]
+            blocking = [(d, why) for d, why in named if why]
+            if blocking:
+                r.bad(f"{len(blocking)} runtime DLL(s) named by the binary are not installed:")
+                for dll, why in blocking:
+                    r.info(f"  {dll}  — install: {why}")
+            elif unresolved:
+                r.ok("every runtime DLL with a known installer is present")
+                r.info(f"({len(unresolved)} other .dll names unresolved — usually "
+                       "plugin or optional-feature names, not required)")
+            else:
+                r.ok("every .dll named by the binary resolves")
 
     # --- 4. the string table -------------------------------------------------
     # An error box with no text means the client looked up a message index that
