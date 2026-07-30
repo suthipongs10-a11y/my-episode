@@ -184,17 +184,25 @@ def read_archive(path: Path) -> Archive:
             ) from exc
         name = table[pos:end].decode("latin-1")
         pos = end + 1
+        # One guard around both unpacks. It used to cover only the fixed 13
+        # bytes, which left the offset field — the part this reader added when it
+        # grew extraction — able to raise a bare struct.error out of the library
+        # on a table truncated mid-entry. Callers catch GrfError; nothing catches
+        # struct.error, so that surfaced as an unhandled traceback.
         try:
             packed, aligned, real, etype = struct.unpack_from("<IIIB", table, pos)
+            pos += 13
+            if version == VERSION_300:
+                (offset,) = struct.unpack_from("<Q", table, pos)
+                pos += 8
+            else:
+                (offset,) = struct.unpack_from("<I", table, pos)
+                pos += 4
         except struct.error as exc:
-            raise GrfError(f"entry {index} metadata is truncated") from exc
-        pos += 13
-        if version == VERSION_300:
-            (offset,) = struct.unpack_from("<Q", table, pos)
-            pos += 8
-        else:
-            (offset,) = struct.unpack_from("<I", table, pos)
-            pos += 4
+            raise GrfError(
+                f"entry {index} of {realcount} is truncated — the file table ends "
+                f"mid-entry"
+            ) from exc
         entries.append(Entry(name, packed, aligned, real, etype, offset))
 
     return Archive(path, version, entries)

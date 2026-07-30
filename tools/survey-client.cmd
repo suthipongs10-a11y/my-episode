@@ -50,7 +50,10 @@ if not defined PY (
   exit /b 1
 )
 
-set "OUT=%~dp0..\docs\recon\%~n1"
+rem %~nx1, not %~n1: a folder named `EternalRO_v3.6.48` has everything from the
+rem last dot stripped by %~n1, so it would land in docs\recon\EternalRO_v3.6 and
+rem two differently-versioned folders would overwrite each other's report.
+set "OUT=%~dp0..\docs\recon\%~nx1"
 
 echo.
 echo   client folder : %~1

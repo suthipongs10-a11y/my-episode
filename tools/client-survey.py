@@ -48,6 +48,7 @@ import math
 import re
 import struct
 import sys
+import traceback
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -182,6 +183,22 @@ EXTRACT_MAX_FILES = 6000
 
 def redact(text: str) -> str:
     return SECRET_RE.sub(lambda m: m.group(1) + "<redacted>", text)
+
+
+def read_or_report(path: Path, report, what: str):
+    """The file's bytes, or None with the reason written into the report.
+
+    Every read here is of a file on somebody else's machine: locked by a running
+    client, held open by an antivirus scan, or sitting behind an ACL nobody
+    remembers setting. An unhandled OSError on one config file used to abort the
+    whole survey and, because the report is written at the end, throw away
+    everything already found. One unreadable file should cost one line.
+    """
+    try:
+        return path.read_bytes()
+    except OSError as exc:
+        report.line(f"could not read {what} (`{path.name}`): {exc.strerror or exc}")
+        return None
 
 
 def human(n: float) -> str:
@@ -452,14 +469,19 @@ def survey_executables(root: Path, report, out: dict, args):
             report.line("not found")
             continue
 
-        blob = exe.read_bytes()
-        flat = flatten_strings(blob)
-        lower = flat.lower()
         try:
             rel = str(exe.relative_to(root))
         except ValueError:  # --exe given as an absolute path elsewhere
             rel = str(exe)
-        report.head(f"Executable: {rel} ({human(len(blob))})")
+
+        # Heading first, so an unreadable executable is reported under its own
+        # name rather than as a bare line under whatever came before.
+        report.head(f"Executable: {rel} ({human(size_of(exe))})")
+        blob = read_or_report(exe, report, "the executable")
+        if blob is None:
+            continue
+        flat = flatten_strings(blob)
+        lower = flat.lower()
 
         pe = pe_info(blob)
         record = {"path": rel, "size": len(blob), "pe": pe}
@@ -623,7 +645,9 @@ def survey_server_config(root: Path, files, archives, report, out: dict):
     for name in ("data/clientinfo.xml", "data/sclientinfo.xml"):
         loose = loose_by_name.get(name)
         if loose is not None:
-            candidates.append((f"{name} (loose)", loose.read_bytes()))
+            raw = read_or_report(loose, report, f"the loose {name}")
+            if raw is not None:
+                candidates.append((f"{name} (loose)", raw))
         for archive in archives:
             entry = archive.get(name)
             if entry is None:
@@ -711,10 +735,12 @@ def survey_configs(root: Path, files, report, out: dict):
     for rel, path, size in interesting:
         record = {"path": str(rel), "size": size}
         if size <= CONFIG_INLINE_BYTES and inlined < CONFIG_INLINE_MAX:
-            text = redact(decode_text(path.read_bytes()))
             report.sub(str(rel))
-            report.code(text)
-            record["content"] = text
+            raw = read_or_report(path, report, "this config file")
+            if raw is not None:
+                text = redact(decode_text(raw))
+                report.code(text)
+                record["content"] = text
             inlined += 1
         out["configs"].append(record)
 
@@ -748,7 +774,7 @@ def survey_archives(root: Path, report, out: dict, outdir: Path, args):
     )
     declared = []
     if data_ini:
-        for line in decode_text(data_ini.read_bytes()).splitlines():
+        for line in decode_text(read_or_report(data_ini, report, "DATA.INI") or b"").splitlines():
             line = line.strip()
             if "=" in line and not line.startswith(("[", ";", "#", "//")):
                 value = line.split("=", 1)[1].strip()
@@ -1237,34 +1263,62 @@ def main():
         "where an archive is protected this says so and stops.",
     ]
 
-    print(f"surveying {root}")
-    files = survey_tree(root, report, out)
-    print("  folder walked")
-    archives = survey_archives(root, report, out, outdir, args)
-    print(f"  {len(archives)} archive(s) read")
-    survey_server_config(root, files, archives, report, out)
-    survey_configs(root, files, report, out)
-    survey_executables(root, report, out, args)
-    print("  executables analysed")
-    survey_diff(archives, report, out, outdir, args.baseline)
-    if args.extract:
-        survey_extract(archives, report, out, outdir)
-        print("  entries extracted")
-    what_this_means(out, report)
-
-    (outdir / "report.md").write_text(report.text(), encoding="utf-8")
-    (outdir / "survey.json").write_text(
-        json.dumps(out, indent=2, ensure_ascii=False, default=str), encoding="utf-8"
-    )
+    # The report is written in a finally block, and that is the whole point of
+    # this structure. This tool gets one run, on a machine the author of the bug
+    # cannot reach, against a folder that exists nowhere else. If something
+    # unforeseen throws in the last stage, everything already found still has to
+    # reach the report — a traceback on a terminal in another country is not a
+    # finding anybody can act on. Same principle as docs/client-debug-plan.md:
+    # every step must produce information even when it fails.
+    failed = None
+    try:
+        print(f"surveying {root}")
+        files = survey_tree(root, report, out)
+        print("  folder walked")
+        archives = survey_archives(root, report, out, outdir, args)
+        print(f"  {len(archives)} archive(s) read")
+        survey_server_config(root, files, archives, report, out)
+        survey_configs(root, files, report, out)
+        survey_executables(root, report, out, args)
+        print("  executables analysed")
+        survey_diff(archives, report, out, outdir, args.baseline)
+        if args.extract:
+            survey_extract(archives, report, out, outdir)
+            print("  entries extracted")
+        what_this_means(out, report)
+    except KeyboardInterrupt:
+        failed = "interrupted"
+        report.head("The survey was interrupted")
+        report.line("Everything above was already found. Re-run to finish.")
+    except Exception as exc:  # noqa: BLE001 — see the comment above
+        failed = f"{type(exc).__name__}: {exc}"
+        report.head("The survey did not finish")
+        report.line(f"`{failed}`")
+        report.line(
+            "Everything above was found before this happened and is still good. "
+            "Send the report anyway — the traceback below says where it stopped."
+        )
+        report.code(traceback.format_exc())
+        out["error"] = failed
+        out["traceback"] = traceback.format_exc()
+    finally:
+        (outdir / "report.md").write_text(report.text(), encoding="utf-8")
+        (outdir / "survey.json").write_text(
+            json.dumps(out, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
 
     print()
+    if failed:
+        print(f"the survey stopped early: {failed}")
+        print("the partial report was still written:")
     print(f"report:   {outdir / 'report.md'}")
     print(f"json:     {outdir / 'survey.json'}")
     print(f"manifest: {outdir / 'manifest'}")
     print()
     print("Send report.md back. It is the summary; the manifests are the detail")
     print("and stay on this machine unless asked for.")
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

@@ -21,6 +21,9 @@
 # count is `filecount - skip - 7`, and entry offsets are relative to the end of
 # the 46-byte header rather than to the start of the file.
 # =============================================================================
+import contextlib
+import importlib.util
+import io
 import json
 import struct
 import subprocess
@@ -33,6 +36,18 @@ TOOLS = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS))
 
 import grflib  # noqa: E402
+
+
+def load_survey_module():
+    """client-survey.py as an importable module, so the resilience checks can
+    reach individual functions. The hyphen in the filename is why this needs
+    importlib rather than a plain import."""
+    spec = importlib.util.spec_from_file_location(
+        "client_survey", TOOLS / "client-survey.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 FAILURES = []
 CHECKS = 0
@@ -80,6 +95,46 @@ def build_grf(path: Path, files):
     path.write_bytes(
         header + body + struct.pack("<II", len(packed_table), len(table)) + packed_table
     )
+
+
+def build_grf_v300(path: Path, files):
+    """The other archive shape grflib claims to read: 8-byte entry offsets, the
+    table offset as a u64 at byte 30, the real count as a u32 at 38, and four
+    bytes of padding before the table (`table_offset + 46 + 4`).
+
+    Untested until now, which was the wrong way round — it is the branch with
+    the unusual arithmetic, so it is the branch where an error hides.
+    """
+    body = b""
+    table = b""
+    for name, data, etype in files:
+        compressed = zlib.compress(data) if data else b""
+        table += name.encode("latin-1") + b"\0"
+        table += struct.pack("<IIIB", len(compressed), len(compressed), len(data), etype)
+        table += struct.pack("<Q", len(body))
+        body += compressed
+
+    packed_table = zlib.compress(table)
+    header = b"Master of Magic".ljust(15, b"\0") + b"\0" * 15
+    # u64 offset at 30 spans what v0x200 reads as (table_offset, skip); the
+    # count sits at 38 and the version at 42.
+    header += struct.pack("<QII", len(body), len(files), 0x300)
+    path.write_bytes(
+        header
+        + body
+        + b"\0" * 4
+        + struct.pack("<II", len(packed_table), len(table))
+        + packed_table
+    )
+
+
+def build_grf_raw_table(path: Path, table: bytes, count: int):
+    """An archive whose file table is exactly the bytes given. Lets a test hand
+    over a table that stops in the middle of an entry."""
+    packed = zlib.compress(table)
+    header = b"Master of Magic".ljust(15, b"\0") + b"\0" * 15
+    header += struct.pack("<IIII", 0, 0, count + 7, 0x200)
+    path.write_bytes(header + struct.pack("<II", len(packed), len(table)) + packed)
 
 
 # =============================================================================
@@ -181,6 +236,10 @@ CLIENTINFO = """<?xml version="1.0" encoding="euc-kr" ?>
 </clientinfo>
 """
 
+# Big enough to compress, and the second entry in the archive so its offset is
+# nonzero — which is what makes it the entry worth checking the *contents* of.
+MSGTABLE = b"\n".join(b"line %d#" % i for i in range(4000))
+
 # Planted so the survey has something definite to find: a client date in both
 # spellings, an anti-cheat name, a patch host, a manager name, a lua path, and
 # a capability marker. The UTF-16 string proves the wide-string sweep works.
@@ -222,7 +281,7 @@ def build_fixture(root: Path):
         root / "data.grf",
         [
             ("data\\clientinfo.xml", CLIENTINFO.encode("utf-8"), 0x01),
-            ("data\\msgstringtable.txt", b"\n".join(b"line %d#" % i for i in range(4000)), 0x01),
+            ("data\\msgstringtable.txt", MSGTABLE, 0x01),
             ("data\\prontera.rsw", b"stock prontera", 0x01),
             ("data\\custom_town.rsw", b"their own map", 0x01),
             (KOREAN_UI_DIR + "\\login_interface.bmp", b"BM" + b"\0" * 200, 0x01),
@@ -274,6 +333,16 @@ def test_grflib(root: Path):
 
     table = archive.get("data/msgstringtable.txt")
     check(table is not None and table.real_size > 20000, "sizes come back from the table")
+    # The check that actually pins the offset base. The clientinfo round-trip
+    # above is the *first* entry, whose offset is 0 — it reads correctly whether
+    # the reader seeks to `offset` or to `46 + offset`. This one does not.
+    if table:
+        check(table.offset > 0, f"it sits at a nonzero offset ({table.offset})")
+        check(
+            archive.read(table) == MSGTABLE,
+            "an entry at a nonzero offset extracts byte for byte — the offset is "
+            "relative to the end of the 46-byte header",
+        )
 
     locked = archive.get("data/locked_secret.txt")
     check(locked is not None and locked.is_encrypted, "the encrypted entry is flagged")
@@ -318,6 +387,62 @@ def test_grflib(root: Path):
     except grflib.GrfError:
         check(True, "a truncated header is rejected with GrfError")
     short.unlink()
+
+    # The gap that let a real bug through: only a truncated *header* was ever
+    # tested, so a table that stops mid-entry was never exercised. It raised a
+    # bare struct.error out of the library, which no caller catches, so it
+    # surfaced as an unhandled traceback instead of a reported problem.
+    cut = root / "cut-table.grf"
+    for label, table in (
+        ("after the name", b"data\\a.txt\0"),
+        ("mid-metadata", b"data\\a.txt\0" + b"\0" * 6),
+        # The exact shape the guard used to miss: all 13 fixed bytes present,
+        # the 4-byte offset absent.
+        ("after the metadata, before the offset", b"data\\a.txt\0" + b"\0" * 13),
+    ):
+        build_grf_raw_table(cut, table, 1)
+        try:
+            grflib.read_archive(cut)
+            check(False, f"a table cut {label} is rejected")
+        except grflib.GrfError:
+            check(True, f"a table cut {label} is rejected with GrfError")
+        except struct.error:
+            check(False, f"a table cut {label} leaked a raw struct.error")
+    cut.unlink()
+
+    empty = root / "empty.grf"
+    build_grf(empty, [])
+    try:
+        archive = grflib.read_archive(empty)
+        check(len(archive) == 0, "an archive with no entries reads as empty")
+    except grflib.GrfError as exc:
+        check(False, f"an archive with no entries should read as empty: {exc}")
+    empty.unlink()
+
+    section("grflib reads the v0x300 shape too")
+    v3 = root / "v300.grf"
+    build_grf_v300(v3, [
+        ("data\\first.txt", b"first entry, offset zero", 0x01),
+        ("data\\second.txt", b"second entry, at a nonzero offset", 0x01),
+    ])
+    try:
+        archive = grflib.read_archive(v3)
+        check(archive.version == 0x300, "the version is reported as 0x300")
+        check(len(archive) == 2, f"both entries parsed (got {len(archive)})")
+        check(
+            archive.get("data/second.txt") is not None,
+            "the 8-byte offset field did not desynchronise the table",
+        )
+        entry = archive.get("data/second.txt")
+        if entry:
+            try:
+                archive.read(entry)
+                check(False, "extraction from v0x300 is refused")
+            except grflib.GrfUnsupported:
+                check(True, "extraction from v0x300 raises GrfUnsupported")
+    except grflib.GrfError as exc:
+        check(False, f"a v0x300 archive should be readable: {exc}")
+    v3.unlink()
 
 
 def run(script: str, *args):
@@ -426,10 +551,13 @@ def test_survey(root: Path, baseline: Path, outdir: Path):
 
     section("... and extraction pulled the text out, but not the locked entry")
     extracted = outdir / "extracted"
-    check(
-        (extracted / "data" / "msgstringtable.txt").is_file(),
-        "a text entry was extracted",
-    )
+    extracted_table = extracted / "data" / "msgstringtable.txt"
+    check(extracted_table.is_file(), "a text entry was extracted")
+    if extracted_table.is_file():
+        check(
+            extracted_table.read_bytes() == MSGTABLE,
+            "and its contents are right, not merely present",
+        )
     check(
         not (extracted / "data" / "locked_secret.txt").exists(),
         "the encrypted entry was not extracted",
@@ -463,6 +591,86 @@ def test_survey(root: Path, baseline: Path, outdir: Path):
     )
 
 
+def test_resilience(root: Path, outdir: Path):
+    """The failure modes that cost a round trip through a human.
+
+    This tool runs once, on a machine whoever wrote the bug cannot reach. A
+    traceback there is worth nothing; a partial report is worth a lot.
+    """
+    cs = load_survey_module()
+
+    section("pe_info survives a malformed executable")
+    for label, blob in (
+        ("random bytes", b"not an executable at all" * 4),
+        ("MZ but nothing else", b"MZ" + b"\0" * 200),
+        ("PE header pointing off the end", b"MZ" + b"\0" * 58 + struct.pack("<I", 0xFFFF)),
+        ("a bogus optional-header size", bytearray(build_pe(b"x", pad_to=2048))),
+        ("truncated mid-section-table", build_pe(b"x", pad_to=2048)[:0x120]),
+    ):
+        if label.startswith("a bogus"):
+            blob[0x80 + 4 + 16] = 0xFF  # opt_size = huge
+            blob = bytes(blob)
+        try:
+            info = cs.pe_info(blob)
+            check(
+                isinstance(info, dict),
+                f"{label}: reported rather than raised"
+                + (f" ({info.get('error', 'parsed')})" if "error" in info else ""),
+            )
+        except Exception as exc:  # noqa: BLE001 — that is the thing under test
+            check(False, f"{label}: raised {type(exc).__name__}: {exc}")
+
+    section("an unreadable file costs one line, not the run")
+    report = cs.ReportBuilder()
+    # A directory raises IsADirectoryError from read_bytes() — an OSError, like
+    # a permission denial or a file locked by a running client, and one that
+    # reproduces without needing to drop privileges.
+    check(
+        cs.read_or_report(root / "data", report, "a directory") is None,
+        "read_or_report returns None instead of raising",
+    )
+    check(
+        "could not read" in report.text(),
+        "and it says so in the report",
+    )
+
+    section("a report is written even when a stage throws")
+    victim = outdir / "partial"
+    original = cs.what_this_means
+
+    def explode(*_args, **_kwargs):
+        raise RuntimeError("deliberate failure, injected by the test")
+
+    cs.what_this_means = explode
+    try:
+        argv = sys.argv
+        sys.argv = ["client-survey.py", str(root), "--out", str(victim)]
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = cs.main()
+        finally:
+            sys.argv = argv
+    finally:
+        cs.what_this_means = original
+
+    check(code == 1, f"main() reports failure with exit 1 (got {code})")
+    check((victim / "report.md").is_file(), "report.md was still written")
+    if (victim / "report.md").is_file():
+        partial = (victim / "report.md").read_text(encoding="utf-8")
+        check("The survey did not finish" in partial, "it says the run stopped early")
+        check("deliberate failure" in partial, "it names the failure")
+        check(
+            "## Archives" in partial and "203.0.113.77" in partial,
+            "and it still holds everything found before the failure",
+        )
+    if (victim / "survey.json").is_file():
+        data = json.loads((victim / "survey.json").read_text(encoding="utf-8"))
+        check("error" in data, "survey.json records the error")
+        check(bool(data.get("archives")), "and the findings collected so far")
+    else:
+        check(False, "survey.json was still written")
+
+
 def test_doctor(root: Path):
     section("client-doctor.py still works on the same folder")
     proc = run("client-doctor.py", str(root))
@@ -491,6 +699,7 @@ def main():
         baseline = build_fixture(root)
         test_grflib(root)
         test_survey(root, baseline, tmp / "out")
+        test_resilience(root, tmp / "out")
         test_doctor(root)
 
     print()
