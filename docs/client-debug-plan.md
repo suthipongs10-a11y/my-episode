@@ -32,6 +32,47 @@ Step 1 closes both gaps.
 
 ---
 
+## Results so far — what is now ruled out, with evidence
+
+Recorded as it happened. Two hypotheses were tested and both came back
+negative; that is progress, because each one closes a direction.
+
+| Tested | Result | What it eliminates |
+|---|---|---|
+| `client-doctor.py` against `CleanTest` | no `msgstringtable.txt` anywhere — not loose, not in any of 7 GRFs | Explained why *that* folder could render no message at all |
+| `client-doctor.py` against `Ep4Client2` | clean: real 4,023-entry table, loose editable `sclientinfo.xml`, one GRF, **zero** startup files missing | The file layer, at archive level — not just filesystem |
+| msgstringtable relabelled to 8,000 entries, every line carrying its own index | box **still completely empty** | **The message does not come from `msgstringtable.txt`.** It is a hardcoded string or a Win32 resource in the executable |
+| WARP `Disable MessageBoxes`, re-diffed | no box; client exits silently | **The error is fatal, not a warning.** Suppressing the notification does not let it proceed |
+| Exit code | `0x00000000` on every attempt | Not a crash — the client walks a normal shutdown path. Rules out access violation, missing DLL, and an active Themida kill |
+| Windows Application event log | no entry for the process | Confirms the clean exit; Windows never saw a fault |
+
+Two things follow. The client **decides** to quit — it is not being killed — and
+whatever it is complaining about is decided *after* graphics initialisation
+(ProcMon showed that was reached) and *before* the login window.
+
+**The binary appears to be unpacked**, despite `CThemidaMgr` being present:
+`client-doctor.py` reads dozens of `.lua` paths out of it as plain text, which a
+Themida-packed image would not expose. An earlier note in this document
+overstated Themida as an obstacle to debugging.
+
+### Untested and cheap — do these before the debugger
+
+1. **DebugView** on `Ep4RO_verbose.exe`. The `_verbose` name suggests a WARP
+   verbose/debug patch was applied, and that output goes to the Windows debug
+   channel, not to a console — nothing we have run so far would have shown it.
+2. **The loading images named in `sclientinfo.xml`.** That file lists
+   `loading00.jpg` … `loading06.jpg`. `client-doctor.py --find loading00`
+   confirms in seconds whether they are reachable. The doctor only extracts
+   `.lua`/`.lub` paths from the binary, so **no texture, sprite or image has
+   ever been checked** — a whole file class is still unexamined.
+3. **The original, unpatched `2018-06-20eRagexeRE.exe`.** We have only ever run
+   patched builds. If the stock binary fails identically, the WARP patch list is
+   exonerated and the cause is data or environment. If it starts, one patch is
+   the killer and bisecting the list finds it in about four runs — no
+   reverse engineering required.
+
+---
+
 ## Step 1 — Ask the binary what it wants, and check inside the archives
 
 ```
