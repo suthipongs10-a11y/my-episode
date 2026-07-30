@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="euc-kr" ?>
+<!--
+  Copy to  <client folder>\data\sclientinfo.xml  and set <address> to your server.
+
+  WHY sclientinfo AND NOT clientinfo
+  A 2018-06-20 RagexeRE is a Sakray build and reads data\sclientinfo.xml. The
+  plain clientinfo.xml is the non-Sakray name; shipping only that leaves the
+  client with no server configuration at all. tools/client-doctor.py reports
+  which of the two names your executable actually references — it reads them
+  straight out of the binary, so trust that over this comment.
+
+  A loose file in data\ wins over the copy inside a GRF, which is the only way
+  to change the address without repacking a 4 GB archive.
+
+  NOT COMMITTED WITH A REAL ADDRESS. CLAUDE.md §2.1: no host, port or
+  credential lives in a tracked file. Fill it in locally; data/ is gitignored
+  on the client side and this file is the .example.
+-->
+<clientinfo>
+	<!-- korea = no extra service gating. america/thai change the login UI and
+	     which language files are loaded; pick the one matching your data. -->
+	<servicetype>korea</servicetype>
+	<servertype>primary</servertype>
+
+	<!-- Show the account list box rather than hiding it. Remove the element
+	     entirely (do not set it to "false") to hide it. -->
+	<!-- <hideaccountlist/> -->
+
+	<connection>
+		<display>Episode4</display>
+
+		<!-- The login-server. CHANGE THIS.
+		     127.0.0.1 only works when the client and server are on one machine
+		     AND the port is reachable — ours is bound to localhost on the VPS
+		     (GAME_PORTS_BIND), so a remote client needs that opened first. -->
+		<address>127.0.0.1</address>
+		<port>6900</port>
+
+		<!-- Must match what the server expects, not the client's build date. -->
+		<version>55</version>
+
+		<!-- 1 = English. Change together with servicetype above. -->
+		<langtype>1</langtype>
+
+		<registrationweb></registrationweb>
+
+		<!-- Account IDs shown with the GM name colour. Harmless if absent. -->
+		<yellow>
+			<admin>2000000</admin>
+		</yellow>
+	</connection>
+</clientinfo>

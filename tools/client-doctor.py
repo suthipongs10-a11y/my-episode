@@ -36,7 +36,9 @@ from pathlib import Path
 # --- what the client asks for, read straight out of the binary ---------------
 # The decisive technique from docs/phase-1-client.md: every path and manager
 # name the client needs is a plain string in the executable.
-LUA_RE = re.compile(rb"[A-Za-z0-9_./\\\- ]{3,80}\.(?:lub|lua)", re.IGNORECASE)
+# ':' is in the class so a URL is captured whole and can be recognised as noise;
+# without it the match starts after "http://" and looks like a real filename.
+LUA_RE = re.compile(rb"[A-Za-z0-9_./\\:\- ]{3,80}\.(?:lub|lua)", re.IGNORECASE)
 MGR_RE = re.compile(rb"C[A-Za-z]{3,30}Mgr")
 INFO_RE = re.compile(rb"s?clientinfo\.xml", re.IGNORECASE)
 
@@ -55,6 +57,69 @@ def norm(path: str) -> str:
     same file, and treating them as different is how you 'lose' a file that is
     right there."""
     return path.replace("\\", "/").lstrip("./").lower()
+
+
+def variants(path: str):
+    """Every spelling under which the client might find one required path.
+
+    Three rules, each learned from a false positive this script produced:
+
+    * **The `data/` prefix.** GRF entries are stored as `data\\luafiles514\\x.lub`,
+      but the executable asks for `luafiles514/x.lub` — paths inside the binary
+      are relative to the data root. Comparing them literally reports hundreds
+      of present files as missing.
+    * **`.lua` and `.lub` are interchangeable.** The binary names `.lua`; the
+      shipped file is usually the compiled `.lub`. The client tries both.
+    * **`_sak` / `_sakray` suffixes.** A RagexeRE prefers the Sakray variant and
+      falls back to the plain name.
+    """
+    seen, out = set(), []
+
+    def add(candidate):
+        if candidate not in seen:
+            seen.add(candidate)
+            out.append(candidate)
+
+    base = norm(path)
+    # Roots the client resolves a bare path against. The lua-files root is why
+    # 'hateffectinfo/hateffect_f.lua' resolves to a file three directories down.
+    roots = ("", "data/", "data/luafiles514/lua files/", "luafiles514/lua files/")
+    for root in roots:
+        stem = base if base.startswith(root) and root else root + base
+        add(stem)
+        if stem.endswith(".lua"):
+            add(stem[:-4] + ".lub")
+        elif stem.endswith(".lub"):
+            add(stem[:-4] + ".lua")
+
+    # ai_sakray/ai.lua also lives at ai/ai.lua on a non-Sakray tree.
+    for candidate in list(out):
+        if "_sakray/" in candidate:
+            add(candidate.replace("_sakray/", "/"))
+        if "_sak." in candidate:
+            add(candidate.replace("_sak.", "."))
+    return out
+
+
+# Strings the regex finds that are not file requests at all: URL fragments, and
+# printf-style error templates the client uses to complain about a load failure.
+NOISE_PREFIXES = ("fail to load ", "failed to load ", "error loading ")
+
+
+def clean_request(raw: str):
+    """Return the path the client actually wants, or None if it is not a path."""
+    text = raw.strip()
+    lowered = text.lower()
+    for prefix in NOISE_PREFIXES:
+        if lowered.startswith(prefix):
+            text = text[len(prefix):].strip()
+            lowered = text.lower()
+    # "www.lua" out of a URL, and anything else that is plainly not a game path.
+    if lowered.startswith(("www.", "http")) or "://" in lowered:
+        return None
+    if not text or text.startswith("."):
+        return None
+    return norm(text)
 
 
 # --- GRF ---------------------------------------------------------------------
@@ -146,6 +211,9 @@ def main():
     ap.add_argument("--exe", help="which executable to read (default: every .exe found)")
     ap.add_argument("--list-missing-only", action="store_true",
                     help="print only the files the client wants and cannot reach")
+    ap.add_argument("--find", metavar="SUBSTRING",
+                    help="list every archive entry whose path contains SUBSTRING, "
+                         "then exit — use it to confirm a file really is absent")
     args = ap.parse_args()
 
     root = Path(args.folder)
@@ -216,18 +284,31 @@ def main():
     for p in root.rglob("*"):
         if p.is_file():
             loose[norm(str(p.relative_to(root)))] = p
+    if args.find:
+        needle = args.find.lower().replace("\\", "/")
+        r.head(f"Entries containing {args.find!r}")
+        hits = sorted(p for p in list(loose) + list(grf_entries) if needle in p)
+        for hit in hits[:200]:
+            r.info(f"{'loose' if hit in loose else 'grf  '}  {hit}")
+        if not hits:
+            r.info("(nothing — the file is genuinely absent)")
+        elif len(hits) > 200:
+            r.info(f"... and {len(hits) - 200:,} more")
+        return 0
+
     r.head("Loose files")
     r.ok(f"{len(loose):,} files on disk under the client folder")
 
     def where(name):
         """Loose copy, GRF entry, or nowhere. A loose file wins over the archive
         when the client is patched to read the data folder first, so which one
-        answers matters as much as whether either does."""
-        n = norm(name)
-        if n in loose:
-            return "loose"
-        if n in grf_entries:
-            return "grf"
+        answers matters as much as whether either does. Every spelling the
+        client would accept is tried — see variants()."""
+        for candidate in variants(name):
+            if candidate in loose:
+                return "loose"
+            if candidate in grf_entries:
+                return "grf"
         return None
 
     def reachable(name):
@@ -259,7 +340,11 @@ def main():
             continue
 
         blob = exe.read_bytes()
-        wants = sorted({norm(m.group().decode("latin-1")) for m in LUA_RE.finditer(blob)})
+        wants = sorted({
+            cleaned
+            for m in LUA_RE.finditer(blob)
+            if (cleaned := clean_request(m.group().decode("latin-1"))) is not None
+        })
         mgrs = sorted({m.group().decode("latin-1") for m in MGR_RE.finditer(blob)})
         infos = sorted({m.group().decode("latin-1").lower() for m in INFO_RE.finditer(blob)})
 
@@ -299,7 +384,7 @@ def main():
     # msgstringtable.txt does not have. The table is how the client speaks; a
     # short one makes it mute exactly when it has something to say.
     r.head("msgstringtable.txt — can the client tell you what is wrong?")
-    mst = loose.get("data/msgstringtable.txt")
+    mst = loose.get("data/msgstringtable.txt") or loose.get("msgstringtable.txt")
     if mst:
         raw = mst.read_bytes()
         lines = raw.count(b"\n") + (0 if raw.endswith(b"\n") else 1)

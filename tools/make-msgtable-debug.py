@@ -80,10 +80,20 @@ def main():
         return 0
 
     if not path.is_file():
-        print(f"not found: {path}", file=sys.stderr)
-        print("If msgstringtable.txt only exists inside a GRF, extract it to", file=sys.stderr)
-        print("data/msgstringtable.txt first — a loose copy wins over the archive.", file=sys.stderr)
-        return 2
+        # A client with no string table at all cannot render *any* message, which
+        # is a complete explanation for an error box with no text. Creating one
+        # from nothing is therefore not a workaround — it is the fix, and every
+        # line is already labelled, so the first box tells you its index.
+        print(f"{path} does not exist — creating a labelled table from scratch.")
+        print("(A client with no msgstringtable.txt cannot render any message at all,")
+        print(" which is exactly what an empty error box looks like.)")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lines = [b"[%d] <no original table>" % i + SEP for i in range(max(args.pad, 1))]
+        path.write_bytes(b"\r\n".join(lines) + b"\r\n")
+        print(f"wrote {len(lines):,} entries to {path}")
+        print()
+        print("Start the client again. Any message box should now show [N].")
+        return 0
 
     raw = path.read_bytes()
     lines, crlf = split_entries(raw)
