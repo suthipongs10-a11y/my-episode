@@ -305,9 +305,25 @@ walks it over the real wire protocol, run on the VPS against `127.0.0.1`.
 
 ### Phase 2 — Vendor decisions and the mobile client ← **next**
 - Answer every question in §3a and write `docs/vendor-roplay.md`
-- Decide `packetver` from the answer to Q1 — this may mean rebuilding, and
-  regenerating `tools/smoke-play.py`'s packet table
-- Decide Gepard from Q2
+- **Add a ninth question: does RoPlay support pre-renewal, or renewal only?**
+  §8b makes this the one that decides the most.
+- Decide `packetver` **and `PRERE`** — this means rebuilding, and regenerating
+  `tools/smoke-play.py`'s packet table
+
+  > **Recommendation, from §8b: `PRERE=no`, `PACKETVER=20211103`.** Renewal
+  > because that is what the reference server is and what we said we want
+  > parity with. `20211103` for three independent reasons: it is rAthena's own
+  > default and therefore its most-tested value; it is the newest version
+  > roBrowser's `PacketVersions.js` carries an explicit table for, so nothing
+  > above it can diverge silently; and it is `> 20180307`, so
+  > `clif_obfuscation.hpp` still yields zero keys and roBrowser's
+  > `packetKeys: false` stays correct. It predates 4th job — a later bump, and
+  > a content project rather than a config change.
+  >
+  > Do this **after** the PC client has connected once at the current settings.
+  > Changing the server and the client in the same step is how the last two days
+  > went (§11).
+- Decide Gepard from Q2 — §8b weakens the case; they do not use it
 - Decide the host from Q3 + §3c
 - Purchase, integrate, and get one real device connected
 - **Gate:** a phone logs in to *our* server through RoPlay, creates a
@@ -423,11 +439,11 @@ screenshots and from public sources:
 | Aspect | What they do | What it means for us |
 |---|---|---|
 | Mobile client | **RoPlay**, `[v.3.6.48]` — bought, not built | §3a |
-| PC client | ragexe protected by **Gepard Shield** | why we could not unpack it; §3b.1 |
-| Content era | modern — cash shop, homunculus auto-feed, 30 char slots, achievement UI | **not Episode 4.0**; §6 Phase 4 |
+| PC client | `Rag.exe`, **Themida/WinLicense**, patched with **Nemo** (`.nemo` section) | §8b — *not* Gepard |
+| Content era | **~2025 renewal.** Client date string `2025-07-16`; RODEX, cash shop, achievements, enchant grade, Doram, 4th-job strings | **decides `PRERE`**; §8b |
 | Localisation | Thai UI, language switcher on login | ours should match |
-| Registration | in-client `สมัครไอดี` button → their website | §6 Phase 6 |
-| Asset delivery | streamed with a progress bar; client has a "clear cache" button | §6 Phase 5 |
+| Registration | in-client `สมัครไอดี` → their site, via an embedded **WebView2** | §6 Phase 6 |
+| Asset delivery | their own `Eternal Patcher.exe`; no patch host in the client binary | §6 Phase 5; §8b |
 
 Their in-game UI (radial touch skill wheel, scaled RO panels) is RoPlay's, so
 matching it is a purchase, not a build. **Where we differ should be rates,
@@ -464,6 +480,60 @@ is let us check Q1's answer against what their client actually speaks.
 
 ---
 
+## 8b. What their client measured — 2026-07-30
+
+The survey above was run. `docs/recon/EternalRO/report.md` is the output; this
+is what it changed. Three rows of §8a were wrong and are corrected there.
+
+**1. They are a ~2025 renewal server. We are built pre-renewal, 2018.**
+
+Client date string `2025-07-16`. Feature strings: RODEX 148, cash shop 100,
+achievements 83, homunculus auto-feed 64, **enchant grade 55**, attendance 46,
+**Doram 41**, **4th-job 17**. `System\itemInfo_true.lub` is 18.4 MB.
+
+Two cautions, because this is the most expensive decision in the file: a client
+carries every string kRO shipped, so this proves what their client *can* speak,
+not what their server enables. And the date is one string. But the direction is
+not in doubt, and it is the same direction the screenshots pointed.
+
+**Consequence: `PRERE=yes` is wrong for parity.** `packetver` is one line and a
+rebuild. `PRERE` decides jobs, damage formulas and the item DB — it gets more
+expensive to change with every hour of Phase 4 content. Decide it before Phase 4,
+not during; §6 Phase 2 carries the recommendation.
+
+**2. It is not Gepard.** Markers are **Themida/WinLicense** (`.winlice` 7.2 MB,
+`.boot` at entropy 7.94, `.vm_sec`) and a `.nemo` section — the Nemo client
+patcher. The 20 nProtect GameGuard hits and every `kro-*.ragnarok.co.kr`,
+`gnjoy.com` and `onstove.com` URL are stock kRO residue, not their choices.
+
+One unexplained thing worth knowing: **`map_cache.grf` is a DLL, not an
+archive** — it starts with `MZ` and appears in `Rag.exe`'s *import table*. A
+module renamed to `.grf` is the most likely home of whatever anti-cheat they
+run, and strings cannot name it.
+
+**Consequence for §3a Q2 / §3b.1:** Gepard may not be needed at all, and the
+hope that buying it also yields a working PC client is weaker than it looked.
+
+**3. Their data.grf is the same kRO base as our `Ep4Client2\data.grf`.**
+Identical file roster (222,554 files); **zero files present in ours and absent
+in theirs**. Theirs is encrypted (`__encryption.info`, `clientinfo.xml` will not
+inflate); ours is not.
+
+**Consequence:** the folder name lies. Our GRF is not Episode-4 data — it is a
+modern kRO archive, unencrypted and readable, which is exactly what a renewal
+packetver and roBrowser both need. One less thing to acquire.
+
+**4. Their custom content is ~1.3%, and none of it is maps.**
+2,812 files added over stock, 417 changed, **0 custom maps**. The additions are
+2,630 textures (skill effects and 304 aura textures), 148 sprites, and 30 added
+/ 84 changed `luafiles514`. `ro-patch.grf` is a re-modelled Prontera.
+
+**Consequence for Phase 4:** matching their *look* is cheap. Their real
+differentiation is server-side — rates, systems, NPCs — which no client survey
+can see, and which is ours to write anyway.
+
+---
+
 ## 9. Legal boundary — state of play
 
 - rAthena is **GPL-3.0**. Commercial use is allowed, but distributing a modified
@@ -485,20 +555,13 @@ is let us check Q1's answer against what their client actually speaks.
 
 ## 10. Immediate next action
 
-Three tracks, independent on purpose (§8, §11).
+Two tracks, independent on purpose (§8, §11).
 
-**Reference — read EternalRO's client.** Cheapest of the three, needs nobody's
-reply, and it feeds the other two. On the Windows box:
-
-```
-tools\survey-client.cmd "C:\Games\EternalRO" "C:\Games\Ep4Client2\data.grf"
-```
-
-Writes `docs/recon/EternalRO/report.md` — inside the repo, so it comes back as a
-commit rather than a paste, and `docs/recon/.gitignore` keeps the manifests and
-their extracted content out. That report is where §8a's screenshot-derived table
-becomes measured, and where §3a Q1 gets a second opinion that does not depend on
-a vendor answering. `docs/eternalro-recon.md`.
+**Reference — done.** `tools\survey-client.cmd` was run against
+`C:\Games\EternalRO` on 2026-07-30. §8b is what it found and what it changed;
+`docs/recon/EternalRO/report.md` is the output. Its one instruction for the
+order of work: **do not change the server before the PC client has connected
+once.** Re-run the survey after their next patch if we want a fresh diff.
 
 **PC — try to log in.** The client is built. On the Windows box:
 

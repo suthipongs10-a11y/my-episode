@@ -270,6 +270,10 @@ def build_fixture(root: Path):
         "password=hunter2\n",
         encoding="utf-8",
     )
+    # Deflated, not text. EternalRO's rag.dat was 49 bytes of zlib and the first
+    # survey printed it as mojibake, which reads like a corrupt file rather than
+    # one nobody had opened.
+    (root / "rag.dat").write_bytes(zlib.compress(b"deflated-marker-value"))
     # Over client-doctor.py's 512 KB floor on purpose, so its executable path
     # runs too.
     (root / "Ep4RO.exe").write_bytes(build_pe(EXE_STRINGS, pad_to=700_000))
@@ -505,6 +509,10 @@ def test_survey(root: Path, baseline: Path, outdir: Path):
     check("<redacted>" in report, "a password in a config file is redacted")
     check("hunter2" not in report, "... and its value does not appear anywhere")
     check(
+        "deflated-marker-value" in report,
+        "a zlib-compressed loose config is inflated rather than printed as mojibake",
+    )
+    check(
         "203.0.113.77, 203.0.113.77" not in report,
         "the same address found twice is reported once, not as two servers",
     )
@@ -692,6 +700,41 @@ def test_doctor(root: Path):
         print(proc.stderr[-2000:], file=sys.stderr)
 
 
+def test_host_classification():
+    """The first EternalRO report listed cacerts.digicert.com as evidence about
+    their asset delivery. It is in every signed binary ever built. Presenting it
+    as a finding did not merely add noise — it hid the real one, that the patch
+    host is not in the executable at all."""
+    section("stock hosts are separated from the server's own")
+    module = load_survey_module()
+
+    for host in (
+        "cacerts.digicert.com",
+        "kro-acc1.ragnarok.co.kr",
+        "admtools.gnjoy.com",
+        "member.onstove.com",
+        "lua.org",
+        "schemas.microsoft.com",
+    ):
+        check(module.is_boilerplate_host(host), f"{host} is recognised as stock")
+
+    for host in ("patch.eternal-origin.com", "cdn.some-private-server.net"):
+        check(not module.is_boilerplate_host(host), f"{host} is kept as a real finding")
+
+    check(
+        module.url_is_boilerplate("https://cs.onstove.com/service/RAGNAROK_IND"),
+        "a whole URL of stock hosts is labelled stock",
+    )
+    check(
+        not module.url_is_boilerplate("http://patch.example-server.com/patch.txt"),
+        "a URL naming an unknown host is not labelled stock",
+    )
+    check(
+        not module.is_boilerplate_host("ragnarok.co.kr.evil.example"),
+        "suffix matching cannot be fooled by a lookalike domain",
+    )
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -701,6 +744,7 @@ def main():
         test_survey(root, baseline, tmp / "out")
         test_resilience(root, tmp / "out")
         test_doctor(root)
+        test_host_classification()
 
     print()
     if FAILURES:

@@ -49,6 +49,7 @@ import re
 import struct
 import sys
 import traceback
+import zlib
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -85,6 +86,33 @@ HOST_RE = re.compile(
     rb"\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,40}[a-zA-Z0-9])?\.)+"
     rb"(?:com|net|org|io|co|gg|th|kr|ru|info|xyz|online|site|shop|app|dev|me)\b"
 )
+
+# Hosts that are in every diffed ragexe ever built and say nothing about the
+# server running it: Gravity's own kRO endpoints, the publishers' account
+# portals, certificate revocation, the toolchain's manifest schema, Lua's
+# licence header. The first EternalRO survey listed cacerts.digicert.com as
+# evidence about their asset delivery, which is worse than saying nothing —
+# it hid the actual finding, that the patch host is not in the executable at
+# all. Matched as suffixes so subdomains are covered.
+BOILERPLATE_HOST_SUFFIXES = (
+    "digicert.com", "verisign.com", "globalsign.com", "sectigo.com",
+    "microsoft.com", "windowsupdate.com", "lua.org",
+    "ragnarok.co.kr", "ragnarok.co", "ragnarokonline.com", "gnjoy.com",
+    "hangame.com", "onstove.com", "gate8.com", "kunlun.com", "twitter.com",
+    "fontrix.co.kr", "puccaracing.co.kr",
+)
+
+
+def is_boilerplate_host(host: str) -> bool:
+    """True for a host that appears in stock clients regardless of the server."""
+    host = host.lower().lstrip(".")
+    return any(host == s or host.endswith("." + s) for s in BOILERPLATE_HOST_SUFFIXES)
+
+
+def url_is_boilerplate(url: str) -> bool:
+    """True when every hostname inside a URL is stock boilerplate."""
+    found = [m.group().decode("latin-1") for m in HOST_RE.finditer(url.encode("latin-1"))]
+    return bool(found) and all(is_boilerplate_host(h) for h in found)
 # No trailing \b on either. The client date is most often carried in a name
 # like `2018-06-20eRagexeRE`, where the digits run straight into a letter, so a
 # word boundary after them matches nothing — and that one string is the most
@@ -562,11 +590,23 @@ def survey_executables(root: Path, report, out: dict, args):
         hosts = Counter(m.group().decode("latin-1").lower() for m in HOST_RE.finditer(flat))
         report.sub("URLs and hostnames")
         if urls or hosts:
+            # Sorted so anything server-specific floats to the top. A stock
+            # ragexe carries thirty-odd Gravity and certificate URLs, and left
+            # unsorted they bury the one host that belongs to this server.
+            interesting = [h for h, c in hosts.most_common(TOP) if not is_boilerplate_host(h)]
+            boilerplate = [h for h, c in hosts.most_common(TOP) if is_boilerplate_host(h)]
             report.table(
-                ["string", "hits"],
-                [[redact(u), f"{c:,}"] for u, c in urls.most_common(TOP)]
-                + [[h, f"{c:,}"] for h, c in hosts.most_common(TOP)],
+                ["string", "hits", "note"],
+                [[h, f"{hosts[h]:,}", ""] for h in interesting]
+                + [[redact(u), f"{c:,}", "stock" if url_is_boilerplate(u) else ""]
+                   for u, c in urls.most_common(TOP)]
+                + [[h, f"{hosts[h]:,}", "stock"] for h in boilerplate],
             )
+            if not interesting:
+                report.line(
+                    "Every host above is stock kRO or toolchain boilerplate. That is a "
+                    "finding: this executable does not name a patch or asset host."
+                )
         else:
             report.line("none found")
         record["urls"] = dict(urls.most_common(60))
@@ -738,6 +778,16 @@ def survey_configs(root: Path, files, report, out: dict):
             report.sub(str(rel))
             raw = read_or_report(path, report, "this config file")
             if raw is not None:
+                # Some of these are deflated, not text — `rag.dat` in the first
+                # EternalRO survey was 49 bytes of zlib and got printed as mojibake,
+                # which reads as corruption rather than as a file we simply had not
+                # opened. A zlib header is two bytes; checking for it is free.
+                if raw[:1] == b"\x78":
+                    try:
+                        raw = zlib.decompress(raw)
+                        report.line("(zlib-compressed on disk; inflated here)")
+                    except zlib.error as exc:
+                        report.line(f"(looks zlib-compressed but would not inflate: {exc})")
                 text = redact(decode_text(raw))
                 report.code(text)
                 record["content"] = text
@@ -1171,11 +1221,21 @@ def what_this_means(out: dict, report):
     hosts = Counter()
     for exe in out.get("executables", []):
         hosts.update(exe.get("hosts", {}))
-    if hosts:
+    theirs = Counter({h: c for h, c in hosts.items() if not is_boilerplate_host(h)})
+    if theirs:
         rows.append(
-            ["Phase 5 — asset delivery", f"hosts named in the binary: "
-             f"{', '.join(h for h, _ in hosts.most_common(5))}",
-             "shows whether patching and assets come from a CDN or from origin"]
+            ["Phase 5 — asset delivery", f"non-stock hosts in the binary: "
+             f"{', '.join(h for h, _ in theirs.most_common(5))}",
+             "candidates for their patch or asset host — check each before believing it"]
+        )
+    elif hosts:
+        # A finding, not an absence. It means patching is driven from somewhere
+        # else — a separate patcher executable, or a config file it reads — and
+        # that is where to look next.
+        rows.append(
+            ["Phase 5 — asset delivery", "every host in the binary is stock kRO or "
+             "toolchain boilerplate",
+             "their patch host is not in the client: look in the patcher exe and its config"]
         )
 
     reg = [
