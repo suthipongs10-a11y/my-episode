@@ -62,6 +62,25 @@ const STAGE_SKIP = new Set(['.git', 'node_modules', 'dist']);
 // env
 // -----------------------------------------------------------------------------
 
+/**
+ * Decode an env file's bytes to text, whatever Windows wrote it as.
+ *
+ * `echo KEY=value >> client.env` in Windows PowerShell 5.1 appends **UTF-16LE**,
+ * because that is the default encoding for `>>`. Read as UTF-8 that becomes
+ * `K\0E\0Y\0...`, every key silently unrecognised, and the only symptom is a
+ * config value that "did not take effect" — which is a bad hour for whoever
+ * hits it. A BOM check costs three lines.
+ */
+export function decodeEnvBytes(buf) {
+	if (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) return buf.toString('utf16le', 2);
+	if (buf.length >= 2 && buf[0] === 0xfe && buf[1] === 0xff) return buf.swap16().toString('utf16le', 2);
+	if (buf.length >= 3 && buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) return buf.toString('utf8', 3);
+	// No BOM, but PowerShell's `>>` writes UTF-16LE without one when it appends
+	// to a file it created. ASCII text as UTF-16LE has a NUL in every other byte.
+	if (buf.length >= 4 && buf[1] === 0x00 && buf[3] === 0x00) return buf.toString('utf16le');
+	return buf.toString('utf8');
+}
+
 /** Parse a KEY=VALUE file. Same shape as the repo's .env, no dependencies. */
 export function parseEnvFile(text) {
 	const out = {};
@@ -500,7 +519,7 @@ function main(argv) {
 
 	let fileEnv = {};
 	if (fs.existsSync(envPath)) {
-		fileEnv = parseEnvFile(fs.readFileSync(envPath, 'utf8'));
+		fileEnv = parseEnvFile(decodeEnvBytes(fs.readFileSync(envPath)));
 		console.log(`config from ${path.relative(REPO, envPath)}`);
 	} else {
 		console.log(`no ${path.relative(REPO, envPath)} — using the process environment only`);
@@ -686,6 +705,21 @@ function selftest() {
 	};
 
 	console.log('build-client selftest:');
+
+	ok('decodes what Windows PowerShell actually writes', () => {
+		const line = 'RO_SERVER_ADDRESS=play.example.test\n';
+		const utf16 = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(line, 'utf16le')]);
+		assert(parseEnvFile(decodeEnvBytes(utf16)).RO_SERVER_ADDRESS === 'play.example.test',
+			'UTF-16LE with a BOM');
+		const noBom = Buffer.from(line, 'utf16le');
+		assert(parseEnvFile(decodeEnvBytes(noBom)).RO_SERVER_ADDRESS === 'play.example.test',
+			'UTF-16LE without a BOM, which is what `>>` appends');
+		const bom8 = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(line, 'utf8')]);
+		assert(parseEnvFile(decodeEnvBytes(bom8)).RO_SERVER_ADDRESS === 'play.example.test',
+			'UTF-8 with a BOM');
+		assert(parseEnvFile(decodeEnvBytes(Buffer.from(line, 'utf8'))).RO_SERVER_ADDRESS === 'play.example.test',
+			'plain UTF-8');
+	});
 
 	ok('parses a KEY=VALUE file', () => {
 		const env = parseEnvFile('# comment\nA=1\nB = "two words" \n\nC=\n');
