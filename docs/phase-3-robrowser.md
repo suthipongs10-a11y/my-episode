@@ -310,6 +310,44 @@ the client is not:
 So: `thana_M` once, `thana` from then on. Two sessions were lost to this on
 2026-07-30, both of them reading a real message that meant something else.
 
+## The GRF has to match the packetver, and here is how to check
+
+roBrowser picks each UI component by packetver, not by what the archive
+contains. `UI/Components/CharSelect/CharSelect.js`:
+
+```js
+common: {
+    20180124: CharSelectV4,   // what PACKETVER=20180307 selects
+    20141016: CharSelectV3,
+    20100803: CharSelectV2,
+    20100728: CharSelect,
+}
+```
+
+The highest date at or below the packetver wins, so ours always loads
+`select_character_ver3/*`. An older archive does not have those textures, and
+there is no config to force an older component — `selectSpecificUIVersion()`
+exists but nothing reaches it from `ROConfig`.
+
+Tested on 2026-07-30 with a Thai EP5 client (2004, 23,094 entries). It got
+further than expected: the GRF was readable, the login screen rendered, an
+account was created and authenticated, and the char-server sent a character
+list. Then character select drew nothing, with a 404 per missing texture.
+
+**So a candidate GRF has to be the same era as `PACKETVER`.** Three checks
+before building anything, all against the folder holding `data.grf`:
+
+```
+python tools\client-doctor.py <folder>
+python tools\client-doctor.py <folder> --find select_character_ver3
+python tools\client-doctor.py <folder> --find luafiles514
+```
+
+A ~2018 kRO pack answers all three: entries decompress cleanly, the modern
+character-select textures are present, and `luafiles514` exists so
+`RO_CLIENT_LOAD_LUA` can stay true. Roughly 4 GB and 200,000+ entries — an
+archive of 20-30,000 entries is a decade too old whatever else it has.
+
 ## Known limits, so they are not discovered as bugs
 
 - **GRF only.** In Electron, roBrowser reads the archives named in
