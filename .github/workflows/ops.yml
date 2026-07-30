@@ -164,11 +164,24 @@ jobs:
                   echo "python3 is not installed on this host"
                   exit 1
               fi
-              python3 ./tools/smoke-play.py
+              # The remote script runs under `set -uo pipefail` with no -e, so a
+              # failure here does not abort, and the job's exit status is that of
+              # the LAST command. With `check-logging.sh || true` after it, that
+              # was always 0: on 2026-07-30 smoke-play failed at the map-server
+              # and this workflow reported success. A gate that cannot go red is
+              # worse than no gate, because it is read as evidence.
+              smoke_status=0
+              python3 ./tools/smoke-play.py || smoke_status=$?
               echo
               # Logging is the one Phase 1 requirement that cannot be added
               # later, so prove it records rather than trusting the config.
+              # Runs even when the gate failed — it is diagnostics, not a gate.
               ./tools/check-logging.sh || true
+              if [ "${smoke_status}" -ne 0 ]; then
+                  echo
+                  echo "::error::smoke-play failed (exit ${smoke_status}). The gate is red."
+              fi
+              exit "${smoke_status}"
               ;;
 
             db-init)

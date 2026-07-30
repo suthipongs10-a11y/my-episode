@@ -130,6 +130,30 @@ jobs:
           # the VPS address is a variable and not a line of code.
           set_kv RO_ADVERTISE_IP "${VPS_HOST}"
 
+          # --- values that belong to the code, not to the host ----------------
+          # check-env.sh --fix only ADDS missing keys; it never changes one that
+          # is already set. That is right for a password and wrong for these two,
+          # because they are not host preferences — the repo is pinned to them.
+          # tools/smoke-play.py's packet table, tools/check-client-protocol.mjs
+          # and client/client.env.example all follow .env.example's PACKETVER,
+          # and CI enforces that the client and server agree at that value.
+          #
+          # This is not hypothetical. On 2026-07-30 .env.example moved to
+          # 20180307 and the VPS stayed on 20180620, so the deploy rebuilt
+          # nothing (same build arg, same cache) and smoke-play failed at the
+          # map-server with "closed the connection" — the exact silent failure
+          # the packetver work existed to prevent. Drift on these keys has no
+          # safe failure mode, so it is closed here rather than documented.
+          for key in PACKETVER RATHENA_PRERE; do
+              want=$(sed -nE "s/^${key}=(.*)$/\1/p" .env.example | head -1)
+              have=$(sed -nE "s/^${key}=(.*)$/\1/p" .env | head -1)
+              if [ -n "${want}" ] && [ "${want}" != "${have}" ]; then
+                  echo "${key}: ${have:-unset} -> ${want} (following .env.example)"
+                  echo "  the binaries will recompile; this is not a cached build"
+                  set_kv "${key}" "${want}"
+              fi
+          done
+
           if [ -n "${IN_PUBLIC_HOST}" ]; then set_kv PUBLIC_HOST "${IN_PUBLIC_HOST}"; fi
           if [ -n "${IN_ACME_EMAIL}" ]; then set_kv ACME_EMAIL  "${IN_ACME_EMAIL}"; fi
 

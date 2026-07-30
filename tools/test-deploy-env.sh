@@ -178,6 +178,45 @@ else
     ok "rejects a bogus bind value"
 fi
 
+# --- 5b. code-coupled keys follow .env.example ------------------------------
+# The bug this covers actually shipped. .env.example moved PACKETVER to 20180307
+# and the VPS stayed on 20180620, so the deploy rebuilt nothing — same build arg,
+# same Docker cache — and smoke-play failed at the map-server with "closed the
+# connection". Unlike a password or a hostname, these two are not host
+# preferences: the repo's packet tables are pinned to them.
+echo
+echo "PACKETVER and RATHENA_PRERE follow .env.example:"
+
+sed -i 's|^PACKETVER=.*|PACKETVER=20180620|' "${CHECKOUT}/.env"
+sed -i 's|^PACKETVER=.*|PACKETVER=20180307|' "${CHECKOUT}/.env.example"
+out="$(run_step 198.51.100.25 '' '')"
+[[ "$(get PACKETVER)" == "20180307" ]] \
+    && ok "a stale PACKETVER is corrected to the committed value" \
+    || bad "PACKETVER stayed at '$(get PACKETVER)'"
+grep -q 'recompile' <<<"${out}" \
+    && ok "and says the binaries will recompile" \
+    || bad "changed PACKETVER without saying a rebuild follows"
+
+# Idempotent: once they agree, a redeploy must be silent about it. Otherwise
+# every routine deploy claims a rebuild that is not happening.
+out="$(run_step 198.51.100.25 '' '')"
+grep -q 'PACKETVER:' <<<"${out}" \
+    && bad "reported a PACKETVER change when the values already agreed" \
+    || ok "silent when the values already agree"
+
+sed -i 's|^RATHENA_PRERE=.*|RATHENA_PRERE=no|' "${CHECKOUT}/.env"
+run_step 198.51.100.25 '' '' >/dev/null
+[[ "$(get RATHENA_PRERE)" == "yes" ]] \
+    && ok "RATHENA_PRERE is corrected the same way" \
+    || bad "RATHENA_PRERE stayed at '$(get RATHENA_PRERE)'"
+
+# A secret must NOT be dragged back to the example's placeholder by this loop.
+before_pw="$(get DB_PASSWORD)"
+run_step 198.51.100.25 '' '' >/dev/null
+[[ "$(get DB_PASSWORD)" == "${before_pw}" && "${before_pw}" != "CHANGE_ME" ]] \
+    && ok "generated secrets are left alone" \
+    || bad "DB_PASSWORD was overwritten with '$(get DB_PASSWORD)'"
+
 # --- 6. first run with no acme_email must fail loudly, not silently ---------
 echo
 echo "first run with no acme_email (operator forgot the input):"
