@@ -335,6 +335,7 @@ def main():
         r.bad("no executable over 512 KB found in the folder")
         return 1 if r.problems else 0
 
+    probed = False   # the byte probe reports once per folder, not per executable
     for exe in exes:
         if not exe.is_file():
             r.bad(f"{exe.name}: not found")
@@ -404,7 +405,11 @@ def main():
                     break
         probe_names = probe_names[:12]
 
-        if probe_names:
+        # Whether the archives are readable is a property of the folder, not of
+        # an executable, and a folder can ship several (Ragexe + Sakexe is
+        # normal). Report it once.
+        if probe_names and not probed:
+            probed = True
             r.head("Reading actual bytes out of the archive")
             readable, failures = 0, []
             for name in probe_names:
