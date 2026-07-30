@@ -37,8 +37,14 @@ mapfile -t files < <(git ls-files | grep -Ev "${exclude_re}")
 # side, so they must contain one. They are held to a narrower rule rather than
 # exempted: only RFC 5737 documentation ranges, which route nowhere and can
 # never be somebody's real server.
-mapfile -t test_files < <(printf '%s\n' "${files[@]}" | grep -E '^tools/test-.*\.sh$' || true)
-mapfile -t prod_files < <(printf '%s\n' "${files[@]}" | grep -vE '^tools/test-.*\.sh$' || true)
+#
+# Python harnesses count too. The pattern used to be `.sh` only, which was not a
+# decision — there simply were no Python ones when it was written, and
+# test-client-survey.py plants a fixture server address in a synthetic
+# clientinfo.xml for exactly the reason above.
+HARNESS_RE='^tools/test-.*\.(sh|py)$'
+mapfile -t test_files < <(printf '%s\n' "${files[@]}" | grep -E "${HARNESS_RE}" || true)
+mapfile -t prod_files < <(printf '%s\n' "${files[@]}" | grep -vE "${HARNESS_RE}" || true)
 
 echo "scanning ${#files[@]} tracked files (${#test_files[@]} test harnesses)"
 echo

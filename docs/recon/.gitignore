@@ -1,0 +1,15 @@
+# Output from tools/client-survey.py — see docs/eternalro-recon.md.
+#
+# report.md is the deliverable and is tracked. Everything else is ignored on
+# purpose:
+#
+#   manifest/  hundreds of thousands of lines per archive
+#   extracted/ another server's game data — CLAUDE.md §2.3
+#   survey.json the same findings as the report, but unbounded in size
+#
+# Ask for one of those specifically when a question needs it; do not commit them
+# by default.
+*
+!*/
+!.gitignore
+!*.md

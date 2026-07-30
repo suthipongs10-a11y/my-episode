@@ -17,6 +17,19 @@
 | `check-workflow-scripts.sh` | shellcheck the bash embedded in GitHub Actions, including the parts that run on the VPS |
 | `test-deploy-env.sh` | run the deploy workflow's real .env logic against a sandbox |
 | `test-smoke-play.py` | run `smoke-play.py` against mock servers that pin the 20180620 byte layout |
+| `check-logging.sh` | the game logging Phase 1 requires is actually switched on |
 
-Phase 2's Ep4 content-cut scripts land here too. They must be idempotent and
-re-runnable against a fresh upstream pull (CLAUDE.md §6 Phase 2).
+## The client tools
+
+| Script | What it does |
+|---|---|
+| `grflib.py` | the one GRF/GPF reader in the repo — file tables, and extraction of unencrypted entries |
+| `client-doctor.py` | **our** client: is every file it needs at startup actually reachable, loose or in an archive? |
+| `client-survey.py` | **anyone's** client: inventory the folder and report what it says about the server behind it (`docs/eternalro-recon.md`) |
+| `survey-client.cmd` | drag-and-drop wrapper for `client-survey.py`, for the Windows box |
+| `make-msgtable-debug.py` | make the client's empty error box report its message index instead |
+| `check-client-imports.mjs` | every static import on roBrowser's startup graph resolves — the Phase 3 bug that CI now catches |
+| `test-client-survey.py` | builds a synthetic GRF and a synthetic PE32, runs `grflib`, the survey and the doctor against them |
+
+Phase 4's content scripts land here too. They must be idempotent and
+re-runnable against a fresh upstream pull (CLAUDE.md §6 Phase 4).

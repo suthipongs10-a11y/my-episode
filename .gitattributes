@@ -1,6 +1,9 @@
 * text=auto eol=lf
 
 *.sh      text eol=lf
+# cmd.exe mis-parses parenthesised blocks in a batch file with LF-only endings,
+# and tools/survey-client.cmd is nothing but parenthesised blocks.
+*.cmd     text eol=crlf
 *.conf    text eol=lf
 *.yml     text eol=lf
 *.yaml    text eol=lf

@@ -433,6 +433,35 @@ Their in-game UI (radial touch skill wheel, scaled RO panels) is RoPlay's, so
 matching it is a purchase, not a build. **Where we differ should be rates,
 content and custom NPCs — the things RoPlay does not own.**
 
+**Every row in that table came from a screenshot, and it does not have to.**
+Their PC client is installed on the Windows box — `docs/phase-1-client.md`
+records it as the one package of the three that was a real, playable install.
+A client folder is a machine-readable description of the server behind it: it
+cannot connect without the address, render content it does not ship, or patch
+without naming a patch host.
+
+`tools/client-survey.py` reads all of it — archive inventories, their client
+date, protection products, `clientinfo.xml`, patch hosts, and with a stock
+`data.grf` as `--baseline`, the exact list of files they added over stock kRO.
+`docs/eternalro-recon.md` is the procedure and the honest boundary.
+
+Two things about it that are worth knowing before reading a report:
+
+- **An archive's file table is readable even when its contents are not.** Entry
+  names are only zlib-compressed. So a Gepard-protected archive still yields a
+  complete list of every custom map, sprite and UI texture they ship, by name
+  and size. Their content roster does not depend on defeating anything, and we
+  do not attempt to.
+- **A packed executable hides its strings.** If their ragexe is packed, the
+  client date and feature evidence come back thin, and the report says so
+  instead of reporting an absence as a finding. Worth measuring rather than
+  assuming — our own ragexe turned out to be effectively unpacked despite
+  carrying `CThemidaMgr` (`docs/client-debug-plan.md`).
+
+This is measurement, not a shortcut around §3a. A folder on disk cannot tell us
+what RoPlay costs or what happens when the subscription lapses. What it can do
+is let us check Q1's answer against what their client actually speaks.
+
 ---
 
 ## 9. Legal boundary — state of play
@@ -456,7 +485,20 @@ content and custom NPCs — the things RoPlay does not own.**
 
 ## 10. Immediate next action
 
-Two tracks, independent on purpose (§8, §11).
+Three tracks, independent on purpose (§8, §11).
+
+**Reference — read EternalRO's client.** Cheapest of the three, needs nobody's
+reply, and it feeds the other two. On the Windows box:
+
+```
+tools\survey-client.cmd "C:\Games\EternalRO" "C:\Games\Ep4Client2\data.grf"
+```
+
+Writes `docs/recon/EternalRO/report.md` — inside the repo, so it comes back as a
+commit rather than a paste, and `docs/recon/.gitignore` keeps the manifests and
+their extracted content out. That report is where §8a's screenshot-derived table
+becomes measured, and where §3a Q1 gets a second opinion that does not depend on
+a vendor answering. `docs/eternalro-recon.md`.
 
 **PC — try to log in.** The client is built. On the Windows box:
 

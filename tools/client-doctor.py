@@ -28,10 +28,14 @@
 # =============================================================================
 import argparse
 import re
-import struct
 import sys
-import zlib
 from pathlib import Path
+
+try:
+    from grflib import TYPE_ENCRYPTED, GrfError, norm, read_grf_entries
+except ImportError:  # invoked as tools/client-doctor.py from somewhere else
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from grflib import TYPE_ENCRYPTED, GrfError, norm, read_grf_entries
 
 # --- what the client asks for, read straight out of the binary ---------------
 # The decisive technique from docs/phase-1-client.md: every path and manager
@@ -77,23 +81,6 @@ def dll_hint(name: str):
         if stem.startswith(key):
             return why
     return None
-
-GRF_SIG = b"Master of Magic"
-GRF_SIG_EH3 = b"Event Horizon"
-HEADER_SIZE = 46  # signature[15] + key[15] + u32 offset + u32 skip + u32 count + u32 version
-
-TYPE_FILE = 0x01
-TYPE_ENCRYPT_MIXED = 0x02
-TYPE_ENCRYPT_HEADER = 0x04
-
-
-def norm(path: str) -> str:
-    """One spelling for a game path. The client is case-insensitive and mixes
-    separators freely — 'System/Towninfo.lub' and 'system\\towninfo.lub' are the
-    same file, and treating them as different is how you 'lose' a file that is
-    right there."""
-    return path.replace("\\", "/").lstrip("./").lower()
-
 
 def variants(path: str):
     """Every spelling under which the client might find one required path.
@@ -183,60 +170,10 @@ def clean_request(raw: str):
 
 
 # --- GRF ---------------------------------------------------------------------
-class GrfError(Exception):
-    pass
-
-
-def read_grf_entries(path: Path):
-    """Return (entries, version). entries maps normalised name -> type byte.
-
-    Format per roBrowser src/Loaders/GameFile.js. Only the file table is read;
-    no entry contents are decompressed, so this stays fast on a 4GB archive.
-    """
-    with path.open("rb") as fp:
-        head = fp.read(HEADER_SIZE)
-        if len(head) < HEADER_SIZE:
-            raise GrfError("file is shorter than a GRF header")
-
-        signature = head[:15].split(b"\0")[0]
-        if signature not in (GRF_SIG, GRF_SIG_EH3):
-            raise GrfError(f"bad signature {signature!r} — not a GRF")
-
-        table_offset, skip, filecount, version = struct.unpack("<IIII", head[30:46])
-
-        if version == 0x300:
-            fp.seek(30)
-            table_offset = struct.unpack("<Q", fp.read(8))[0]
-            realcount = struct.unpack("<I", fp.read(4))[0]
-            table_at = table_offset + HEADER_SIZE + 4
-        elif version == 0x200:
-            realcount = filecount - skip - 7
-            table_at = table_offset + HEADER_SIZE
-        else:
-            raise GrfError(f"unsupported version 0x{version:x} (only 0x200 and 0x300)")
-
-        if realcount < 0:
-            raise GrfError("file table count is negative — header is corrupt")
-
-        fp.seek(table_at)
-        pack_size, real_size = struct.unpack("<II", fp.read(8))
-        table = zlib.decompress(fp.read(pack_size))
-        if len(table) != real_size:
-            raise GrfError(f"file table inflated to {len(table)}, header said {real_size}")
-
-    entries = {}
-    pos = 0
-    for _ in range(realcount):
-        end = table.index(b"\0", pos)
-        name = table[pos:end].decode("latin-1")
-        pos = end + 1
-        # pack_size, length_aligned, real_size, type, offset
-        _, _, _, etype = struct.unpack_from("<IIIB", table, pos)
-        pos += 13
-        pos += 8 if version == 0x300 else 4
-        entries[norm(name)] = etype
-
-    return entries, version
+# The reader itself lives in grflib.py, imported at the top. It used to be
+# copied in here; `client-survey.py` needed the same parser plus extraction, and
+# two copies of a file-table parser that can disagree is a bug waiting for the
+# worst possible moment. tools/test-client-survey.py covers it.
 
 
 # --- report ------------------------------------------------------------------
@@ -330,8 +267,7 @@ def main():
             r.bad(f"{g.name}: could not read ({exc})")
             continue
 
-        encrypted = sum(1 for t in entries.values()
-                        if t & (TYPE_ENCRYPT_MIXED | TYPE_ENCRYPT_HEADER))
+        encrypted = sum(1 for t in entries.values() if t & TYPE_ENCRYPTED)
         size_gb = g.stat().st_size / (1024 ** 3)
         r.ok(f"{g.name}: {len(entries):,} entries, v0x{version:x}, {size_gb:.2f} GB")
         if encrypted:

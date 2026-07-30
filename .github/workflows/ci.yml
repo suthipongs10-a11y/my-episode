@@ -66,6 +66,15 @@ jobs:
         # This runs it against mock servers that pin the byte layout.
         run: ./tools/test-smoke-play.py
 
+      - name: The client recon tooling reads the formats it claims to
+        # grflib.py parses GRF file tables and client-survey.py parses PE
+        # images. Both are meant to be run once, on a Windows box, against a
+        # folder that exists nowhere else — so a bug in either costs a round
+        # trip through a human before anyone finds out. Both formats are fully
+        # specified, so this builds a real archive and a real executable here
+        # and checks what the tools report about them.
+        run: ./tools/test-client-survey.py
+
       - name: Hadolint
         # Mounted rather than piped on stdin: .hadolint.yaml lives in the
         # workspace, and a container reading the Dockerfile from stdin cannot
