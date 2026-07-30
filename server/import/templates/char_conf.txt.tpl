@@ -32,3 +32,20 @@ stdout_with_ansisequence: no
 // setting it explicitly keeps the intent visible.
 start_point_pre: new_1-1,53,111
 start_zeny: 0
+
+// --- PIN code: off -----------------------------------------------------------
+// rAthena ships this ON, with pincode_force: yes. At PACKETVER >= 20110309 the
+// char-server then demands a PIN before character select, and the client opens
+// a dialog for it.
+//
+// Turned off because our PC client cannot render that dialog. roBrowser draws
+// it from msgstringtable entries that only exist in clients from ~2011 onward;
+// with older game data every label falls back to the component name and the
+// player sees a box captioned "Pincodewindow" containing "NO MSG 1900". Which
+// is not a broken client — it is a working client asked to say something its
+// data has no words for. Observed the first time a human logged in, 2026-07-30.
+//
+// It is also a feature nobody asked for on a server with no players. Revisit
+// with the website (§6 Phase 6): a PIN is only worth having once accounts are
+// worth stealing, and by then the client data will be modern enough to say so.
+pincode_enabled: no
