@@ -34,7 +34,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /build
 COPY server/rathena/ ./
 
-ARG PACKETVER=20180620
+# Compile-time overrides. rAthena ships src/custom/ for this, so it is not a
+# patch to upstream and does not block pulling upstream fixes (CLAUDE.md §2.6).
+# Must land before ./configure — defines_pre.hpp is read by the compiler, and
+# what it currently carries (packet obfuscation off) decides whether the PC
+# client can talk to this build at all.
+COPY server/import/src/custom/ ./src/custom/
+
+ARG PACKETVER=20180307
 ARG RATHENA_PRERE=yes
 ARG RATHENA_MAXCONN=16384
 

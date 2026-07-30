@@ -93,7 +93,7 @@ the images and can change them whenever we like.
 
 Two facts about it that matter to us:
 
-**It is gated on `PACKETVER >= 20160330`.** Our build is `20180620`, so the
+**It is gated on `PACKETVER >= 20160330`.** Our build is `20180307`, so the
 server side is available. ✅
 
 **But the client has to implement packets `0x0a52`–`0x0a57` to render the image

@@ -174,7 +174,7 @@ export function buildRoConfig(env) {
 		port: num(env, 'RO_SERVER_PORT', 6900),
 		version: num(env, 'RO_SERVER_VERSION', 55),
 		langtype: num(env, 'RO_SERVER_LANGTYPE', 1),
-		packetver: num(env, 'RO_SERVER_PACKETVER', 20180620),
+		packetver: num(env, 'RO_SERVER_PACKETVER', 20180307),
 		renewal: bool(env, 'RO_SERVER_RENEWAL', false),
 		worldMapSettings: { episode: num(env, 'RO_SERVER_EPISODE', 12) },
 

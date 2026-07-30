@@ -158,6 +158,16 @@ jobs:
         # a submodule bump from quietly bringing them back.
         run: node tools/check-client-imports.mjs
 
+      - name: The client and the server agree on the wire
+        # Official clients shuffle their packet ids every release. rAthena and
+        # roBrowser each carry their own table of that, and they only agree on a
+        # date both of them have. Disagreement produces no error at all — the
+        # server parses the id as whatever else it means and the client waits
+        # forever. This preprocesses rAthena's real headers at the configured
+        # PACKETVER and compares, so a change to that number cannot silently
+        # break the PC client again.
+        run: node tools/check-client-protocol.mjs
+
   compose:
     name: Compose config
     runs-on: ubuntu-latest

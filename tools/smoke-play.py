@@ -28,8 +28,15 @@
 # --------------------
 # Packet IDs are shuffled per packetver, so no wiki value can be trusted. The
 # ids below were derived by preprocessing rAthena's own tables at PACKETVER
-# 20180620 and taking the last registration of each id, which is what
+# 20180307 and taking the last registration of each id, which is what
 # packetdb_addpacket() does at runtime.
+#
+# The table moved from 20180620 to 20180307 on 2026-07-30 because the PC client
+# could not work at 20180620: roBrowser's newest shuffle table is 20180307, so
+# above it the client's map-enter and movement packets reach no handler. Two ids
+# changed with the move, both on the map-server — CZ_ENTER and CZ_REQUEST_MOVE.
+# tools/check-client-protocol.mjs is what measured that and what will catch it
+# the next time this number moves.
 #
 # Two files, in this order, and missing the second one costs an afternoon:
 #
@@ -56,7 +63,7 @@ import socket
 import sys
 import time
 
-# --- packet identifiers, for PACKETVER 20180620 ------------------------------
+# --- packet identifiers, for PACKETVER 20180307 ------------------------------
 # Verified against server/rathena at the pinned submodule commit:
 #   CA_LOGIN            src/common/packets.hpp        DEFINE_PACKET_HEADER(CA_LOGIN, 0x64)
 #   AC_ACCEPT_LOGIN     ditto, PACKETVER >= 20170315 branch  -> 0xac4
@@ -64,7 +71,7 @@ import time
 #   HC_NOTIFY_ZONESVR   ditto, PACKETVER >= 20170315 branch  -> 0xac5
 #   ZC_ACCEPT_ENTER     src/map/packets.hpp, <20141022||>=20160330 -> 0x2eb
 #   CZ_* below           clif_packetdb.hpp + clif_shuffle.hpp, preprocessed
-EXPECTED_PACKETVER = 20180620
+EXPECTED_PACKETVER = 20180307
 
 CA_LOGIN = 0x0064
 AC_ACCEPT_LOGIN = 0x0AC4
@@ -83,13 +90,13 @@ HC_BLOCK_CHARACTER = 0x020D
 HC_NOTIFY_ZONESVR = 0x0AC5
 SC_NOTIFY_BAN = 0x0081
 
-# These four are the shuffle's final word for 20180620 — what a real client of
+# These four are the shuffle's final word for 20180307 — what a real client of
 # this version sends, not merely an id the server would also accept. Several
 # stale ids stay registered and would work; using the authentic ones keeps this
 # an honest rehearsal of the traffic the Phase 3 proxy has to carry.
-CZ_ENTER = 0x0436              # clif_parse_WantToConnection, 19 bytes
+CZ_ENTER = 0x07E4              # clif_parse_WantToConnection, 19 bytes
 CZ_NOTIFY_ACTORINIT = 0x007D   # clif_parse_LoadEndAck, 2 bytes
-CZ_REQUEST_MOVE = 0x035F       # clif_parse_WalkToXY, 5 bytes
+CZ_REQUEST_MOVE = 0x0877       # clif_parse_WalkToXY, 5 bytes
 CZ_REQUEST_QUIT = 0x018A       # clif_parse_QuitGame, 4 bytes
 ZC_AID = 0x0283                # 6 bytes: header + account id
 ZC_ACCEPT_ENTER = 0x02EB

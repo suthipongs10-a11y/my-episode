@@ -90,6 +90,37 @@ quietly reintroduce it.
 
 ---
 
+### 3. The server was on the wrong packetver, and it would have been silent
+
+Found after the build, by writing `tools/check-client-protocol.mjs`.
+
+Official clients **shuffle their packet ids every release**. rAthena keeps that
+in `src/map/clif_shuffle.hpp`, one block per client date; roBrowser keeps it in
+`src/Network/PacketVersions.js`. They agree only on dates in **both** tables.
+
+We built `PACKETVER=20180620`. roBrowser's newest table is `20180307`. So:
+
+| roBrowser sends | to reach | what rAthena at 20180620 does with it |
+|---|---|---|
+| `0x07E4` | enter the map | parses it as `clif_parse_ItemListWindowSelected` |
+| `0x0877` | walk | nothing — the id is bound to no handler |
+
+No error, on either side. The account logs in, the character list appears, and
+then the character never arrives on a map.
+
+`PACKETVER` is now **20180307**, the newest value where both agree. Two ids moved
+in `tools/smoke-play.py` with it (`CZ_ENTER`, `CZ_REQUEST_MOVE`) and
+`tools/test-smoke-play.py` still passes. `server/import/src/custom/defines_pre.hpp`
+zeroes the obfuscation keys, because every version roBrowser agrees with sits
+inside the era where rAthena would otherwise scramble ids.
+
+`node tools/check-client-protocol.mjs --sweep` is the tool to run before that
+number is ever touched again. `CLAUDE.md` §12a carries the consequence, which is
+uncomfortable: this caps the PC client at a 2018 client era, and §8b says the
+server we want parity with runs 2025.
+
+---
+
 ## How it is wired
 
 ```

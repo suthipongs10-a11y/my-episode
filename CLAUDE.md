@@ -120,7 +120,7 @@ row is something that, answered badly, costs more than the subscription.
 
 | # | Question | Why it matters |
 |---|---|---|
-| 1 | **Which `packetver`s are supported?** | Decides our rAthena build, our client data, and therefore our whole content baseline. We currently build `PACKETVER=20180620`. |
+| 1 | **Which `packetver`s are supported?** | Decides our rAthena build, our client data, and therefore our whole content baseline. We build `PACKETVER=20180307`, and §12a explains why it cannot rise while roBrowser is the PC client. |
 | 2 | **Is Gepard Shield required or optional? What does it cost?** | A second subscription. It is also the thing that makes a client un-unpackable, which cuts both ways. |
 | 3 | **How does the app reach the server — raw TCP to 6900/6121/5121, or a proxy/WSS endpoint?** | **This decides §3c entirely.** Raw TCP means the origin address is public and Cloudflare cannot protect it. |
 | 4 | **iOS distribution: App Store, TestFlight, or sideload?** | Android sideloading is routine; iOS is not. If this needs an Apple developer account or a TestFlight slot, that is a hard external dependency with its own review process. |
@@ -287,7 +287,7 @@ Repo, `.env.example`, gitignore, Compose skeleton, pinned base images, CI.
 **Gate passed.** `docs/phase-0-audit.md`.
 
 ### Phase 1 — rAthena baseline ✅
-rAthena tracked upstream, `PRERE=yes`, `PACKETVER=20180620`. MariaDB with the
+rAthena tracked upstream, `PRERE=yes`, `PACKETVER=20180307` (was 20180620; §12a). MariaDB with the
 schema imported. login / char / N×map as separate services. Off-host backups.
 Game logging on — pick, drop, zeny, chat, MVP, trade — into the log schema.
 
@@ -310,19 +310,14 @@ walks it over the real wire protocol, run on the VPS against `127.0.0.1`.
 - Decide `packetver` **and `PRERE`** — this means rebuilding, and regenerating
   `tools/smoke-play.py`'s packet table
 
-  > **Recommendation, from §8b: `PRERE=no`, `PACKETVER=20211103`.** Renewal
-  > because that is what the reference server is and what we said we want
-  > parity with. `20211103` for three independent reasons: it is rAthena's own
-  > default and therefore its most-tested value; it is the newest version
-  > roBrowser's `PacketVersions.js` carries an explicit table for, so nothing
-  > above it can diverge silently; and it is `> 20180307`, so
-  > `clif_obfuscation.hpp` still yields zero keys and roBrowser's
-  > `packetKeys: false` stays correct. It predates 4th job — a later bump, and
-  > a content project rather than a config change.
+  > **`PACKETVER=20211103` was recommended here and it is wrong. Withdrawn.**
+  > §12a records what measured it. Briefly: roBrowser's newest packet-shuffle
+  > table is `20180307`, and above that its map-enter and movement packets reach
+  > no rAthena handler at all. `PACKETVER` is now `20180307` and cannot rise
+  > while roBrowser is the PC client.
   >
-  > Do this **after** the PC client has connected once at the current settings.
-  > Changing the server and the client in the same step is how the last two days
-  > went (§11).
+  > **`PRERE` is still open, and still the expensive one.** It is independent of
+  > `packetver`, so renewal at `20180307` is available. Decide before Phase 4.
 - Decide Gepard from Q2 — §8b weakens the case; they do not use it
 - Decide the host from Q3 + §3c
 - Purchase, integrate, and get one real device connected
@@ -663,3 +658,79 @@ ragexe's files, `check-client-imports.mjs` for roBrowser's modules.
 
 **What did not change:** §3c. This client speaks raw TCP like every other one.
 The origin is still exposed and the host decision is still owed before launch.
+
+---
+
+## 12a. The packetver finding — 2026-07-30, later the same day
+
+**`PACKETVER` was 20180620 and the PC client could not have worked at that
+value.** Not "worked badly" — the character would have logged in and then never
+appeared on a map, with no error anywhere. It is now `20180307`.
+`tools/check-client-protocol.mjs` is the instrument; run `--sweep` before ever
+touching that number again.
+
+### What nobody had checked
+
+Official clients **shuffle their packet ids every release**. rAthena tracks that
+in `src/map/clif_shuffle.hpp`, one block per client date; roBrowser tracks the
+same thing in `src/Network/PacketVersions.js`. The two agree only when
+`PACKETVER` is a date that appears in **both** tables.
+
+When they disagree there is no error. rAthena parses the id as whatever else it
+means and the session quietly does nothing. Measured at 20180620:
+
+| roBrowser sends | to reach | rAthena at 20180620 has that id bound to |
+|---|---|---|
+| `0x07E4` | map enter | `clif_parse_ItemListWindowSelected` |
+| `0x0877` | walk | nothing at all |
+
+At **20180307** — a date both tables carry — rAthena binds `0x07E4` to
+`clif_parse_WantToConnection` and `0x0877` to `clif_parse_WalkToXY`. Same
+client, same server, one number different.
+
+The sweep, from roBrowser's own table dates:
+
+| packetver | verdict |
+|---|---|
+| 20151104, 20170830, 20180103, **20180307** | agree on everything from login to walking |
+| 20180308, 20180620, 20190904, 20200902, 20211103 | map enter and movement reach no handler |
+
+**20180307 is the newest one that works.** It is the same client era as the
+20180620 we had, so the GRF and the content baseline are unaffected.
+
+### The consequence, and it is not small
+
+**roBrowser cannot be the PC client for a modern renewal server.** §8b says
+EternalRO runs a ~2025 client; §12a says our PC client tops out at 2018-03.
+Those cannot both hold. The options, honestly:
+
+1. **Run at 20180307.** Free, works now, and content-wise this is a 2018-era
+   server. Not EternalRO parity.
+2. **Go modern and give up roBrowser.** Back to a ragexe — which does not start
+   (`docs/client-debug-plan.md`) — or buy a client build (§3b.2).
+3. **Teach roBrowser the newer shuffle.** The ids and field offsets are sitting
+   in rAthena's `clif_shuffle.hpp` in exactly the shape
+   `PacketVersions.js` wants, and we now have the preprocessor plumbing to
+   extract them. A generated patch to a GPL client we already ship. Untried, but
+   it is the only option that keeps both halves.
+
+Do 1 now, because it is what gets a player onto a map this week. Decide between
+2 and 3 before Phase 4 spends content effort on a version we may abandon.
+
+### One thing the move required
+
+Every packetver roBrowser agrees with is inside the **obfuscation era**: at
+20180307 rAthena would scramble ids with `packet_keys(0x47DA10EB,…)`, and
+roBrowser implements no obfuscation. `server/import/src/custom/defines_pre.hpp`
+zeroes the three keys, which makes the transform the identity — rAthena's own
+supported override, not a patch. It also removes a small speed bump against
+packet editors, deliberately; §8 already holds that the client cannot be
+trusted and every limit is enforced server-side.
+
+### And the ordering advice from §10 is now void
+
+It said "do not change the server before the client has connected once." That
+was right when the server looked innocent. The server was the reason the client
+could not connect, so it had to change first. `tools/smoke-play.py`'s packet
+table moved with it, and `tools/test-smoke-play.py` still passes — which is the
+only reason to believe the move was clean.
