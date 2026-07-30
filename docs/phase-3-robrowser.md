@@ -292,6 +292,24 @@ That does not make the client work. It removes the reason it could not.
 
 ---
 
+## Logging in the first time
+
+`new_account: yes` is on, so an account is created by logging in once with `_M`
+(male) or `_F` (female) appended to the id. **The suffix is for creation only.**
+
+Use it again afterwards and rAthena treats it as a second registration, hits the
+account that already exists, and answers with refusal code 1 — which every
+client renders as *"incorrect password"*. The server log is unambiguous where
+the client is not:
+
+```
+[Status]: Request for connection of thana_M (ip: ...)
+[Notice]: Attempt of creation of an already existant account (account: thana, sex: M)
+```
+
+So: `thana_M` once, `thana` from then on. Two sessions were lost to this on
+2026-07-30, both of them reading a real message that meant something else.
+
 ## Known limits, so they are not discovered as bugs
 
 - **GRF only.** In Electron, roBrowser reads the archives named in
