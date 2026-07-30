@@ -1,0 +1,146 @@
+<!doctype html>
+<!--
+  GENERATED FROM THIS TEMPLATE BY client/build-client.mjs — DO NOT EDIT THE OUTPUT.
+
+  This replaces roBrowser's applications/electron/index.html inside the staged
+  build copy. The upstream file is a demo: it hardcodes 127.0.0.1, three sample
+  servers and a remoteClient pointing at grf.robrowser.com. None of that can
+  ship, and CLAUDE.md §2.1 forbids a tracked file naming a host anyway — so the
+  address arrives at build time from client.env and lands in {{CONFIG}}.
+
+  The path is fixed by upstream: applications/electron/main.js loads
+  `app://localhost/applications/electron/index.html` verbatim in a packaged
+  build. We overwrite that path in the staged copy, never in the submodule.
+
+  WHY WE EMIT OUR OWN IMPORT MAP INSTEAD OF LOADING ../shared/importmap.js
+
+  Upstream's map covers `bson`, `lodash` and the src/ aliases. It does not cover
+  `rijndael-js` or `granny-ro-js/wasm`, and both are reachable by *static*
+  import from the startup graph:
+
+      Engine/LoginEngine.js  -> Utils/Rijndael.js       -> rijndael-js
+      Renderer/MapRenderer.js -> GR2/GR2ModelRenderer.js -> granny-ro-js/wasm
+
+  A static import that cannot resolve fails the whole module graph at load, so
+  a packaged build stops before the login window. It works under `npm run
+  electron:dev` only because Vite resolves bare specifiers itself — which is
+  why the gap survived upstream. build-client.mjs resolves both from the staged
+  node_modules and writes them into {{IMPORTMAP}}.
+-->
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>{{TITLE}}</title>
+		<link rel="icon" type="image/png" href="icon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<style>
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+				border: 0;
+				height: 100%;
+				width: 100%;
+				overflow: hidden;
+				background: #060810;
+			}
+			#ro-preloader {
+				position: fixed;
+				inset: 0;
+				z-index: 99999;
+				background: rgba(6, 8, 16, 0.97);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex-direction: column;
+			}
+			#ro-preloader .pre-spinner {
+				width: 48px;
+				height: 48px;
+				margin: 0 auto 16px;
+				border: 4px solid rgba(232, 184, 75, 0.2);
+				border-top-color: #e8b84b;
+				border-radius: 50%;
+				animation: ro-pre-spin 0.8s linear infinite;
+			}
+			#ro-preloader .pre-text {
+				font-family: serif;
+				font-size: 16px;
+				letter-spacing: 3px;
+				text-transform: uppercase;
+				color: #e8b84b;
+			}
+			@keyframes ro-pre-spin {
+				to {
+					transform: rotate(360deg);
+				}
+			}
+			/* Startup failures are otherwise invisible: the window stays black and
+			   nothing is written anywhere the player can reach. That is exactly the
+			   empty-message-box problem that cost this project two days on the
+			   ragexe (docs/phase-1-client.md) and it is not worth repeating. */
+			#ro-fatal {
+				position: fixed;
+				inset: 0;
+				z-index: 100000;
+				display: none;
+				padding: 24px;
+				overflow: auto;
+				background: #10060a;
+				color: #ffb4b4;
+				font: 13px/1.6 ui-monospace, Consolas, monospace;
+				white-space: pre-wrap;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="ro-preloader">
+			<div class="pre-spinner"></div>
+			<p class="pre-text">Loading...</p>
+		</div>
+
+		<div id="ro-fatal"></div>
+		<div id="robrowser"></div>
+
+		<script type="importmap">
+{{IMPORTMAP}}
+		</script>
+
+		<script>
+			window.ROConfig = {{CONFIG}};
+			window.ROConfig.target = document.getElementById('robrowser');
+
+			(function () {
+				var box = document.getElementById('ro-fatal');
+				function fatal(what, err) {
+					var pre = document.getElementById('ro-preloader');
+					if (pre) {
+						pre.style.display = 'none';
+					}
+					box.style.display = 'block';
+					box.textContent +=
+						what +
+						'\n' +
+						(err && err.stack ? err.stack : String(err)) +
+						'\n\n' +
+						'Ctrl+Shift+I opens DevTools for the full console.\n' +
+						'Report this text with docs/phase-3-robrowser.md step numbers.\n\n';
+				}
+				window.addEventListener('error', function (e) {
+					fatal('Uncaught error:', e.error || e.message);
+				});
+				window.addEventListener('unhandledrejection', function (e) {
+					fatal('Unhandled rejection:', e.reason);
+				});
+				window.__roFatal = fatal;
+			})();
+		</script>
+
+		<script type="module">
+			import('../../src/main.js').catch(err => {
+				// A bare-specifier resolution failure lands here and nowhere else.
+				window.__roFatal('Failed to load the roBrowser engine:', err);
+			});
+		</script>
+	</body>
+</html>

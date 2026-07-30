@@ -8,6 +8,8 @@ extends: default
 
 ignore: |
   server/rathena/
+  client/robrowser/
+  client/.build/
   node_modules/
 
 rules:

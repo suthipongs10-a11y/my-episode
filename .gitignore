@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+# The PC client's build configuration. Holds no credential, but it does hold
+# the server hostname, and CLAUDE.md §2.1 keeps that out of tracked files.
+client/client.env
 *.pem
 *.key
 secrets/
@@ -29,6 +32,9 @@ backups/
 node_modules/
 dist/
 build/
+# The staged copy of the roBrowser submodule that client/build-client.mjs
+# writes the generated index.html into. Disposable; the submodule is the source.
+client/.build/
 *.o
 *.so
 *.a

@@ -4,11 +4,12 @@
 > Written in English for token efficiency; the human operator works in Thai —
 > respond to him in Thai, keep code/comments/commits in English.
 >
-> **Revised 2026-07-29.** The original spec targeted Episode 4.0 with a
-> browser-first client and a launcher that tunnelled a stock PC client over
-> WebSocket. That spec cost a full day against a client executable that would
-> not start, and its Phase 1 gate is why. §11 records what changed and why, so
-> the reasoning is not lost. Do not restore the old plan without reading it.
+> **Revised 2026-07-29, again 2026-07-30.** The original spec targeted Episode
+> 4.0 with a browser-first client and a launcher that tunnelled a stock PC
+> client over WebSocket. That spec cost a full day against a client executable
+> that would not start, and its Phase 1 gate is why. §11 records what changed
+> and why; §12 records the day the PC client was finally built, and the two
+> upstream findings behind it. Do not restore the old plan without reading both.
 
 ---
 
@@ -25,7 +26,7 @@ in gameplay. When a question is "how good does this have to be", the answer is
 |---|---|---|
 | Game server | rAthena, containerised, N map-servers | **working** — §6 Phase 1 passed |
 | Mobile client | **RoPlay** (`roplay-app.com`), a paid native app for iOS+Android | to buy — §3a |
-| PC client | diffed ragexe + GRF, distributed as a zip | **unsolved** — §3b |
+| PC client | **roBrowser Electron**, a Windows folder with an `.exe` | **built** — §3b, awaiting one human login |
 | Anti-cheat | Gepard Shield, if RoPlay requires it | to confirm — §3a |
 | Website | registration, downloads, control panel | later |
 
@@ -140,16 +141,34 @@ version of the mistake we already made once.
 
 ---
 
-## 3b. PC client: still unsolved, and honestly so
+## 3b. PC client: roBrowser Electron — chosen 2026-07-30
 
-The PC client is a **diffed ragexe + GRF + `clientinfo.xml`**, distributed as a
-zip. A full day was spent on this and it does not start: an empty `Error`
-message box, after satisfying `CPetEvolutionMgr`, `CCheckAttendanceMgr`,
-`CAchievementMgr` and `CPrivateAirplaneMgr`. The full record, including the
-technique that got that far — extracting required file paths straight out of
-the binary — is in `docs/phase-1-client.md`.
+**Decided.** Option 4 below was taken and is built. `docs/phase-3-robrowser.md`
+is the record: how it works, what was verified, what was not.
 
-Options, in the order worth trying:
+roBrowser is a JavaScript+WebGL Ragnarok client with an Electron target. It
+packages to an ordinary Windows folder with an `.exe`, reads **the player's
+existing GRF files off local disk**, and speaks **raw TCP** to rAthena. Same
+deal as the ragexe from the player's side: unzip, run, play. Cost: nothing.
+
+```
+cp client/client.env.example client/client.env   # then edit
+node client/build-client.mjs --run               # unpackaged, seconds
+node client/build-client.mjs --win               # ship this folder
+```
+
+**What this does not mean.**
+
+- **It does not need `/proxy`.** In Electron, `preload.mjs` hands the page a
+  real TCP socket and `NetworkManager` prefers it over WebSocket. The bridge is
+  a *browser* requirement. §5 stands: still dormant, still not built.
+- **It does not improve §3c.** Raw TCP, same as everything else. Game ports must
+  still be public.
+- **It does not close the ragexe.** `docs/client-debug-plan.md` is still live —
+  the trace stopped at `C:\_tmpskin_`, which is a lead. It is just no longer on
+  the critical path.
+
+The remaining ragexe options, in the order still worth trying:
 
 1. **Ask whether Gepard Shield ships a working client build.** Gepard patches
    clients as part of what it does. If buying it (which §3a Q2 may force
@@ -157,11 +176,8 @@ Options, in the order worth trying:
 2. **Buy a client build from the RO dev scene.** People sell this service. It
    is a known, priced commodity, and given the operator is already investing,
    it is a proportionate spend.
-3. **WARP's `Disable MessageBoxes`.** The one untried patch. Cheap, and it may
-   turn the empty box into a readable message.
-4. **roBrowser Electron as a fallback PC client.** Free, cross-platform, and
-   `npm run electron:build:win` already exists upstream. Worse-looking than a
-   real client, but it means PC players are never fully blocked.
+3. **Follow the `_tmpskin_` trace.** `docs/client-debug-plan.md`, step 4.
+4. ~~roBrowser Electron as a fallback~~ — taken; see above.
 
 **Do not let the PC client block mobile again.** That ordering is the mistake
 §11 records. Mobile and PC proceed independently from here.
@@ -224,7 +240,10 @@ Decide the host before launch, not after the first attack. Until then, treat
 /server         rAthena (upstream tracked) + our import/ overrides
   /import       conf/import, db/import, npc/custom  ← all our changes live here
   /map-groups   which maps each map-server owns
-/client         PC client build recipe: WARP patch list, data/ layout, stubs
+/client         PC client. roBrowser submodule + our overlay + build script
+  /robrowser    upstream submodule, pinned. NEVER written to
+  /overlay      the two templates we generate the client from
+  /.build       staged copy builds happen in (gitignored, disposable)
                 (no GRF, no exe — the recipe, not the artifact)
 /proxy          WebSocket <-> TCP bridge. DORMANT — see below.
 /assets-build   GRF extraction + content-hashing pipeline (no assets committed)
@@ -235,12 +254,22 @@ Decide the host before launch, not after the first attack. Until then, treat
 **Removed 2026-07-29:** `/launcher`, `/ui`, `/pwa` — placeholders for the
 browser-client plan (§11), never implemented. Git has them if needed.
 
-**`/proxy` stays, dormant.** It is a Phase-0 skeleton — config validation,
-`/healthz`, and a 501 on WebSocket upgrade — and it is wired into
-`infra/docker-compose.yml`, the Caddyfile and CI. It costs nothing to keep, it
-would cost a working deployment to remove, and §3b.4 keeps roBrowser as the PC
-fallback, which is the one thing that would still need it. **Do not build the
-bridge out unless §3b.4 is actually chosen.**
+**`/proxy` stays, dormant — and the reason changed on 2026-07-30.** It is a
+Phase-0 skeleton — config validation, `/healthz`, and a 501 on WebSocket upgrade
+— wired into `infra/docker-compose.yml`, the Caddyfile and CI.
+
+The old note here said to build the bridge out if §3b.4 was chosen. §3b.4 *was*
+chosen, and the bridge is still not needed: in Electron, roBrowser is handed a
+real TCP socket by `applications/electron/preload.mjs`, and
+`src/Network/NetworkManager.js` prefers it over WebSocket. The bridge is a
+**browser** requirement, not a desktop one.
+
+**Build it only if we ship a client that runs in an actual browser tab.** That
+would also need a remote-client service and the GRFs hosted somewhere, which is
+Phase 5, not this. Until then it costs nothing to keep and a working deployment
+to remove. And if it is ever built: roBrowser's own `wsproxy.js` is an **open
+relay** — it dials whatever `host:port` the WebSocket path names — which is why
+ours has `parseTargets()` and an allowlist. Do not swap one for the other.
 
 ---
 
@@ -285,8 +314,19 @@ walks it over the real wire protocol, run on the VPS against `127.0.0.1`.
   character, and walks. The same thing `smoke-play` proves, proven by a human
   on a real device.
 
-### Phase 3 — PC client
-- §3b, in the order listed there
+### Phase 3 — PC client — **built, awaiting one human login**
+roBrowser Electron (§3b), built 2026-07-30. `docs/phase-3-robrowser.md`.
+
+Verified on Linux: packages, launches, and all 1,444 modules of the startup
+graph resolve (`tools/check-client-imports.mjs`, in CI). **Not** verified: a
+person logging in, on Windows, with our GRF.
+
+What is left, in order:
+1. `node client/build-client.mjs --run` on the Windows box, against a real GRF
+2. Set `GAME_PORTS_BIND=0.0.0.0` and open 6900/6121/5121 — this client speaks
+   raw TCP and cannot reach a loopback-bound server (§3c applies in full)
+3. `--win`, zip `dist/Desktop/win-unpacked/`, hand it to somebody else
+
 - **Gate:** a clean Windows machine downloads the zip, extracts, and connects.
   **This gate blocks nothing else.** If it stays open, we launch mobile-first
   and say so publicly.
@@ -399,6 +439,11 @@ content and custom NPCs — the things RoPlay does not own.**
 
 - rAthena is **GPL-3.0**. Commercial use is allowed, but distributing a modified
   version obliges us to provide source to recipients under the same terms.
+- **roBrowser is GPL-3.0 too, and §3b means we now ship it to players.** Same
+  obligation, and an easier one: the client build is entirely `client/` in this
+  repo plus a pinned public submodule. Keep the repo reachable, or put a written
+  offer in the download. This is not the Gravity question below — it is a
+  licence we chose and can comply with for free.
 - **RO's GRF assets, sprites, maps, and trademarks are Gravity's.**
   **Decided (2026-07-28): the operator accepts this risk. Do not raise it again
   as a blocker.** What survives the decision is the engineering consequence:
@@ -411,13 +456,25 @@ content and custom NPCs — the things RoPlay does not own.**
 
 ## 10. Immediate next action
 
-**Phase 2, step one: ask RoPlay the eight questions in §3a.** Nothing else in
-this file can be planned accurately until Q1 (packetver) and Q3 (transport) are
-answered, and Q8 (what happens when the subscription lapses) is the one that
-should be answered before any money moves.
+Two tracks, independent on purpose (§8, §11).
 
-Write the answers to `docs/vendor-roplay.md` and update this file where they
-change a decision.
+**PC — try to log in.** The client is built. On the Windows box:
+
+```
+git submodule update --init --recursive
+cp client/client.env.example client/client.env   # RO_SERVER_ADDRESS + RO_CLIENT_GRF_LIST
+node client/build-client.mjs --run
+```
+
+It will not connect until the server's game ports are public
+(`GAME_PORTS_BIND=0.0.0.0` plus the firewall) — that is §3c, taken on
+deliberately. `docs/phase-3-robrowser.md` has the whole procedure and an honest
+list of what has and has not been verified.
+
+**Mobile — ask RoPlay the eight questions in §3a.** Q1 (packetver) and Q3
+(transport) gate planning; Q8 (what happens when the subscription lapses) gates
+spending. Write the answers to `docs/vendor-roplay.md` and update this file
+where they change a decision.
 
 ---
 
@@ -464,3 +521,40 @@ not a simplification of it.
 CI-built from a tagged commit, published SHA-256, HTTPS and our domain only.
 They were written because players in this scene routinely disable antivirus to
 run our binaries, and that is still true of anything we ship.
+
+---
+
+## 12. What changed on 2026-07-30
+
+**The PC client exists.** §3b.4 was chosen and built: roBrowser's Electron
+target, configured from `client/client.env`, packaged by
+`client/build-client.mjs`. `docs/phase-3-robrowser.md` is the record.
+
+Two findings, both measured in upstream's source rather than assumed, and both
+of which corrected something written here earlier:
+
+1. **Electron does not need the WebSocket bridge.** `preload.mjs` hands the page
+   a real TCP socket; `NetworkManager` prefers it. §5 previously said to build
+   the bridge out if §3b.4 was chosen. §3b.4 was chosen and the bridge is still
+   not needed — it is a *browser* requirement. Building it would have been work
+   this path never executes.
+
+2. **Upstream's packaged Electron build cannot reach its own login window.**
+   `rijndael-js` and `granny-ro-js/wasm` are static imports on the startup graph
+   that appear in neither the import map nor the packaged files list. An
+   unresolvable static import fails the *whole* module graph at load: black
+   window, no message — the empty error box of `docs/phase-1-client.md`, rebuilt
+   in JavaScript. It survives upstream because `electron:dev` runs through Vite,
+   which resolves bare specifiers itself.
+
+   `build-client.mjs` fixes both. `tools/check-client-imports.mjs` walks all
+   1,444 modules and fails CI if any specifier is unreachable — verified to
+   catch exactly this bug by re-running it against upstream's import map.
+
+**The lesson is the same one as §11, one layer down.** The thing that stops a
+client from starting is invisible by construction, and the answer both times was
+to build the instrument before continuing to guess: `client-doctor.py` for the
+ragexe's files, `check-client-imports.mjs` for roBrowser's modules.
+
+**What did not change:** §3c. This client speaks raw TCP like every other one.
+The origin is still exposed and the host decision is still owed before launch.

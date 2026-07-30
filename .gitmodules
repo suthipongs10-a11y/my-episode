@@ -1,3 +1,7 @@
 [submodule "server/rathena"]
 	path = server/rathena
 	url = https://github.com/rathena/rathena.git
+[submodule "client/robrowser"]
+	path = client/robrowser
+	url = https://github.com/MrAntares/roBrowserLegacy.git
+	branch = master

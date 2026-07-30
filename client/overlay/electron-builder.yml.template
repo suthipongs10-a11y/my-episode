@@ -1,0 +1,60 @@
+# =============================================================================
+# GENERATED FROM THIS TEMPLATE BY client/build-client.mjs — DO NOT EDIT OUTPUT.
+# =============================================================================
+# Written next to upstream's electron-builder.yml rather than over it, so the
+# submodule stays clean (CLAUDE.md §2.6). Differences from upstream, each for a
+# reason:
+#
+#   appId / productName   ours, from client.env. CLAUDE.md §8a: where we differ
+#                         from EternalRO is content and identity, and the window
+#                         title is the cheapest piece of that.
+#
+#   files:                upstream ships only lodash-es and bson out of
+#                         node_modules. rijndael-js and granny-ro-js are also
+#                         reachable by static import from the startup graph, so
+#                         a packaged build without them never reaches the login
+#                         window. See index.html.template for the trace.
+#
+#   asar: false           kept. The generated index.html stays a readable file
+#                         in the shipped folder, so a wrong server address can
+#                         be corrected without a rebuild.
+# =============================================================================
+
+appId: {{APP_ID}}
+productName: {{PRODUCT_NAME}}
+
+directories:
+    output: dist/Desktop
+    buildResources: applications/electron
+
+files:
+    - applications/electron/**/*
+    - applications/shared/**/*
+    - src/**/*
+    - node_modules/lodash-es/**/*
+    - node_modules/bson/**/*
+    - node_modules/granny-ro-js/**/*
+    - node_modules/rijndael-js/**/*
+    - package.json
+
+extraMetadata:
+    main: applications/electron/main.js
+    name: {{APP_SLUG}}
+    productName: {{PRODUCT_NAME}}
+
+asar: false
+
+win:
+    target:
+        - dir
+    icon: applications/electron/icon.png
+
+linux:
+    target:
+        - dir
+    icon: applications/electron/icon.png
+
+mac:
+    target:
+        - dir
+    icon: applications/electron/icon.png

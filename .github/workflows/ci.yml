@@ -112,6 +112,43 @@ jobs:
       - run: npm run check
         working-directory: proxy
 
+  client:
+    name: PC client
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Selftests
+        run: |
+          node client/build-client.mjs --selftest
+          node tools/check-client-imports.mjs --selftest
+
+      - name: Stage and configure a client
+        env:
+          # A hostname that can never resolve, so a mistake here cannot reach
+          # anybody's server. The build only writes it into a config file.
+          RO_SERVER_ADDRESS: play.example.invalid
+          RO_CLIENT_GRF_LIST: /nonexistent/data.grf
+          # We need node_modules for the import map and the rijndael shim, not
+          # a runnable Electron. Skips a ~100 MB download per run.
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: node client/build-client.mjs --stage-only
+
+      - name: Every module specifier resolves
+        # The failure this guards against is silent: one unresolvable static
+        # import fails roBrowser's whole module graph at load, and the player
+        # sees a black window with no message. Upstream ships two of them —
+        # docs/phase-3-robrowser.md has the trace. This is the check that stops
+        # a submodule bump from quietly bringing them back.
+        run: node tools/check-client-imports.mjs
+
   compose:
     name: Compose config
     runs-on: ubuntu-latest
