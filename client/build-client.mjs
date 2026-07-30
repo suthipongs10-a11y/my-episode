@@ -5,6 +5,7 @@
 //   node client/build-client.mjs --selftest      no env needed; runs in CI
 //   node client/build-client.mjs --run           stage + launch, no packaging
 //   node client/build-client.mjs --win           stage + package for Windows
+//   node client/build-client.mjs --win --zip     ... and produce the download
 //   node client/build-client.mjs --linux
 //   node client/build-client.mjs --stage-only
 //
@@ -43,6 +44,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -453,8 +455,46 @@ function slugify(name) {
 	return slug || 'ro-client';
 }
 
+/**
+ * Zip the packaged folder and write its SHA-256 next to it.
+ *
+ * CLAUDE.md §11 keeps the release-integrity rules from the original spec, and
+ * the reason is not ceremony: players in this scene routinely disable antivirus
+ * to run our binaries. A published hash is the only thing that lets one of them
+ * tell our download from somebody else's.
+ */
+function packageZip(outDir, name) {
+	const zipPath = path.join(path.dirname(outDir), `${name}.zip`);
+	fs.rmSync(zipPath, { force: true });
+
+	if (process.platform === 'win32') {
+		run('powershell', [
+			'-NoProfile', '-Command', 'Compress-Archive',
+			'-Path', `"${outDir}\\*"`, '-DestinationPath', `"${zipPath}"`, '-Force',
+		], REPO);
+	} else {
+		run('zip', ['-qr', zipPath, '.'], outDir);
+	}
+
+	const hash = createHash('sha256').update(fs.readFileSync(zipPath)).digest('hex');
+	fs.writeFileSync(`${zipPath}.sha256`, `${hash}  ${path.basename(zipPath)}\n`);
+
+	const mb = (fs.statSync(zipPath).size / 1024 / 1024).toFixed(1);
+	console.log(`\n${zipPath}  (${mb} MB)`);
+	console.log(`sha256 ${hash}`);
+	return zipPath;
+}
+
 function main(argv) {
 	const flags = new Set(argv);
+
+	// roBrowser's package.json says node>=22 and so does ours. Saying so here
+	// beats a resolution error three minutes into an npm install.
+	const major = Number(process.versions.node.split('.')[0]);
+	if (major < 22) {
+		throw new Error(`Node ${process.versions.node} is too old; this needs Node 22 or newer.`);
+	}
+
 	const envArgIndex = argv.indexOf('--env');
 	const envPath = envArgIndex !== -1 ? argv[envArgIndex + 1] : path.join(HERE, 'client.env');
 
@@ -496,6 +536,36 @@ function main(argv) {
 	fs.mkdirSync(vendorDir, { recursive: true });
 	fs.writeFileSync(path.join(vendorDir, 'rijndael-js.mjs'), shim);
 	console.log(`bundled rijndael-js (${rijndaelPkg.version}) to ESM`);
+
+	// --- preload: tell the page where the app was unzipped --------------------
+	// Appended rather than replaced. A relative RO_CLIENT_GRF_LIST entry has to
+	// become absolute somewhere, and only a preload can see the filesystem: the
+	// renderer runs with contextIsolation and no node integration, which is also
+	// why roBrowser reads GRFs from a worker (nodeIntegrationInWorker) and not
+	// from the page. Appending means an upstream change to preload.mjs still
+	// reaches us instead of being shadowed by a stale copy.
+	const preloadPath = path.join(STAGE, 'applications', 'electron', 'preload.mjs');
+	fs.appendFileSync(preloadPath, [
+		'',
+		'// --- appended by client/build-client.mjs ---------------------------------',
+		"import { contextBridge as __roContextBridge } from 'electron';",
+		"import __roPath from 'node:path';",
+		"import __roProcess from 'node:process';",
+		'',
+		'// resourcesPath is <appdir>/resources in a packaged build on every',
+		'// platform, including inside a macOS .app bundle where execPath is not',
+		'// what you want. Unpackaged it points into node_modules/electron, which',
+		'// is wrong and harmless: --run is for absolute paths.',
+		'const __roAppDir = __roProcess.resourcesPath',
+		'\t? __roPath.dirname(__roProcess.resourcesPath)',
+		'\t: __roProcess.cwd();',
+		'',
+		"__roContextBridge.exposeInMainWorld('roClient', {",
+		'\tappDir: __roAppDir,',
+		'\tsep: __roPath.sep,',
+		'});',
+		'',
+	].join('\n'));
 
 	// --- granny-ro-js/wasm ----------------------------------------------------
 	const grannyDir = path.join(STAGE, 'node_modules', 'granny-ro-js');
@@ -567,7 +637,21 @@ function main(argv) {
 	}
 
 	run('npx', ['electron-builder', '--config', builderRel, ...targets], STAGE);
-	console.log(`\npackaged into ${path.join(STAGE, 'dist', 'Desktop')}`);
+	const desktop = path.join(STAGE, 'dist', 'Desktop');
+	console.log(`\npackaged into ${desktop}`);
+
+	if (flags.has('--zip')) {
+		const unpacked = fs
+			.readdirSync(desktop)
+			.filter((entry) => entry.endsWith('-unpacked'))
+			.map((entry) => path.join(desktop, entry));
+		if (!unpacked.length) throw new Error(`no *-unpacked folder in ${desktop}`);
+		for (const dir of unpacked) {
+			packageZip(dir, `${appSlug}-${path.basename(dir).replace('-unpacked', '')}`);
+		}
+		console.log('\nPublish the hash with the download. CLAUDE.md §11.');
+	}
+
 	return 0;
 }
 
@@ -689,7 +773,22 @@ const argv = process.argv.slice(2);
 if (argv.includes('--selftest')) {
 	process.exit(selftest());
 } else if (argv.includes('--help') || argv.length === 0) {
-	console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 12).join('\n').replace(/^\/\/ ?/gm, ''));
+	console.log([
+		'build-client — turn the roBrowser submodule into our PC client',
+		'',
+		'  --run          stage, configure and launch unpackaged (fastest loop)',
+		'  --win          stage, configure and package for Windows',
+		'  --linux/--mac  the same for other platforms',
+		'  --zip          with a package target: zip it and write a SHA-256',
+		'  --stage-only   stage and configure, build nothing',
+		'  --selftest     run the pure-function tests; needs no configuration',
+		'',
+		'  --env <path>   default client/client.env',
+		'  --skip-install do not npm install into the staged copy',
+		'',
+		'Settings come from client/client.env — see client/client.env.example.',
+		'The guide is docs/phase-3-robrowser.md.',
+	].join('\n'));
 	process.exit(argv.length === 0 ? 1 : 0);
 } else {
 	try {

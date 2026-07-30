@@ -110,6 +110,28 @@
 			window.ROConfig = {{CONFIG}};
 			window.ROConfig.target = document.getElementById('robrowser');
 
+			// A GRF path in client.env may be relative, which is what makes the
+			// download self-contained: drop the archive into the packaged folder
+			// and it travels with the app. Resolve those against the folder the
+			// player unzipped to, which the preload measured for us. Absolute
+			// paths are left exactly as given.
+			(function () {
+				var api = window.roClient || {};
+				var appDir = api.appDir || '';
+				var sep = api.sep || '/';
+				var isAbsolute = /^([A-Za-z]:[\\/]|[\\/])/;
+				function resolve(p) {
+					if (typeof p !== 'string' || isAbsolute.test(p)) return p;
+					return appDir ? appDir + sep + p : p;
+				}
+				var list = window.ROConfig.grfList;
+				window.ROConfig.grfList = Array.isArray(list) ? list.map(resolve) : resolve(list);
+				// Logged unconditionally, before ConsoleManager can silence the
+				// console. "Which archive did it actually open" is the first
+				// question every asset problem asks.
+				console.log('[client] game data:', window.ROConfig.grfList);
+			})();
+
 			(function () {
 				var box = document.getElementById('ro-fatal');
 				function fatal(what, err) {

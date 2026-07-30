@@ -111,9 +111,15 @@ Two files are generated, both from templates in `client/overlay/`:
 |---|---|---|
 | `applications/electron/index.html` | `index.html.template` | Holds the server address and the import map. `CLAUDE.md` §2.1. |
 | `applications/electron/electron-builder.local.yml` | `electron-builder.yml.template` | Holds the app name and the corrected `files:` list. |
+| `applications/electron/vendor/rijndael-js.mjs` | the installed package | The CommonJS→ESM flattening described above. |
 
 The path `applications/electron/index.html` is not a choice — upstream's
 `main.js` loads it verbatim.
+
+`preload.mjs` is **appended to**, not replaced: a few lines that expose the
+app's own directory so a relative GRF path can be resolved at startup. Appending
+means an upstream change to that file still reaches us rather than being
+shadowed by a stale copy — the same reason nothing else here is a fork.
 
 ---
 
@@ -152,8 +158,30 @@ log. Once it works:
 node client\build-client.mjs --win
 ```
 
-The result is `client\.build\robrowser\dist\Desktop\win-unpacked\` — zip that
-folder and it is the download.
+The result is `client\.build\robrowser\dist\Desktop\win-unpacked\`.
+
+### Making it a download somebody else can use
+
+An absolute `RO_CLIENT_GRF_LIST` is right for your own machine and wrong for
+everybody else's. For the build you hand out, make the path **relative** —
+it is resolved at startup against the folder the player unzipped into:
+
+```
+RO_CLIENT_GRF_LIST=game\data.grf
+```
+
+Then put the archive at `win-unpacked\game\data.grf` and package:
+
+```
+node client\build-client.mjs --win --zip
+```
+
+That writes the zip and a `.sha256` beside it. Publish the hash with the
+download — players in this scene routinely disable antivirus to run our
+binaries, and a published hash is the only way one of them can tell our file
+from somebody else's (`CLAUDE.md` §11).
+
+The client itself is about 120 MB. The GRF is the rest, and it is most of it.
 
 ### Before you wonder why nothing connects
 
@@ -189,6 +217,8 @@ Run on Linux, 2026-07-30, against submodule `e84bfdc`:
 | The packaged app starts | launched under Xvfb | ran to timeout, reached `Utils/ConsoleManager.js` |
 | The whole module graph resolves | `tools/check-client-imports.mjs` | 1,444 modules, zero unresolved |
 | That check actually catches the bug | same check against an import map with our two entries removed | fails, naming all 4 import sites |
+| A relative GRF path follows the app | packaged with `game/data.grf`, launched, logged the resolved path | resolved to `<unpacked>/game/data.grf` |
+| Zip and hash | `--linux --zip` | 116.5 MB zip plus a `.sha256` |
 
 **Not verified, and these are the real risks:**
 
