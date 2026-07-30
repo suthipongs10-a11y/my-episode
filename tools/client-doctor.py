@@ -32,10 +32,10 @@ import sys
 from pathlib import Path
 
 try:
-    from grflib import TYPE_ENCRYPTED, GrfError, norm, read_grf_entries
+    from grflib import TYPE_ENCRYPTED, GrfError, extract, norm, read_archive
 except ImportError:  # invoked as tools/client-doctor.py from somewhere else
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from grflib import TYPE_ENCRYPTED, GrfError, norm, read_grf_entries
+    from grflib import TYPE_ENCRYPTED, GrfError, extract, norm, read_archive
 
 # --- what the client asks for, read straight out of the binary ---------------
 # The decisive technique from docs/phase-1-client.md: every path and manager
@@ -251,6 +251,7 @@ def main():
 
     r.head("GRF archives")
     grf_entries = {}
+    grf_source = {}   # name -> (archive, entry), so bytes can be read
     grf_files = sorted(root.glob("*.grf")) + sorted(root.glob("*.gpf"))
     if not grf_files:
         r.bad("no .grf found — the client has no assets to read")
@@ -259,7 +260,11 @@ def main():
             r.warn(f"{g.name} is on disk but not listed in DATA.INI — the client ignores it")
     for g in grf_files:
         try:
-            entries, version = read_grf_entries(g)
+            archive = read_archive(g)
+            entries = {norm(e.name): e.type for e in archive.entries}
+            version = archive.version
+            for e in archive.entries:
+                grf_source.setdefault(norm(e.name), (archive, e))
         except GrfError as exc:
             r.bad(f"{g.name}: {exc}")
             continue
@@ -378,7 +383,68 @@ def main():
                 for n in near:
                     r.info(f"      similar name present: {n}")
         else:
-            r.ok("every file the client needs at startup is reachable")
+            r.ok("every file the client needs at startup is reachable by name")
+
+        # --- can its bytes actually be read? --------------------------------
+        # Everything above only asked whether a NAME is in the archive's table.
+        # That is not the same question, and the difference cost a whole
+        # session on 2026-07-30: this folder reported "zero startup files
+        # missing" while every single entry in its data.grf was unreadable, and
+        # roBrowser sat on a black screen saying nothing a player could see.
+        #
+        # An archive's file table is only zlib-compressed, so names and sizes
+        # read out of a protected GRF exactly as they do out of a plain one.
+        # The payload is where protection lives. So read some.
+        probe_names = [w for w in wants if where(w) == "grf"]
+        for extra in ("data/msgstringtable.txt", "data/resnametable.txt",
+                      "data/mp3nametable.txt", "data/mapnametable.txt"):
+            for cand in variants(extra):
+                if where(cand) == "grf" and cand not in probe_names:
+                    probe_names.append(cand)
+                    break
+        probe_names = probe_names[:12]
+
+        if probe_names:
+            r.head("Reading actual bytes out of the archive")
+            readable, failures = 0, []
+            for name in probe_names:
+                found = next((variants(name)[i] for i, c in enumerate(variants(name))
+                              if c in grf_source), None)
+                if found is None:
+                    continue
+                archive, entry = grf_source[found]
+                try:
+                    data = extract(archive, entry)
+                except GrfError as exc:
+                    head = b""
+                    try:
+                        with archive.path.open("rb") as fp:
+                            fp.seek(46 + entry.offset)
+                            head = fp.read(4)
+                    except OSError:
+                        pass
+                    failures.append((found, str(exc), head.hex(" ")))
+                    continue
+                if data:
+                    readable += 1
+            total = readable + len(failures)
+            if not total:
+                r.info("no GRF-resident startup files to sample")
+            elif not failures:
+                r.ok(f"{readable}/{total} sampled entries decompressed cleanly")
+            else:
+                r.bad(f"{len(failures)}/{total} sampled entries could NOT be read")
+                for name, why, head in failures[:6]:
+                    r.info(f"  {name}")
+                    r.info(f"      {why}")
+                    if head:
+                        r.info(f"      first bytes: {head}   (plain deflate starts 78 9c / 78 da / 78 5e)")
+                r.info("The table is readable and the payload is not, which means this")
+                r.info("archive's contents are encrypted or scrambled by a packer.")
+                r.info("roBrowser cannot use it: src/Loaders/GameFile.js rejects any")
+                r.info('entry whose bytes are not recognisable zlib with "a new')
+                r.info('encryption method which is not supported". Get an')
+                r.info("unencrypted GRF, or decrypt this one with its own tool.")
 
         if optional and not args.list_missing_only:
             r.info(f"{len(optional)} absent but not needed to start:")

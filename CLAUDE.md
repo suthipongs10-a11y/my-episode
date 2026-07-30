@@ -533,12 +533,19 @@ hope that buying it also yields a working PC client is weaker than it looked.
 
 **3. Their data.grf is the same kRO base as our `Ep4Client2\data.grf`.**
 Identical file roster (222,554 files); **zero files present in ours and absent
-in theirs**. Theirs is encrypted (`__encryption.info`, `clientinfo.xml` will not
-inflate); ours is not.
+in theirs**.
 
-**Consequence:** the folder name lies. Our GRF is not Episode-4 data — it is a
-modern kRO archive, unencrypted and readable, which is exactly what a renewal
-packetver and roBrowser both need. One less thing to acquire.
+> **"ours is not encrypted" was written here and it was never tested. It is
+> false.** The survey only ever read the file *table*, which is plain zlib in
+> every archive, protected or not. On 2026-07-30 roBrowser opened our GRF, found
+> every name it wanted, and could not decompress a single entry:
+> *"data\msgstringtable.txt is using a new encryption method which is not
+> supported"*. §12b is the record. `tools/client-doctor.py` now reads bytes
+> instead of names, so this class of claim cannot be made again.
+
+**Consequence:** the folder name lies twice. Our GRF is not Episode-4 data — it
+is a modern kRO roster — and it is not usable as-is either. An unencrypted GRF
+is still something we have to acquire.
 
 **4. Their custom content is ~1.3%, and none of it is maps.**
 2,812 files added over stock, 417 changed, **0 custom maps**. The additions are
@@ -756,3 +763,68 @@ was right when the server looked innocent. The server was the reason the client
 could not connect, so it had to change first. `tools/smoke-play.py`'s packet
 table moved with it, and `tools/test-smoke-play.py` still passes — which is the
 only reason to believe the move was clean.
+
+---
+
+## 12b. The GRF is encrypted — 2026-07-30, evening
+
+**The PC client runs, connects and is configured correctly. It cannot read the
+game data.** roBrowser reached its own UI, then filled the console with:
+
+```
+GRF: file "data\msgstringtable.txt" is using a new encryption method
+     which is not supported.          GameFile.js:238 decodeEntry
+```
+
+Every entry, not a few. So the archive opens, its table parses, every name the
+client asks for is present — and not one payload will inflate.
+
+### What the message actually means
+
+`src/Loaders/GameFile.js` did **not** complain about an encryption *flag* — that
+is a different branch and it stayed quiet, so the entries are not marked
+encrypted. What failed is a sanity check on the first two bytes:
+
+```js
+if (data[0] !== 0 && (data[0] !== 0x78 || ![0x9c,0x01,0xda,0x5e].includes(data[1]))) {
+    console.warn(`... a new encryption method which is not supported`);
+```
+
+The bytes at the offsets the table gives are not recognisable zlib. Something
+scrambled the payload without setting the flags — which is what a GRF-protecting
+packer does.
+
+### The claim in §8b that made this invisible
+
+§8b said *"ours is not encrypted"*. **That was never tested.** The survey read
+the file *table*, which is plain zlib in every archive, protected or not, and
+`client-doctor.py`'s `reachable()` only ever asked whether a **name** was in that
+table. Both tools reported a healthy archive and neither had read a byte out of
+it.
+
+`client-doctor.py` now extracts a sample of the startup files and reports the
+first bytes when they will not inflate. `tools/test-client-survey.py` builds an
+archive with a valid table over a scrambled payload and fails if the doctor
+calls it healthy. That is the third time in this project that the instrument was
+the fix (§12, §12a) and the second time a "verified" claim turned out to be an
+untested one.
+
+### What is actually needed
+
+**An unencrypted kRO `data.grf`.** Neither archive on the Windows box is one:
+`Ep4Client2`'s is scrambled, and EternalRO's is encrypted outright
+(`__encryption.info`). They share a file roster, which suggests both came from
+protected server packs rather than from a stock client.
+
+What does *not* work:
+
+- **Extracting to loose files.** In Electron, roBrowser reads only the archives
+  named in `grfList`; loose `data\` files are ignored (§3b).
+- **Decrypting this one.** No flags, no key, no tool named. Not a lead.
+- **`RO_CLIENT_DATA_INI`.** Broken for an unrelated reason: the names inside
+  `DATA.INI` are relative and `FileManager` passes them straight to
+  `fs.existsSync`, which resolves against the process cwd. Do not use it.
+
+So: obtain a stock kRO client pack, drop its `data.grf` in, and **verify it with
+`client-doctor.py` before building** — the doctor can now answer that question,
+which is the whole point of the last hour.

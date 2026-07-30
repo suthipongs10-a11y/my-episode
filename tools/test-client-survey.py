@@ -700,6 +700,48 @@ def test_doctor(root: Path):
         print(proc.stderr[-2000:], file=sys.stderr)
 
 
+def test_doctor_unreadable_payload(tmp: Path):
+    """A readable table over an unreadable payload must be called out.
+
+    This is the exact false positive that cost 2026-07-30. The doctor said
+    "zero startup files missing" for a folder whose every archive entry was
+    unreadable, because it only ever checked that a NAME was in the table. An
+    archive's table is only zlib-compressed, so a protected GRF lists its
+    contents perfectly while yielding nothing.
+    """
+    section("an archive with a good table and a scrambled payload")
+    root = tmp / "ScrambledClient"
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "DATA.INI").write_text("[Data]\n0=data.grf\n", encoding="utf-8")
+    (root / "Ep4RO.exe").write_bytes(build_pe(EXE_STRINGS, pad_to=700_000))
+    grf = root / "data.grf"
+    build_grf(grf, [
+        ("data\\msgstringtable.txt", b"x" * 4000, 1),
+        ("data\\resnametable.txt", b"y" * 400, 1),
+    ])
+    # Entry data begins right after the 46-byte header. Replace the first entry's
+    # opening bytes so the table still points at it but zlib cannot inflate it —
+    # which is what a payload-encrypting packer looks like from outside.
+    raw = bytearray(grf.read_bytes())
+    raw[46:54] = b"\xde\xad\xbe\xef\xde\xad\xbe\xef"
+    grf.write_bytes(bytes(raw))
+
+    proc = run("client-doctor.py", str(root))
+    check(proc.returncode in (0, 1), f"ran to a verdict (exit {proc.returncode})")
+    check("Reading actual bytes out of the archive" in proc.stdout,
+          "the doctor now reads bytes, not just names")
+    check("could NOT be read" in proc.stdout,
+          "it reports that entries could not be read")
+    check("first bytes: de ad be ef" in proc.stdout,
+          "and shows the bytes, so the cause is visible rather than inferred")
+    check("encrypted or scrambled" in proc.stdout,
+          "it names the likely cause")
+    check("roBrowser cannot use it" in proc.stdout,
+          "and says what that means for the client we actually ship")
+    if proc.returncode not in (0, 1):
+        print(proc.stdout[-2000:])
+
+
 def test_host_classification():
     """The first EternalRO report listed cacerts.digicert.com as evidence about
     their asset delivery. It is in every signed binary ever built. Presenting it
@@ -744,6 +786,7 @@ def main():
         test_survey(root, baseline, tmp / "out")
         test_resilience(root, tmp / "out")
         test_doctor(root)
+        test_doctor_unreadable_payload(tmp)
         test_host_classification()
 
     print()
