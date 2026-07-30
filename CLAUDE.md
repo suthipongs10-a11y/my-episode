@@ -216,6 +216,28 @@ a reason to change how the origin is protected. The honest options:
 Decide the host before launch, not after the first attack. Until then, treat
 "we are protected" as false.
 
+### The ports are open, as of 2026-07-30
+
+`GAME_PORTS_BIND=0.0.0.0`. The operator was asked whether to open 6900/6121/5121
+for the PC-client test and close them again, or leave them open, and chose to
+**leave them open**. Recorded here because §6 Phase 8's gate is "origin exposure
+is understood and accepted **in writing**, not by default", and this is that
+writing.
+
+What it means, plainly:
+
+- The VPS's address is discoverable by anyone who runs the client, and is
+  therefore permanently public — historical DNS and scan data outlive any later
+  change of mind.
+- Hostinger includes no L3/L4 protection. There is nothing between an attacker
+  and the game ports.
+- Cloudflare cannot help: this is raw TCP (§3c).
+
+This is a **test box** (§4) with no players on it, which is what makes the
+trade reasonable today. It stops being reasonable the day real accounts exist.
+The host decision (§3c.1) is now the last thing standing between us and launch,
+and it is owed before we advertise the server anywhere.
+
 ---
 
 ## 4. Environment
