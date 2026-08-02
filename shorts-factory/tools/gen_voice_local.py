@@ -26,11 +26,24 @@ CONFIGURATION — all of it environment, nothing hardcoded (CLAUDE.md §2.1):
   LOCAL_TTS_VOICE   voice/speaker id                                       [default: default]
   LOCAL_TTS_FORMAT  wav | mp3 | opus — what the server returns             [default: wav]
   LOCAL_TTS_API_KEY optional bearer token, if the pod is behind one
+  LOCAL_TTS_LANG    language sent with every line, e.g. th                    [default: unset]
   LOCAL_TTS_BODY    optional JSON template for a non-OpenAI server. Use the placeholders
                     {text} {model} {voice} {format}, e.g.
                       '{"text":"{text}","speaker":"{voice}","language":"th"}'
                     The default is the OpenAI /v1/audio/speech shape, which most self-host
-                    wrappers (vLLM, openedai-speech, most RunPod templates) already expose.
+                    wrappers (vLLM, openedai-speech, most RunPod templates) already expose,
+                    and which tools/omnivoice_server.py speaks. Setting this disables the
+                    extra fields below, since a custom template controls the whole body.
+
+--fit-window AND WHY IT IS THE POINT WITH OMNIVOICE
+
+  beats.json already says how long every line has. OmniVoice's generate() takes a `duration`
+  in seconds and synthesises to exactly that, so --fit-window sends the window per line and
+  the audio comes back already fitting. Nothing is time-stretched afterwards — gen_voice.py
+  has to atempo ElevenLabs output to make it fit, and that is audible past about 1.15x.
+
+  Servers that ignore an unknown `duration` field just behave as before, and the drift
+  report will say so.
 
 Usage:
   python tools/gen_voice_local.py --beats vox-shorts/vox-2-thai-rice/beats.json --dry-run
@@ -77,18 +90,31 @@ def duration(path):
     return float(out.strip())
 
 
-def build_body(template, text, model, voice, fmt):
-    """Fill the JSON template. Substituting into JSON means escaping the text first."""
-    esc = json.dumps(text)[1:-1]  # JSON string escaping without the surrounding quotes
-    return (template
-            .replace("{text}", esc)
-            .replace("{model}", model)
-            .replace("{voice}", voice)
-            .replace("{format}", fmt)).encode("utf-8")
+def build_body(cfg, text, seconds):
+    """The request body.
+
+    With a custom LOCAL_TTS_BODY we fill the caller's template verbatim and add nothing —
+    they own the shape. Otherwise we build the OpenAI shape as a dict, which lets the
+    optional fields (language, duration) be attached properly instead of string-patched in.
+    """
+    if cfg.get("template"):
+        esc = json.dumps(text)[1:-1]  # JSON escaping, without the surrounding quotes
+        return (cfg["template"]
+                .replace("{text}", esc)
+                .replace("{model}", cfg["model"])
+                .replace("{voice}", cfg["voice"])
+                .replace("{format}", cfg["format"])).encode("utf-8")
+    body = {"model": cfg["model"], "input": text, "voice": cfg["voice"],
+            "response_format": cfg["format"]}
+    if cfg.get("language"):
+        body["language"] = cfg["language"]
+    if seconds:
+        body["duration"] = round(seconds, 3)
+    return json.dumps(body, ensure_ascii=False).encode("utf-8")
 
 
-def synth(cfg, text, out_path):
-    body = build_body(cfg["body"], text, cfg["model"], cfg["voice"], cfg["format"])
+def synth(cfg, text, out_path, seconds=None):
+    body = build_body(cfg, text, seconds)
     headers = {"Content-Type": "application/json"}
     if cfg.get("api_key"):
         headers["Authorization"] = f"Bearer {cfg['api_key']}"
@@ -112,6 +138,10 @@ def main():
     ap.add_argument("--url", help="override LOCAL_TTS_URL")
     ap.add_argument("--voice", help="override LOCAL_TTS_VOICE")
     ap.add_argument("--model", help="override LOCAL_TTS_MODEL")
+    ap.add_argument("--fit-window", action="store_true",
+                    help="ask the server to synthesise each line to EXACTLY its beats.json "
+                         "window (OmniVoice's `duration`). Mutually exclusive with --retime.")
+    ap.add_argument("--language", help="override LOCAL_TTS_LANG, e.g. th")
     ap.add_argument("--retime", action="store_true",
                     help="rewrite beats.json start/end from the REAL audio durations, packed "
                          "in order with --gap between lines, instead of keeping the estimates")
@@ -128,8 +158,15 @@ def main():
         "voice": args.voice or env.get("LOCAL_TTS_VOICE", "default"),
         "format": env.get("LOCAL_TTS_FORMAT", "wav"),
         "api_key": env.get("LOCAL_TTS_API_KEY"),
-        "body": env.get("LOCAL_TTS_BODY", DEFAULT_BODY),
+        "language": args.language or env.get("LOCAL_TTS_LANG"),
+        "template": env.get("LOCAL_TTS_BODY"),
     }
+    if args.fit_window and args.retime:
+        sys.exit("--fit-window and --retime contradict each other: one makes the audio fit "
+                 "the windows, the other makes the windows fit the audio. Pick one.")
+    if args.fit_window and cfg["template"]:
+        sys.exit("--fit-window cannot be used with a custom LOCAL_TTS_BODY — that template "
+                 "owns the whole request, so there is nowhere to put `duration`.")
     if not cfg["url"] and not args.dry_run:
         sys.exit("LOCAL_TTS_URL is not set (env or .env). See this file's docstring.")
 
@@ -142,7 +179,9 @@ def main():
 
     print(f"{beats['id']}: {len(vo)} lines -> {os.path.relpath(vdir, ROOT)}")
     print(f"  endpoint: {cfg['url'] or '(unset)'}")
-    print(f"  model={cfg['model']}  voice={cfg['voice']}  format={cfg['format']}\n")
+    print(f"  model={cfg['model']}  voice={cfg['voice']}  format={cfg['format']}"
+          f"  lang={cfg['language'] or '-'}"
+          f"{'  fit-window' if args.fit_window else ''}\n")
 
     clips = []
     for i, line in enumerate(vo):
@@ -153,13 +192,19 @@ def main():
         if args.dry_run:
             print(f"  [{i}] {'cached' if cached else 'would generate'}: {text[:64]}…")
             continue
+        window = (line["end"] - line["start"]) if args.fit_window else None
         if not cached:
-            synth(cfg, text, out)
+            synth(cfg, text, out, window)
         d = duration(out)
         clips.append({"path": out, "dur": d, "line": line})
         est = line["end"] - line["start"]
         drift = d - est
-        flag = "  <-- OVERFLOWS its window" if drift > 0.25 else ""
+        if args.fit_window and abs(drift) > 0.25:
+            flag = "  <-- server IGNORED `duration`"
+        elif drift > 0.25:
+            flag = "  <-- OVERFLOWS its window"
+        else:
+            flag = ""
         print(f"  [{i}] {d:5.2f}s  (window {est:5.2f}s, drift {drift:+.2f}s){flag}")
 
     if args.dry_run:

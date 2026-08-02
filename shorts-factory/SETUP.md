@@ -90,13 +90,56 @@ python tools/gen_voice_local.py --beats vox-shorts/vox-2-thai-rice/beats.json --
 python tools/gen_voice_local.py --beats vox-shorts/vox-2-thai-rice/beats.json
 ```
 
-It defaults to the OpenAI `/v1/audio/speech` body shape, which most self-host wrappers
-already expose; `LOCAL_TTS_BODY` takes a JSON template for anything else. Verified end to
+It defaults to the OpenAI `/v1/audio/speech` body shape; `LOCAL_TTS_BODY` takes a JSON
+template for anything else. Verified end to
 end against a stand-in server: generates per line, measures the real durations, **reports
 which lines overflow their authored window**, mixes one timeline, and writes the measured
 timings back into `beats.json`. `--retime` rewrites the windows from the audio instead of
 keeping the estimates — use that when the VO is a different language or length from the
 plan, and move the composition's `CUE` table with it.
+
+#### The pod side: `tools/omnivoice_server.py`
+
+The chosen model is [k2-fsa/OmniVoice](https://github.com/k2-fsa/OmniVoice) — Apache-2.0,
+zero-shot, **646 languages**, and **Thai is 10th of them by training hours (~10,500 h)**, so
+it is a first-class language for this model rather than a long-tail one.
+
+OmniVoice ships a Python API, a CLI and a Gradio demo but **no HTTP server**, so
+`gen_voice_local.py` has nothing to talk to on its own. `tools/omnivoice_server.py` is that
+missing piece: copy it to the pod, and it speaks the OpenAI shape on `/v1/audio/speech`.
+
+```bash
+# on the pod
+python omnivoice_server.py --port 8000 --device cuda:0 --language th \
+    --instruct "male, middle-aged, warm, calm documentary narrator"
+```
+
+**`--fit-window` is the reason this model suits the pipeline.** OmniVoice's `generate()`
+takes a **`duration` in seconds** and synthesises to exactly that length. `beats.json`
+already says how long each line has, so the audio arrives already fitting:
+
+| | drift across the 6 vox-2 lines |
+|---|---|
+| without `--fit-window` | +0.72 · +0.32 · +0.19 · +0.26 · **+1.16** · −0.45 s |
+| with `--fit-window` | **0.00 s on every line** |
+
+(Measured against a stand-in server, one honouring `duration` and one ignoring it — the
+second is there to prove the "server IGNORED `duration`" warning fires rather than passing
+silently.) `gen_voice.py` has to atempo ElevenLabs output to make it fit, which is audible
+past about 1.15×; this needs no stretching at all.
+
+**Voice consistency is a channel decision**, and the server exposes all three OmniVoice
+modes in descending order of repeatability:
+
+1. `--voice-prompt my_voice.pt` — a saved `VoiceClonePrompt`. Byte-identical voice forever.
+   This is the one to use once the channel has a voice it likes.
+2. `--instruct "male, middle-aged, warm, calm"` — voice *design*, no reference clip needed.
+   Similar voice each time, not identical. Fine for drafts.
+3. neither — the model picks, and picks differently next run. Do not ship this; the server
+   prints a warning when started that way.
+
+Reference clips should be 3–10 s and **in the same language as the target**, or the output
+carries an accent from the reference's language (OmniVoice's own note).
 
 **What it cannot do: per-word timestamps.** The `short-N` TSX track highlights the exact
 spoken word, and that needs them; ElevenLabs returns them from `/with-timestamps` and a raw
