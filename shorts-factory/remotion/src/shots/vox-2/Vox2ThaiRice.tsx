@@ -1,7 +1,9 @@
 import React from 'react';
 import { AbsoluteFill, Sequence, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import {
+  ArchivalPhoto,
   CollageBoard,
+  Cutout,
   Grain,
   LabelChip,
   Layer,
@@ -40,6 +42,11 @@ const H = 1920;
 // Reused from vox-1: a generic paper texture, not coffee-specific. It graduates to
 // media/library/ the moment a third video wants it.
 const PAPER = staticFile('projects/vox-1-coffee/layers/paper.png');
+// Generated layers. EVERY ONE IS AI-MADE and none of them is presented as a document: the
+// 1945 figure is drawn as an illustration and captioned nowhere, because a synthetic image
+// under an archival border with a factual caption is a fabricated record. The maps stay
+// real; the imagery is texture. script.md carries the same note.
+const asset = (f: string) => staticFile(`projects/vox-2-thai-rice/layers/${f}`);
 
 // =============================================================================
 // GEOGRAPHY — real coordinates, projected. Mercator keeps one k for x and y, so the box
@@ -81,6 +88,7 @@ const routeTo = (lon: number, lat: number) => {
 const CUE = {
   // Hook: negative so the page is FULLY composed at frame 0 — frame 0 is the thumbnail.
   // (vox-1 starts its title at f4 and its frame 0 is bare paper. Don't copy that.)
+  hookPhoto: -60,
   hookTitle: -46,
   hookGrains: -30,
   hookChip: -16,
@@ -173,28 +181,6 @@ const SitePin: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) =
   );
 };
 
-// Rice grains scattered on the hook page — SVG, because a grain is a shape, not a photo.
-const GRAINS: { x: number; y: number; r: number; s: number }[] = [
-  { x: -230, y: 8, r: -28, s: 1 },
-  { x: -120, y: 54, r: 14, s: 0.86 },
-  { x: -18, y: -8, r: -8, s: 1.08 },
-  { x: 96, y: 46, r: 32, s: 0.92 },
-  { x: 208, y: 2, r: -20, s: 1.02 },
-  { x: 306, y: 58, r: 6, s: 0.8 },
-];
-const RiceGrains: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => (
-  <Layer x={x} y={y} w={880} at={at} dur={18} enter="rise" depth={0.09} drift={0.8}>
-    <svg viewBox="-440 -110 880 220" style={{ display: 'block', width: 880, height: 220, overflow: 'visible' }}>
-      {GRAINS.map((g, i) => (
-        <g key={i} transform={`translate(${g.x * 1.16} ${g.y * 1.5}) rotate(${g.r}) scale(${g.s * 1.55})`}>
-          <ellipse rx={30} ry={12.5} fill="#ddcda6" stroke={VOX.ink} strokeWidth={2} />
-          <path d="M -17 -2.5 Q 0 -7.5 17 -1.5" fill="none" stroke={VOX.ink} strokeWidth={1.4} opacity={0.5} />
-        </g>
-      ))}
-    </svg>
-  </Layer>
-);
-
 // 2025 H1 exports, first half. The bars are the numbers — nothing is asserted by width alone.
 const RANK = [
   { name: 'India', mt: 11.68, color: VOX.inkSoft },
@@ -248,9 +234,10 @@ const Vox2ThaiRice: React.FC = () => {
         {/* ---- HOOK (0–5s): composed at FRAME 0, slow push ---- */}
         <Sequence from={0} durationInFrames={158} layout="none">
           <SceneFade out={155}>
-            <SerifStatement x={540} y={620} w={940} at={CUE.hookTitle} size={86} words={TITLE_WORDS} />
-            <RiceGrains x={540} y={1010} at={CUE.hookGrains} />
-            <LabelChip x={632} y={1420} at={CUE.hookChip} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} />
+            <ArchivalPhoto src={asset('paddy-raw.png')} x={540} y={330} w={820} at={CUE.hookPhoto} enter="place" rotate={-1.6} depth={0.04} treatment="sepia" />
+            <SerifStatement x={540} y={720} w={940} at={CUE.hookTitle} size={78} words={TITLE_WORDS} />
+            <Cutout src={asset('rice-stalk.png')} x={540} y={1135} w={420} at={CUE.hookGrains} enter="place" rotate={3} depth={0.1} sticker={0} shadow={2} />
+            <LabelChip x={632} y={1420} at={CUE.hookChip} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} z={6} />
           </SceneFade>
         </Sequence>
 
@@ -289,10 +276,11 @@ const Vox2ThaiRice: React.FC = () => {
               color={VOX.teal}
               width={2.6}
             />
+            <Cutout src={asset('pot.png')} x={PIN_X - 150} y={PIN_Y - 26} w={126} at={6} enter="place" rotate={-4} depth={0.07} sticker={4} shadow={2} />
             <Sequence from={CUE.accidentChip - CUE.originChip} layout="none">
               <LabelChip
-                x={PIN_X + 30}
-                y={PIN_Y + 105}
+                x={PIN_X - 10}
+                y={PIN_Y + 118}
                 at={0}
                 text="One fragrant plant"
                 kicker="1945"
@@ -301,6 +289,7 @@ const Vox2ThaiRice: React.FC = () => {
                 rotate={1.8}
                 depth={0.03}
               />
+              <Cutout src={asset('farmer.png')} x={PIN_X + 145} y={PIN_Y + 85} w={155} at={4} enter="slide-r" rotate={2.5} depth={0.09} sticker={5} shadow={2} />
               <SketchArrow
                 id="lead-accident"
                 d={`M ${PIN_X + 10} ${PIN_Y + 70} Q ${PIN_X + 12} ${PIN_Y + 44} ${PIN_X + 2} ${PIN_Y + 20}`}
@@ -409,9 +398,10 @@ const Vox2ThaiRice: React.FC = () => {
         </Sequence>
 
         <Sequence from={CUE.titleBack} layout="none">
-          <SerifStatement x={540} y={620} w={940} at={0} size={86} words={TITLE_WORDS} />
-          <RiceGrains x={540} y={1010} at={10} />
-          <LabelChip x={632} y={1420} at={26} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} />
+          <ArchivalPhoto src={asset('paddy-raw.png')} x={540} y={330} w={820} at={0} enter="place" rotate={-1.6} depth={0.04} treatment="sepia" />
+          <SerifStatement x={540} y={720} w={940} at={4} size={78} words={TITLE_WORDS} />
+          <Cutout src={asset('rice-stalk.png')} x={540} y={1135} w={420} at={10} enter="place" rotate={3} depth={0.1} sticker={0} shadow={2} />
+          <LabelChip x={632} y={1420} at={26} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} z={6} />
         </Sequence>
       </CollageBoard>
       <Grain opacity={0.055} />

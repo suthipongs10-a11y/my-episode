@@ -9,7 +9,7 @@
 - composition built, QA'd at 11 frames across two passes
 - **rendered: all 1,230 frames, 1080×1920 h264** (`remotion/out/Vox2ThaiRice.mp4`, gitignored)
 - frames spot-checked back OUT of the MP4, not just from renderStill
-- **zero AI images, zero API calls** — see "Why there are no generated layers"
+- 4 generated layers (Gemini) — see "Layers: what is real and what is drawn"
 
 Missing before this is publishable: the voice track (needs `ELEVENLABS_API_KEY`) and the
 SFX pass. Everything visual is done.
@@ -65,23 +65,38 @@ export record supports as a story, not as a single-cause claim).
 Outro rule honoured: no CTA. The loop back to the title *is* the ending, and it re-reads
 differently once you know both dates.
 
-## Why there are no generated layers
+## Layers: what is real and what is drawn
 
-`DESIGN.md` lists three layer sources; only one needs an API key.
+`DESIGN.md` lists three layer sources. The split here is deliberate — **information is real,
+texture is generated**, and the two never swap roles.
 
-| Layer here | Source | Key? |
+| Layer | Source | Real? |
 |---|---|---|
-| Thailand + world maps, borders, coastlines | **Natural Earth 110m** via `lib/geo/world.ts`, projected by `lib/map.tsx` | ❌ |
-| Export routes, pins, rice grains, ranking bars | SVG authored in the TSX | ❌ |
-| Chips, statements, stamp, paper board, grain | `lib/collage.tsx` | ❌ |
-| Paper texture | reused from vox-1 (`projects/vox-1-coffee/layers/paper.png`) | ❌ |
+| Thailand + world maps, borders, coastlines | **Natural Earth 110m** via `lib/geo/world.ts`, projected by `lib/map.tsx` | ✅ actual coordinates |
+| Export routes, site pin, ranking bars | SVG in the TSX, from the numbers in the fact table | ✅ |
+| Chips, statements, stamp, paper board, grain | `lib/collage.tsx` | — |
+| Paper texture | reused from vox-1 | — |
+| `rice-stalk` · `pot` · `farmer` · `paddy` | **Gemini** (`gen_image.py`) + `cutout.py` (rembg) | ❌ illustration |
 
-The maps being real is not a cost-saving accident — `gen_image.py` maps have to be prompted
+The maps being real is not a cost-saving accident: `gen_image.py` maps have to be prompted
 "NO text, no labels" because AI map text is gibberish, and their geography is decorative.
 These borders are the actual coordinates, so a pin on Chonburi is *on Chonburi*.
 
-**What a Gemini key would still add:** an archival-photograph layer for the 1945 beat and a
-die-cut rice-stalk cutout for the hook — texture, not information. Worth doing; not blocking.
+### The rule the imagery follows
+
+**No generated image is presented as a document.** The 1945 figure is drawn as a hand-inked
+editorial illustration — visibly a drawing — and is captioned nowhere; it is "a rice farmer",
+never *the* farmer. The paddy photo carries no caption, no date and no place. Nothing wears
+an archival border plus a factual caption.
+
+This is worth stating because vox-1 does the opposite: its Constantinople coffeehouse is an
+AI image inside an `ArchivalPhoto` frame captioned *"A coffeehouse, Constantinople — 1555"*,
+which reads as a historical document and is not one. For a channel whose whole pitch is
+verified facts, that is a credibility leak. Don't repeat it.
+
+`sacks.png` was generated and is **unused**: every position that fitted collided with the
+crown statement, and the world map plus its fan of routes was already a complete image. It
+is on disk if a later cut wants it.
 
 ## Production notes
 
