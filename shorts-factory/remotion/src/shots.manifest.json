@@ -110,5 +110,13 @@
   "width": 1080,
   "height": 1920,
   "transparent": false
+ },
+ {
+  "id": "Vox2ThaiRice",
+  "durationInSeconds": 41,
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "transparent": false
  }
 ]

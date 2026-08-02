@@ -1,0 +1,422 @@
+import React from 'react';
+import { AbsoluteFill, Sequence, interpolate, staticFile, useCurrentFrame } from 'remotion';
+import {
+  CollageBoard,
+  Grain,
+  LabelChip,
+  Layer,
+  PaperBG,
+  RubberStamp,
+  SerifStatement,
+  SketchArrow,
+  VOX,
+} from '../../lib/collage';
+import { CountryShape, WorldLayer, makeMapScale } from '../../lib/map';
+import { WORLD } from '../../lib/geo/world';
+import { FONT_BODY, FONT_EDITORIAL } from '../../fonts';
+
+// =============================================================================
+// COMPOSITION CONFIG — "Same District. Four Thousand Years Apart."
+// Beats + VO contract: vox-shorts/vox-2-thai-rice/beats.json.
+// Facts verified 2026-08-02 — the sources are in that folder's script.md.
+//
+// The spine: Khok Phanom Di (oldest confirmed rice in Thailand, ~2000 BC) and the 1945
+// discovery of the fragrant plant that became Khao Dawk Mali 105 are in the SAME district
+// — Phanat Nikhom, Chonburi. Both chips land on ONE pin; that is the whole video.
+//
+// NO GENERATED IMAGES. Both maps are Natural Earth 110m outlines projected by lib/map.tsx,
+// so the pin sits on the real Chonburi rather than on an AI painting of a coastline.
+// =============================================================================
+export const compositionConfig = {
+  id: 'Vox2ThaiRice',
+  durationInSeconds: 41,
+  fps: 30,
+  width: 1080,
+  height: 1920,
+};
+
+const W = 1080;
+const H = 1920;
+// Reused from vox-1: a generic paper texture, not coffee-specific. It graduates to
+// media/library/ the moment a third video wants it.
+const PAPER = staticFile('projects/vox-1-coffee/layers/paper.png');
+
+// =============================================================================
+// GEOGRAPHY — real coordinates, projected. Mercator keeps one k for x and y, so the box
+// height falls out of the projection instead of being chosen (lib/map.tsx).
+// =============================================================================
+const THAI = makeMapScale([96, 106.5], [5.5, 21], { x: 200, y: 470, w: 680 });
+const GLOBE = makeMapScale([-25, 150], [-38, 62], { x: 40, y: 690, w: 1000 });
+
+const country = (name: string) => WORLD.find((c) => c.name === name)!;
+const NEIGHBOURS = ['Myanmar', 'Laos', 'Cambodia', 'Vietnam', 'Malaysia'].map(country);
+const THAILAND = country('Thailand');
+
+// Phanat Nikhom, Chonburi — Khok Phanom Di AND the 1945 field. One pin, two dates.
+const [PIN_X, PIN_Y] = THAI.px(101.18, 13.45);
+// Bang Khla, Chachoengsao (13.73N) is where the seed went in 1951, and it is deliberately
+// NOT drawn as a second point: it is 0.28 degrees away, ~20 board px, which renders as a
+// scribble on top of the pin. The label carries it instead.
+
+// Thailand's real export markets, drawn as routes off the world map.
+const MARKETS: { name: string; lon: number; lat: number }[] = [
+  { name: 'Iraq', lon: 44, lat: 33 },
+  { name: 'China', lon: 104, lat: 35 },
+  { name: 'Nigeria', lon: 8, lat: 9 },
+  { name: 'South Africa', lon: 25, lat: -29 },
+  { name: 'Indonesia', lon: 117, lat: -2 },
+];
+const [TH_X, TH_Y] = GLOBE.px(101, 15);
+const routeTo = (lon: number, lat: number) => {
+  const [x, y] = GLOBE.px(lon, lat);
+  // bow every route the same way so the fan reads as one gesture
+  return `M ${TH_X} ${TH_Y} Q ${(TH_X + x) / 2} ${Math.min(TH_Y, y) - 90} ${x} ${y}`;
+};
+
+// =============================================================================
+// CUES (GLOBAL frames @30) — estimated from beats.json windows. gen_voice.py has not run
+// (no key), so these are the ONLY timings. Retime this table to real word starts after it
+// does; nothing else in the file holds a cue.
+// =============================================================================
+const CUE = {
+  // Hook: negative so the page is FULLY composed at frame 0 — frame 0 is the thumbnail.
+  // (vox-1 starts its title at f4 and its frame 0 is bare paper. Don't copy that.)
+  hookTitle: -46,
+  hookGrains: -30,
+  hookChip: -16,
+
+  mapIn: 156, //        the map places as the camera starts its dive
+  pinIn: 196,
+  originChip: 232, //   "here" ~7.4s
+  accidentChip: 396, // "1945" ~13.2s
+  sameStatement: 486, //"same district" ~16.2s
+
+  routeBK: 636, //      the seed travels north ~21.2s
+  panicleChip: 672, //  "hundred ninety-nine" ~22.4s
+  stamp: 726, //        "won" ~24.2s
+  nameChip: 786, //     "Khao Dawk Mali" ~26.2s
+
+  globeIn: 872, //      world map places ~29.1s
+  routesOut: 906, //    "top of the world's rice trade" ~30.2s
+  crownLine: 972, //    "thirty-one years" ~32.4s
+
+  ranking: 1074, //     "third" ~35.8s
+  titleBack: 1172,
+} as const;
+
+// Camera: one journey — push on the title page, dive onto Chonburi and STAY there through
+// both dates, ease back over the central plain, pull out to the world, come home for the loop.
+const CAM = [
+  { f: 0, x: 540, y: 960, z: 1 },
+  { f: 150, x: 540, y: 960, z: 1.06 },
+  { f: 240, x: PIN_X, y: PIN_Y - 40, z: 2.3 },
+  { f: 600, x: PIN_X + 6, y: PIN_Y - 46, z: 2.36 },
+  { f: 690, x: 552, y: 940, z: 1.72 },
+  { f: 850, x: 556, y: 936, z: 1.76 },
+  { f: 900, x: 540, y: 1040, z: 1.12 },
+  { f: 1040, x: 540, y: 1044, z: 1.14 },
+  { f: 1120, x: 540, y: 985, z: 1.04 },
+  { f: 1180, x: 540, y: 960, z: 1 },
+  { f: 1229, x: 540, y: 960, z: 1 },
+];
+
+const TITLE_WORDS = [
+  { t: 'Same' },
+  { t: 'district.' },
+  { t: 'Four' },
+  { t: 'thousand' },
+  { t: 'years' },
+  { t: 'apart.', hl: true },
+];
+
+// =============================================================================
+// SHOT-LOCAL PIECES
+// Generic enough to graduate to lib/collage.tsx, but not until a second vox short wants
+// them — the skill's rule. Keep them prop-driven so that move is a cut-and-paste.
+// =============================================================================
+
+// A map drawn on the paper: sepia landmasses, one country picked out, ink coastlines.
+const PaperMap: React.FC<{
+  scale: ReturnType<typeof makeMapScale>;
+  context: typeof NEIGHBOURS;
+  highlight?: typeof THAILAND;
+  world?: boolean;
+  children?: React.ReactNode;
+}> = ({ scale, context, highlight, world = false, children }) => (
+  <svg viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', width: W, height: H, overflow: 'visible' }}>
+    {world ? (
+      <WorldLayer scale={scale} except={['Thailand']} fill="#dcccab" stroke={VOX.inkSoft} opacity={0.95} />
+    ) : (
+      context.map((c) => (
+        <CountryShape key={c.name} scale={scale} country={c} fill={VOX.paperDeep} stroke={VOX.inkSoft} strokeWidth={1.6} opacity={0.72} />
+      ))
+    )}
+    {highlight ? (
+      <CountryShape scale={scale} country={highlight} fill="#cbb489" stroke={VOX.ink} strokeWidth={2.4} opacity={0.95} />
+    ) : null}
+    {children}
+  </svg>
+);
+
+// The one pin both dates land on. Rings pulse out of it so the eye cannot miss it.
+const SitePin: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => {
+  const frame = useCurrentFrame();
+  const p = interpolate(frame, [at, at + 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  if (frame < at) return null;
+  const pulse = ((frame - at) % 46) / 46;
+  return (
+    <g opacity={p}>
+      <circle cx={x} cy={y} r={5 + pulse * 26} fill="none" stroke={VOX.red} strokeWidth={2} opacity={(1 - pulse) * 0.7} />
+      <circle cx={x} cy={y} r={7} fill={VOX.red} />
+      <circle cx={x} cy={y} r={13} fill="none" stroke={VOX.red} strokeWidth={2.5} />
+    </g>
+  );
+};
+
+// Rice grains scattered on the hook page — SVG, because a grain is a shape, not a photo.
+const GRAINS: { x: number; y: number; r: number; s: number }[] = [
+  { x: -230, y: 8, r: -28, s: 1 },
+  { x: -120, y: 54, r: 14, s: 0.86 },
+  { x: -18, y: -8, r: -8, s: 1.08 },
+  { x: 96, y: 46, r: 32, s: 0.92 },
+  { x: 208, y: 2, r: -20, s: 1.02 },
+  { x: 306, y: 58, r: 6, s: 0.8 },
+];
+const RiceGrains: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => (
+  <Layer x={x} y={y} w={880} at={at} dur={18} enter="rise" depth={0.09} drift={0.8}>
+    <svg viewBox="-440 -110 880 220" style={{ display: 'block', width: 880, height: 220, overflow: 'visible' }}>
+      {GRAINS.map((g, i) => (
+        <g key={i} transform={`translate(${g.x * 1.16} ${g.y * 1.5}) rotate(${g.r}) scale(${g.s * 1.55})`}>
+          <ellipse rx={30} ry={12.5} fill="#ddcda6" stroke={VOX.ink} strokeWidth={2} />
+          <path d="M -17 -2.5 Q 0 -7.5 17 -1.5" fill="none" stroke={VOX.ink} strokeWidth={1.4} opacity={0.5} />
+        </g>
+      ))}
+    </svg>
+  </Layer>
+);
+
+// 2025 H1 exports, first half. The bars are the numbers — nothing is asserted by width alone.
+const RANK = [
+  { name: 'India', mt: 11.68, color: VOX.inkSoft },
+  { name: 'Vietnam', mt: 4.72, color: VOX.inkSoft },
+  { name: 'Thailand', mt: 3.73, color: VOX.red },
+];
+const MAX_MT = 11.68;
+const RankBars: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => {
+  const frame = useCurrentFrame();
+  return (
+    <Layer x={x} y={y} w={980} at={at} dur={12} enter="rise" depth={0.05} drift={0.5}>
+      <div style={{ background: VOX.cream, padding: '44px 52px 52px', boxShadow: '0 10px 26px rgba(40,28,12,0.28)' }}>
+        <div style={{ fontFamily: FONT_BODY, fontSize: 30, fontWeight: 600, letterSpacing: 2.4, textTransform: 'uppercase', color: VOX.red, marginBottom: 30 }}>
+          Rice exports · first half 2025
+        </div>
+        {RANK.map((r, i) => {
+          const p = interpolate(frame, [at + 10 + i * 9, at + 34 + i * 9], [0, 1], {
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
+          });
+          return (
+            <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 22, marginTop: i ? 26 : 0 }}>
+              <div style={{ fontFamily: FONT_BODY, fontSize: 40, fontWeight: 600, color: VOX.ink, width: 230, textAlign: 'right' }}>{r.name}</div>
+              <div style={{ flex: 1, height: 54, background: 'rgba(40,34,23,0.09)' }}>
+                <div style={{ width: `${(r.mt / MAX_MT) * 100 * p}%`, height: '100%', background: r.color }} />
+              </div>
+              <div style={{ fontFamily: FONT_EDITORIAL, fontSize: 40, fontWeight: 700, color: r.color, width: 180, opacity: p }}>
+                {r.mt.toFixed(2)} Mt
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Layer>
+  );
+};
+
+// Fades a whole scene's layers out over its last `dur` local frames.
+const SceneFade: React.FC<{ out: number; dur?: number; children: React.ReactNode }> = ({ out, dur = 16, children }) => {
+  const frame = useCurrentFrame();
+  const op = interpolate(frame, [out - dur, out], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  return <div style={{ opacity: op }}>{children}</div>;
+};
+
+const Vox2ThaiRice: React.FC = () => {
+  return (
+    <AbsoluteFill style={{ backgroundColor: VOX.paper }}>
+      <CollageBoard cam={CAM}>
+        <PaperBG src={PAPER} w={W} h={H} />
+
+        {/* ---- HOOK (0–5s): composed at FRAME 0, slow push ---- */}
+        <Sequence from={0} durationInFrames={158} layout="none">
+          <SceneFade out={155}>
+            <SerifStatement x={540} y={620} w={940} at={CUE.hookTitle} size={86} words={TITLE_WORDS} />
+            <RiceGrains x={540} y={1010} at={CUE.hookGrains} />
+            <LabelChip x={632} y={1420} at={CUE.hookChip} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} />
+          </SceneFade>
+        </Sequence>
+
+        {/* ---- THAILAND MAP: scenery under origin + accident + selection ---- */}
+        <Sequence from={CUE.mapIn} durationInFrames={706} layout="none">
+          <SceneFade out={700} dur={26}>
+            <Layer x={540} y={960} w={W} at={0} dur={20} enter="place" rotate={-0.8} depth={0} drift={0.35}>
+              <PaperMap scale={THAI} context={NEIGHBOURS} highlight={THAILAND}>
+                <SitePin x={PIN_X} y={PIN_Y} at={CUE.pinIn - CUE.mapIn} />
+              </PaperMap>
+            </Layer>
+          </SceneFade>
+        </Sequence>
+
+        {/* ---- ORIGIN + ACCIDENT: two dates, ONE pin ---- */}
+        <Sequence from={CUE.originChip} durationInFrames={392} layout="none">
+          <SceneFade out={386}>
+            <LabelChip
+              x={PIN_X - 20}
+              y={PIN_Y - 150}
+              at={0}
+              text="Khok Phanom Di"
+              kicker="~ 2000 BC"
+              accent={VOX.teal}
+              size={22}
+              rotate={-2}
+              depth={0.03}
+            />
+            <SketchArrow
+              id="lead-origin"
+              d={`M ${PIN_X + 10} ${PIN_Y - 116} Q ${PIN_X + 12} ${PIN_Y - 70} ${PIN_X + 2} ${PIN_Y - 22}`}
+              vb={{ w: W, h: H }}
+              at={12}
+              dur={14}
+              head={false}
+              color={VOX.teal}
+              width={2.6}
+            />
+            <Sequence from={CUE.accidentChip - CUE.originChip} layout="none">
+              <LabelChip
+                x={PIN_X + 30}
+                y={PIN_Y + 105}
+                at={0}
+                text="One fragrant plant"
+                kicker="1945"
+                accent={VOX.red}
+                size={22}
+                rotate={1.8}
+                depth={0.03}
+              />
+              <SketchArrow
+                id="lead-accident"
+                d={`M ${PIN_X + 10} ${PIN_Y + 70} Q ${PIN_X + 12} ${PIN_Y + 44} ${PIN_X + 2} ${PIN_Y + 20}`}
+                vb={{ w: W, h: H }}
+                at={12}
+                dur={12}
+                head={false}
+                color={VOX.red}
+                width={2.6}
+              />
+            </Sequence>
+            <Sequence from={CUE.sameStatement - CUE.originChip} layout="none">
+              <SerifStatement
+                x={PIN_X}
+                y={PIN_Y + 235}
+                w={420}
+                at={0}
+                size={40}
+                backing
+                words={[{ t: 'The' }, { t: 'same' }, { t: 'district.', hl: true }]}
+              />
+            </Sequence>
+          </SceneFade>
+        </Sequence>
+
+        {/* ---- SELECTION (20–28.5s): the seed travels, 105 wins ---- */}
+        <Sequence from={CUE.routeBK} durationInFrames={228} layout="none">
+          <SceneFade out={222}>
+            <SketchArrow
+              id="seed-to-bangkhla"
+              d={`M ${PIN_X + 16} ${PIN_Y - 22} Q ${PIN_X + 74} ${PIN_Y - 96} ${PIN_X + 96} ${PIN_Y - 168}`}
+              vb={{ w: W, h: H }}
+              at={0}
+              dur={26}
+              dashed
+              color={VOX.red}
+              width={4}
+            />
+            <LabelChip
+              x={PIN_X + 120}
+              y={PIN_Y - 212}
+              at={CUE.panicleChip - CUE.routeBK}
+              text="199 panicles"
+              kicker="Bang Khla, 1951"
+              accent={VOX.teal}
+              size={24}
+              rotate={-1.6}
+              depth={0.03}
+            />
+            <RubberStamp text="105" x={PIN_X + 10} y={PIN_Y + 150} at={CUE.stamp - CUE.routeBK} size={66} rotate={-10} z={6} />
+            <LabelChip
+              x={PIN_X + 62}
+              y={PIN_Y + 300}
+              at={CUE.nameChip - CUE.routeBK}
+              text="Khao Dawk Mali 105"
+              kicker="Named 1959"
+              accent={VOX.yellow}
+              kickerColor={VOX.inkSoft}
+              size={26}
+              rotate={1.2}
+              depth={0.03}
+            />
+          </SceneFade>
+        </Sequence>
+
+        {/* ---- CROWN (28.5–35s): the world, and the routes out of it ---- */}
+        <Sequence from={CUE.globeIn} durationInFrames={286} layout="none">
+          <SceneFade out={280} dur={26}>
+            <Layer x={540} y={960} w={W} at={0} dur={20} enter="place" rotate={0.6} depth={0} drift={0.3}>
+              <PaperMap scale={GLOBE} context={[]} highlight={THAILAND} world />
+            </Layer>
+            {MARKETS.map((m, i) => (
+              <SketchArrow
+                key={m.name}
+                id={`route-${m.name}`}
+                d={routeTo(m.lon, m.lat)}
+                vb={{ w: W, h: H }}
+                at={CUE.routesOut - CUE.globeIn + i * 7}
+                dur={34}
+                dashed
+                color={VOX.red}
+                width={3.5}
+              />
+            ))}
+            <Sequence from={CUE.crownLine - CUE.globeIn} durationInFrames={CUE.ranking - CUE.crownLine} layout="none">
+              <SceneFade out={CUE.ranking - CUE.crownLine - 4} dur={18}>
+              <SerifStatement
+                x={540}
+                y={1500}
+                w={940}
+                at={0}
+                size={60}
+                backing
+                words={[{ t: 'Number' }, { t: 'one.' }, { t: 'Thirty-one' }, { t: 'years.', hl: true }]}
+              />
+              </SceneFade>
+            </Sequence>
+          </SceneFade>
+        </Sequence>
+
+        {/* ---- TWIST + LOOP (35–41s): the ranking, then back to frame 0 ---- */}
+        <Sequence from={CUE.ranking} durationInFrames={112} layout="none">
+          <SceneFade out={106}>
+            <RankBars x={540} y={1040} at={0} />
+          </SceneFade>
+        </Sequence>
+
+        <Sequence from={CUE.titleBack} layout="none">
+          <SerifStatement x={540} y={620} w={940} at={0} size={86} words={TITLE_WORDS} />
+          <RiceGrains x={540} y={1010} at={10} />
+          <LabelChip x={632} y={1420} at={26} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} />
+        </Sequence>
+      </CollageBoard>
+      <Grain opacity={0.055} />
+    </AbsoluteFill>
+  );
+};
+
+export default Vox2ThaiRice;

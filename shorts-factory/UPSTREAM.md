@@ -24,13 +24,37 @@ that upstream never had to care about. Diff against upstream to see them in isol
 |---|---|---|
 | `remotion/scripts/frames.mjs` | honour `REMOTION_BROWSER_EXECUTABLE` | Remotion downloads its own Chrome Headless Shell on first render; `remotion.media` is not on this environment's egress allowlist, so it 403s. The container already ships a Chromium. |
 | `remotion/scripts/render-all.mjs` | same | same |
-| `remotion/src/fonts.ts` | load the 5 brand fonts from `media/library/fonts/` instead of `@remotion/google-fonts` | the google-fonts loaders fetch from `fonts.gstatic.com` **during** the render. Behind the TLS-terminating egress proxy every fetch dies with `ERR_CERT_AUTHORITY_INVALID` and the render aborts — Chrome Headless Shell reads neither the system CA store, nor the NSS db, nor enterprise policy, so there is no supported way to make it trust the proxy CA. |
-| `remotion/scripts/fetch-fonts.mjs` | **new** | downloads those fonts once, with a client that does trust the CA |
+| `remotion/src/fonts.ts` | rewritten: the 5 brand fonts are injected as `@font-face` CSS over base64 data URIs, replacing `@remotion/google-fonts` | see "The font problem" below — three approaches, two of them wrong |
+| `remotion/src/fonts.gen.ts` | **new, generated** (~710 KB) | the inlined woff2 bytes. Never hand-edit; re-run `scripts/fetch-fonts.mjs`. |
+| `remotion/scripts/fetch-fonts.mjs` | **new** | downloads the faces with a client that does trust the CA, and writes `fonts.gen.ts` |
 | `media/library/fonts/` | **new** — 14 woff2 + `manifest.json` | the downloaded files. All five families are OFL-licensed, so redistributing them here is fine. |
 | `UPSTREAM.md`, `SETUP.md` | **new** | this file and the setup notes |
 
 The font change is worth keeping even off a sandbox: it makes renders offline and
 byte-identical run to run, instead of depending on a live CDN mid-render.
+
+### The font problem, and why it took three tries
+
+Each attempt failed one step further into the pipeline than the last, and only the third
+failure identified the actual cause.
+
+1. **`@remotion/google-fonts`** resolves to `fonts.gstatic.com` URLs the browser fetches
+   *during* the render. Behind this environment's TLS-terminating proxy every one dies with
+   `ERR_CERT_AUTHORITY_INVALID`. Chrome Headless Shell reads neither the system CA store,
+   nor the NSS db (imported — no effect), nor enterprise policy (written to all three policy
+   directories — no effect). The only remaining lever is ignoring certificate errors, which
+   is disabling TLS verification, which we do not do.
+2. **Local woff2 through `staticFile()` + `FontFace.load()`** — `renderStill` fine,
+   `renderMedia` hung until the `delayRender` timed out and took the render with it.
+3. **The same bytes as base64 data URIs, still via `FontFace.load()`** — *still* hung. That
+   is what ruled the network out: `renderMedia` opens one tab per concurrency slot and all
+   but one are backgrounded, and Chromium does not settle `FontFace.load()` promises in a
+   background tab.
+
+The fix is to use no font promise at all: a `<style>` element of `@font-face` rules over the
+data URIs, injected synchronously at module scope. Nothing to await, so nothing can stall.
+Verified by rendering all 1,230 frames of `Vox2ThaiRice` and reading frames back out of the
+MP4 — both serifs render, so this is not a fallback that happens to look plausible.
 
 ## Pulling upstream changes later
 

@@ -1,0 +1,95 @@
+{
+	"id": "vox-2-thai-rice",
+	"title": "Same District. Four Thousand Years Apart.",
+	"composition": "Vox2ThaiRice",
+	"format": {
+		"width": 1080,
+		"height": 1920,
+		"fps": 30,
+		"durationSec": 41
+	},
+	"voicePlan": "elevenlabs:TX3LPaxmHKxFdv7VOQHJ",
+	"voiceStatus": "not-generated — no ELEVENLABS_API_KEY. Windows below are ESTIMATES at ~2.3 words/sec (documentary pace, slower than the short-N grammar). gen_voice.py overwrites start/end and adds per-word times.",
+	"vo": [
+		{
+			"beat": "hook",
+			"text": "Two things happened in the same Thai district, four thousand years apart.",
+			"start": 0.5,
+			"end": 5.0
+		},
+		{
+			"beat": "origin",
+			"text": "By two thousand BC, people here were already growing rice. The oldest confirmed in Thailand.",
+			"start": 5.6,
+			"end": 11.8
+		},
+		{
+			"beat": "accident",
+			"text": "In 1945, in that same district, a farmer smelled jasmine in his field. He kept the seed.",
+			"start": 12.4,
+			"end": 19.6
+		},
+		{
+			"beat": "selection",
+			"text": "Out of a hundred ninety-nine panicles, row one-oh-five won. In 1959 it got a name. Khao Dawk Mali 105.",
+			"start": 20.2,
+			"end": 28.2
+		},
+		{
+			"beat": "crown",
+			"text": "It carried Thailand to the top of the world's rice trade, and held it thirty-one years.",
+			"start": 28.8,
+			"end": 34.6
+		},
+		{
+			"beat": "twist",
+			"text": "Today Thailand is third. India ships three times as much.",
+			"start": 35.2,
+			"end": 40.0
+		}
+	],
+	"beats": [
+		{
+			"beat": "hook",
+			"from": 0,
+			"to": 150,
+			"camera": "slow push on the composed title page",
+			"layers": ["title statement", "rice grains", "chapter chip"]
+		},
+		{
+			"beat": "origin",
+			"from": 150,
+			"to": 372,
+			"camera": "dive into the Thailand map, settle on Chonburi",
+			"layers": ["thailand map", "site pin", "chip: Khok Phanom Di ~2000 BC"]
+		},
+		{
+			"beat": "accident",
+			"from": 372,
+			"to": 606,
+			"camera": "hold on Chonburi",
+			"layers": ["chip: 1945 Phanat Nikhom on the SAME pin", "statement: the same district"]
+		},
+		{
+			"beat": "selection",
+			"from": 606,
+			"to": 858,
+			"camera": "small pull back over the central plain",
+			"layers": ["route to Bang Khla", "chip: 199 panicles", "stamp: 105", "chip: 1959"]
+		},
+		{
+			"beat": "crown",
+			"from": 858,
+			"to": 1056,
+			"camera": "pull back to the world",
+			"layers": ["world map", "5 dashed export routes", "statement: Number one. Thirty-one years."]
+		},
+		{
+			"beat": "twist",
+			"from": 1056,
+			"to": 1230,
+			"camera": "return to the page-1 wide framing",
+			"layers": ["2025 ranking bars", "title returns — last frame = frame 0"]
+		}
+	]
+}

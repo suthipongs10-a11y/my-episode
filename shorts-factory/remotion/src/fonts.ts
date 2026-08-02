@@ -1,54 +1,34 @@
-// Brand 3-font system (+2 serifs), served from media/library/fonts/ — NOT from the network.
+// Brand 3-font system (+2 serifs), inlined into the bundle as plain CSS.
 //
-// This used to be five @remotion/google-fonts loaders. Those resolve to fonts.gstatic.com
-// URLs that the headless browser fetches mid-render, which makes every render depend on a
-// live network and fails completely behind a TLS-terminating proxy (Chrome Headless Shell
-// trusts neither the system CA store, the NSS db, nor enterprise policy). The files are now
-// downloaded once by `node scripts/fetch-fonts.mjs` and loaded from disk, so renders are
-// offline and byte-identical run to run.
+// Three things were tried here and the history matters, because each failure only shows up
+// one step further into the pipeline than the last:
 //
-// Adding a weight = add it to WANTED in scripts/fetch-fonts.mjs, re-run it, add it here.
-import { continueRender, delayRender, staticFile } from 'remotion';
+// 1. @remotion/google-fonts — resolves to fonts.gstatic.com and fetches DURING the render.
+//    Behind a TLS-terminating egress proxy every fetch dies ERR_CERT_AUTHORITY_INVALID and
+//    the render aborts. Chrome Headless Shell trusts neither the system CA store, the NSS
+//    db, nor enterprise policy, so there is no supported way to make it trust the proxy.
+// 2. Local woff2 via staticFile() + FontFace.load() — renderStill fine, renderMedia hangs.
+// 3. The same bytes as base64 data: URIs, still via FontFace.load() — STILL hangs, which is
+//    what ruled the network out entirely. renderMedia opens one tab per concurrency slot and
+//    all but one are backgrounded; Chromium does not settle FontFace.load() promises in a
+//    background tab, so the delayRender waits out its whole timeout and kills the render.
+//
+// So: no font promise, no delayRender, nothing that can stall. A <style> element with
+// @font-face rules over data: URIs, injected synchronously at module scope, before React
+// renders anything. The bytes are already in the bundle, so the faces are usable at first
+// paint and there is no fallback flash to wait out.
+//
+// `node scripts/fetch-fonts.mjs` downloads the faces and regenerates fonts.gen.ts.
+import { FACES } from './fonts.gen';
 
-type Face = { family: string; weight: string; file: string };
-
-const FACES: Face[] = [
-	{ family: 'Space Grotesk', weight: '500', file: 'space-grotesk-500.woff2' },
-	{ family: 'Space Grotesk', weight: '600', file: 'space-grotesk-600.woff2' },
-	{ family: 'Space Grotesk', weight: '700', file: 'space-grotesk-700.woff2' },
-	{ family: 'Inter', weight: '400', file: 'inter-400.woff2' },
-	{ family: 'Inter', weight: '500', file: 'inter-500.woff2' },
-	{ family: 'Inter', weight: '600', file: 'inter-600.woff2' },
-	{ family: 'JetBrains Mono', weight: '400', file: 'jetbrains-mono-400.woff2' },
-	{ family: 'JetBrains Mono', weight: '500', file: 'jetbrains-mono-500.woff2' },
-	{ family: 'JetBrains Mono', weight: '700', file: 'jetbrains-mono-700.woff2' },
-	{ family: 'Spectral', weight: '500', file: 'spectral-500.woff2' },
-	{ family: 'Spectral', weight: '600', file: 'spectral-600.woff2' },
-	{ family: 'Source Serif Four', weight: '600', file: 'source-serif-4-600.woff2' },
-	{ family: 'Source Serif Four', weight: '700', file: 'source-serif-4-700.woff2' },
-	{ family: 'Source Serif Four', weight: '900', file: 'source-serif-4-900.woff2' },
-];
-
-// One delayRender for the whole set: Remotion must not sample a frame until every face is
-// ready, or the first frames render in a fallback font and the layout shifts under them.
-if (typeof document !== 'undefined') {
-	const handle = delayRender('Loading brand fonts from media/library/fonts');
-	Promise.all(
-		FACES.map(async ({ family, weight, file }) => {
-			const face = new FontFace(family, `url(${staticFile(`library/fonts/${file}`)}) format('woff2')`, {
-				weight,
-				style: 'normal',
-			});
-			await face.load();
-			document.fonts.add(face);
-		}),
-	)
-		.then(() => continueRender(handle))
-		// Never hang the render on a missing file — fail loudly instead, with the name.
-		.catch((err) => {
-			console.error('brand font load failed — run `node scripts/fetch-fonts.mjs`', err);
-			continueRender(handle);
-		});
+if (typeof document !== 'undefined' && !document.getElementById('brand-fonts')) {
+	const style = document.createElement('style');
+	style.id = 'brand-fonts';
+	style.textContent = FACES.map(
+		({ family, weight, src }) =>
+			`@font-face{font-family:"${family}";font-style:normal;font-weight:${weight};font-display:block;src:url(${src}) format("woff2");}`,
+	).join('\n');
+	document.head.appendChild(style);
 }
 
 export const FONT_DISPLAY = 'Space Grotesk';

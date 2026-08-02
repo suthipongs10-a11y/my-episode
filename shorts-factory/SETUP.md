@@ -40,8 +40,8 @@ It must be the **headless shell**, not `chromium-1194/chrome-linux/chrome` — R
 the old headless protocol, and full Chrome removed it ("Old Headless mode has been removed
 from the Chrome binary").
 
-Fonts are already local (`media/library/fonts/`, see UPSTREAM.md) so nothing else in a
-render touches the network.
+Fonts are inlined into the bundle (`remotion/src/fonts.gen.ts`, see UPSTREAM.md), so
+nothing else in a render touches the network either.
 
 `npm run gen` regenerates `src/registry.gen.tsx` from `src/shots/`. It must be re-run after
 adding or renaming a shot — `frames.mjs` and `render-all.mjs` do **not** run it themselves.
