@@ -1,0 +1,22 @@
+# Local config and secrets — never commit
+config.yaml
+.env
+
+# Runtime data and generated reports
+*.db
+backlinks.html
+backlinks.csv
+backlinks.md
+report.html
+report.csv
+report.md
+urls.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.eggs/
+build/
+dist/

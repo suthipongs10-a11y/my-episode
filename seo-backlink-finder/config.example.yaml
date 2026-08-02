@@ -1,0 +1,85 @@
+# ============================================================================
+# seo-backlink-finder configuration
+# ----------------------------------------------------------------------------
+# Copy this file to `config.yaml` and edit it. Secrets (API keys) are read
+# from environment variables, NEVER from this file, so this file is safe to
+# commit. See `config.example.env` for the environment variables.
+# ============================================================================
+
+# --- Your site: the thing you are building backlinks FOR --------------------
+site:
+  url: "https://example.com"          # your website
+  name: "Example"                     # brand / anchor name
+  # Topics that define your niche. Used for relevance scoring and to keep
+  # drafted comments/pitches on-topic. Add as many as are genuinely relevant.
+  topics:
+    - "example topic"
+    - "another topic"
+  # Languages you can operate in. The drafter writes in the target SITE's
+  # language when it is one of these; otherwise it falls back to the first.
+  languages: ["en", "th"]
+
+# --- Discovery --------------------------------------------------------------
+discovery:
+  # Which search provider to use for `blf discover`.
+  #   serpapi     -> real Google results   (needs SERPAPI_KEY)
+  #   google_cse  -> Google Custom Search  (needs GOOGLE_CSE_KEY + GOOGLE_CSE_CX)
+  #   manual      -> read URLs from a file you paste search results into
+  #   none        -> discovery disabled; add prospects by URL with `blf add`
+  provider: "manual"
+  results_per_query: 20
+  # Categories of opportunity to search for. See `blf footprints --list`.
+  categories:
+    - guest_post
+    - resource_page
+    - directory
+    - blog_comment
+    - forum
+    - qa
+    - profile
+
+# --- Fetching (be a good citizen) -------------------------------------------
+fetch:
+  user_agent: "seo-backlink-finder/0.1 (+https://example.com/bot)"
+  timeout_seconds: 15
+  respect_robots_txt: true            # skip pages robots.txt disallows
+  delay_seconds: 1.0                  # politeness delay between requests
+  max_bytes: 3000000                  # don't download huge pages
+
+# --- Scoring weights (must sum to ~1.0; they are normalised anyway) ---------
+# QUALITY comes first: this is the score you rank by. EASE is secondary and
+# only breaks ties / feeds the priority score below.
+scoring:
+  quality_weights:
+    authority: 0.35        # domain strength (Open PageRank / DA)
+    relevance: 0.30        # topical match to your niche
+    link_attribute: 0.15   # dofollow > ugc > nofollow > sponsored
+    placement: 0.12        # editorial > resource > directory > forum > comment
+    trust: 0.08            # https, domain age, sane outbound-link count
+  # Priority = quality * quality_pref + ease * (1 - quality_pref).
+  # 0.8 means "quality first, then ease" — raise toward 1.0 for pure quality,
+  # or use `blf rank --order quality` to sort by quality alone.
+  quality_pref: 0.80
+  tiers:                   # quality score cutoffs
+    A: 75
+    B: 55
+    C: 35
+
+# --- Metrics providers (all optional; keys come from the environment) -------
+metrics:
+  open_pagerank: true      # domain authority 0-100 (needs OPENPAGERANK_KEY, free)
+  rdap_domain_age: true    # registration age over RDAP (no key, HTTPS/JSON)
+
+# --- Assist / drafting ------------------------------------------------------
+assist:
+  # Template mode always works with no key. If ANTHROPIC_API_KEY is set and
+  # llm is true, drafts are written by Claude for higher quality.
+  llm: false
+  llm_model: "claude-fable-5"
+  # Hard guardrail: the tool NEVER auto-submits to third-party sites. It drafts
+  # for your review. Leave this true. See README "Why not bulk auto-posting".
+  human_review_required: true
+
+# --- Storage ----------------------------------------------------------------
+storage:
+  db_path: "backlinks.db"

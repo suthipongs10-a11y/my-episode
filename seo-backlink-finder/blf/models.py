@@ -1,0 +1,212 @@
+"""Core data types shared across the tool.
+
+Kept dependency-free (stdlib only) so every other module can import it and so
+the tests never need the network.
+"""
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field, asdict
+from enum import Enum
+from typing import Any, Optional
+
+
+class OpportunityType(str, Enum):
+    """How a backlink can be obtained from a page.
+
+    Ordered loosely from most to least valuable *ceiling*. This ordering feeds
+    the "placement" component of the quality score: an editorial guest post can
+    reach a higher quality than a forum signature no matter the domain.
+    """
+
+    GUEST_POST = "guest_post"          # editorial in-content link, you author the piece
+    EDITORIAL_MENTION = "editorial"    # someone links you in their own content (PR/HARO)
+    RESOURCE_PAGE = "resource_page"    # curated "useful links" list
+    DIRECTORY = "directory"            # niche/business directory listing
+    BUSINESS_LISTING = "business_listing"  # local citation (maps/yelp-style)
+    QA = "qa"                          # question-and-answer site answer
+    FORUM = "forum"                    # forum post / signature
+    BLOG_COMMENT = "blog_comment"      # comment under an article
+    PROFILE = "profile"                # profile page with a website field
+    WEB2 = "web2"                      # free hosted blog (medium/wordpress.com/...)
+    SOCIAL = "social"                  # social platform bio
+    WIKI = "wiki"                      # wiki external-links section
+    BOOKMARK = "bookmark"              # social bookmarking site
+    UNKNOWN = "unknown"
+
+    @property
+    def label(self) -> str:
+        return _TYPE_LABELS.get(self, self.value)
+
+
+_TYPE_LABELS = {
+    OpportunityType.GUEST_POST: "Guest post",
+    OpportunityType.EDITORIAL_MENTION: "Editorial mention",
+    OpportunityType.RESOURCE_PAGE: "Resource page",
+    OpportunityType.DIRECTORY: "Directory",
+    OpportunityType.BUSINESS_LISTING: "Business listing",
+    OpportunityType.QA: "Q&A answer",
+    OpportunityType.FORUM: "Forum",
+    OpportunityType.BLOG_COMMENT: "Blog comment",
+    OpportunityType.PROFILE: "Profile",
+    OpportunityType.WEB2: "Web 2.0 blog",
+    OpportunityType.SOCIAL: "Social bio",
+    OpportunityType.WIKI: "Wiki",
+    OpportunityType.BOOKMARK: "Bookmark",
+    OpportunityType.UNKNOWN: "Unknown",
+}
+
+
+class LinkAttribute(str, Enum):
+    """The rel attribute a link from this page would most likely carry."""
+
+    DOFOLLOW = "dofollow"
+    UGC = "ugc"
+    NOFOLLOW = "nofollow"
+    SPONSORED = "sponsored"
+    UNKNOWN = "unknown"
+
+
+class Status(str, Enum):
+    """Where a prospect sits in your outreach pipeline."""
+
+    NEW = "new"                # discovered, not analysed
+    QUALIFIED = "qualified"    # analysed and worth pursuing
+    DRAFTED = "drafted"        # a comment/pitch has been drafted
+    CONTACTED = "contacted"    # outreach sent / comment submitted
+    LIVE = "live"              # link is live on the page
+    REJECTED = "rejected"      # not worth it / declined / spam risk
+    DISCARDED = "discarded"    # low quality, dropped
+
+
+# Tier is a plain string ("A".."D"); helpers live in score.py.
+
+
+@dataclass
+class Analysis:
+    """Everything we learn by fetching and reading a page. All optional so a
+    partially-analysed prospect is still valid."""
+
+    fetched: bool = False
+    http_status: Optional[int] = None
+    final_url: Optional[str] = None
+    https: bool = False
+    title: Optional[str] = None
+    meta_description: Optional[str] = None
+    declared_lang: Optional[str] = None       # from <html lang> / meta
+    content_lang: Optional[str] = None        # what we detected from text
+    lang_confidence: float = 0.0
+    platform: Optional[str] = None            # WordPress, Discourse, ...
+    comment_system: Optional[str] = None      # native, disqus, facebook, none
+    has_comment_form: bool = False
+    has_submit_form: bool = False             # "submit your site / write for us"
+    link_attribute: LinkAttribute = LinkAttribute.UNKNOWN
+    external_links: int = 0
+    external_dofollow: int = 0
+    contact_email: Optional[str] = None
+    contact_url: Optional[str] = None
+    signals: list[str] = field(default_factory=list)   # human-readable evidence
+    error: Optional[str] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        d = asdict(self)
+        d["link_attribute"] = self.link_attribute.value
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Analysis":
+        d = dict(d or {})
+        if "link_attribute" in d and d["link_attribute"] is not None:
+            d["link_attribute"] = LinkAttribute(d["link_attribute"])
+        # tolerate unknown keys from older schema versions
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in d.items() if k in known})
+
+
+@dataclass
+class Metrics:
+    """Third-party quality signals for the registrable domain."""
+
+    authority: Optional[float] = None        # 0-100 (Open PageRank / DA)
+    authority_source: Optional[str] = None
+    domain_age_days: Optional[int] = None
+    domain_created: Optional[str] = None      # ISO date string
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Metrics":
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in (d or {}).items() if k in known})
+
+
+@dataclass
+class Scores:
+    quality: float = 0.0        # 0-100, the number you rank by
+    ease: float = 0.0           # 0-100, higher = easier to obtain
+    priority: float = 0.0       # blend, quality-first
+    tier: str = "D"             # A/B/C/D
+    breakdown: dict[str, float] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Scores":
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in (d or {}).items() if k in known})
+
+
+@dataclass
+class Prospect:
+    """One backlink opportunity: a URL plus everything we know about it."""
+
+    url: str
+    domain: str = ""                       # registrable domain, e.g. example.com
+    opportunity_type: OpportunityType = OpportunityType.UNKNOWN
+    category: Optional[str] = None         # footprint category that found it
+    source_query: Optional[str] = None     # the footprint/query used
+    status: Status = Status.NEW
+    analysis: Analysis = field(default_factory=Analysis)
+    metrics: Metrics = field(default_factory=Metrics)
+    scores: Scores = field(default_factory=Scores)
+    notes: str = ""
+    discovered_at: Optional[str] = None
+    analyzed_at: Optional[str] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "url": self.url,
+            "domain": self.domain,
+            "opportunity_type": self.opportunity_type.value,
+            "category": self.category,
+            "source_query": self.source_query,
+            "status": self.status.value,
+            "analysis": self.analysis.to_dict(),
+            "metrics": self.metrics.to_dict(),
+            "scores": self.scores.to_dict(),
+            "notes": self.notes,
+            "discovered_at": self.discovered_at,
+            "analyzed_at": self.analyzed_at,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Prospect":
+        return cls(
+            url=d["url"],
+            domain=d.get("domain", ""),
+            opportunity_type=OpportunityType(d.get("opportunity_type", "unknown")),
+            category=d.get("category"),
+            source_query=d.get("source_query"),
+            status=Status(d.get("status", "new")),
+            analysis=Analysis.from_dict(d.get("analysis", {})),
+            metrics=Metrics.from_dict(d.get("metrics", {})),
+            scores=Scores.from_dict(d.get("scores", {})),
+            notes=d.get("notes", ""),
+            discovered_at=d.get("discovered_at"),
+            analyzed_at=d.get("analyzed_at"),
+        )

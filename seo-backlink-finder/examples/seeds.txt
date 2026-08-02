@@ -1,0 +1,15 @@
+# Example seed file for `blf import --input seeds.txt`.
+# One URL per line. Lines that don't start with http(s):// are ignored, so
+# comments like this one are fine.
+#
+# Typical workflow when you have no Search API key:
+#   1) blf footprints --keyword "your niche"
+#   2) run those queries in your browser
+#   3) paste the result URLs below (or into your own file)
+#   4) blf import --input seeds.txt
+#   5) blf analyze
+#
+# Replace the placeholders below with real prospects for your niche.
+https://example-blog.com/write-for-us
+https://example-directory.com/submit
+https://example-forum.com/viewtopic?t=123

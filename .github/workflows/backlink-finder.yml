@@ -1,0 +1,40 @@
+name: backlink-finder
+
+# Scoped to the SEO tool only, so it never queues behind the rAthena build in
+# the main CI. Runs the offline test suite on every change under its folder.
+on:
+  push:
+    branches: ["**"]
+    paths: ["seo-backlink-finder/**"]
+  pull_request:
+    paths: ["seo-backlink-finder/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: blf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: seo-backlink-finder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run tests
+        run: python -m pytest -q

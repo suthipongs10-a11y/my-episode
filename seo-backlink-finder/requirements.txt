@@ -1,0 +1,13 @@
+# Core runtime dependencies.
+# The tool runs on the Python standard library alone for its core logic;
+# these packages improve HTTP handling, parsing, and output but the code
+# degrades gracefully when any of them is missing.
+requests>=2.28
+beautifulsoup4>=4.11
+lxml>=4.9
+pyyaml>=6.0
+tldextract>=3.4
+rich>=13.0
+
+# Optional, install if you want the test suite:
+#   pip install pytest
