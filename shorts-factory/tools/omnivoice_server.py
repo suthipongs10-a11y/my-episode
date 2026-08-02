@@ -7,7 +7,7 @@ Python API, a CLI and a Gradio demo, but no HTTP server — so `tools/gen_voice_
 has nothing to talk to until something like this is running. Copy it to the pod, start it,
 point LOCAL_TTS_URL at it.
 
-    pip install "omnivoice" torch torchaudio      # per the OmniVoice README, on the pod
+    pip install "omnivoice[tn]"                   # [tn] = spoken numbers/dates; see below
     python omnivoice_server.py --port 8000 --device cuda:0 \
         --language th --instruct "male, middle-aged, warm, calm documentary narrator"
 
@@ -151,7 +151,21 @@ class Handler(BaseHTTPRequestHandler):
             with _lock:
                 audio = _model.generate(**kw)
         except Exception as e:
-            return self._json(500, {"error": f"{type(e).__name__}: {e}"})
+            # normalize_text pulls in optional deps (WeTextProcessing for zh/en, num2words
+            # elsewhere). A pod without `omnivoice[tn]` should still speak the line rather
+            # than 500 — but say so, because "1945" will come out as digits-not-words.
+            if kw.get("normalize_text"):
+                print(f"  normalize_text failed ({type(e).__name__}: {e}); retrying raw. "
+                      f"Install omnivoice[tn] on this pod for spoken numbers and dates.",
+                      flush=True)
+                kw["normalize_text"] = False
+                try:
+                    with _lock:
+                        audio = _model.generate(**kw)
+                except Exception as e2:
+                    return self._json(500, {"error": f"{type(e2).__name__}: {e2}"})
+            else:
+                return self._json(500, {"error": f"{type(e).__name__}: {e}"})
 
         try:
             body = to_wav(audio[0])

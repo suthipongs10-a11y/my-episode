@@ -114,6 +114,49 @@ python omnivoice_server.py --port 8000 --device cuda:0 --language th \
     --instruct "male, middle-aged, warm, calm documentary narrator"
 ```
 
+##### Picking the pod
+
+**OmniVoice needs about 4 GB of VRAM** — its README reports it tested on an Arc A310 with
+4 GB, and `audio_chunk_duration` keeps VRAM near-constant however long the text is. Every
+GPU RunPod offers is therefore oversized for it, so choose on **price and availability, not
+on VRAM**:
+
+| GPU | $/hr | VRAM | availability | hours from a $3.89 balance |
+|---|---|---|---|---|
+| **RTX 4000 Ada** | 0.28 | 20 GB | Low | ~13.9 |
+| RTX PRO 4000 | 0.57 | 24 GB | Medium | ~6.8 |
+| **RTX 4090** | 0.69 | 24 GB | High | ~5.6 |
+| RTX PRO 4500 | 0.74 | 32 GB | High | ~5.2 |
+| RTX 5090 | 0.99 | 32 GB | High | ~3.9 |
+
+Take **RTX 4000 Ada** when one is free and **RTX 4090** when it is not — both are Ada
+generation, which has the widest CUDA/template support. Skip Blackwell (5090, B200): it
+needs CUDA 12.8+, adds template friction, and buys VRAM this model will not touch.
+
+**The bill is the install, not the inference.** At the quoted RTF of 0.025 the whole 41 s
+of vox-2 narration is about one second of GPU time. What costs money is `pip install` plus
+the first model download, so start from a template that already ships PyTorch + CUDA, give
+it ~40 GB container disk, and **terminate** the pod afterwards rather than leaving it
+stopped. A first end-to-end run should land around $0.10–0.25.
+
+##### On the pod
+
+```bash
+pip install "omnivoice[tn]"          # [tn] = WeTextProcessing/num2words, so "1945" is spoken
+                                     # as words. Without it the server retries unnormalised
+                                     # and logs why, rather than failing the line.
+# copy tools/omnivoice_server.py across, then:
+python omnivoice_server.py --port 8000 --device cuda:0 --language th \
+    --instruct "male, middle-aged, warm, calm documentary narrator"
+curl http://127.0.0.1:8000/healthz   # {"ok": true, ...} before leaving the pod alone
+```
+
+Expose HTTP port **8000** on the pod so RunPod publishes it at
+`https://<pod-id>-8000.proxy.runpod.net`.
+
+Start in `--instruct` mode: voice design needs no reference clip, and it also avoids
+OmniVoice auto-loading Whisper to transcribe one, which is extra download and extra VRAM.
+
 **`--fit-window` is the reason this model suits the pipeline.** OmniVoice's `generate()`
 takes a **`duration` in seconds** and synthesises to exactly that length. `beats.json`
 already says how long each line has, so the audio arrives already fitting:
