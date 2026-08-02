@@ -78,6 +78,51 @@ these out of the RO server's `.env`; they are unrelated systems.
 **A TSX short needs exactly one key: `ELEVENLABS_API_KEY`.** That is the cheapest way in,
 and it is the track to start on.
 
+### Or run the voice yourself — `tools/gen_voice_local.py`
+
+Added 2026-08-02. Same `beats.json` contract as `gen_voice.py`, but it POSTs to a TTS server
+you host (RunPod, vLLM, anything) instead of ElevenLabs. No key, no per-character bill.
+
+```bash
+export LOCAL_TTS_URL=https://<pod-id>-8000.proxy.runpod.net/v1/audio/speech
+export LOCAL_TTS_MODEL=<model-id>   LOCAL_TTS_VOICE=<voice-id>
+python tools/gen_voice_local.py --beats vox-shorts/vox-2-thai-rice/beats.json --dry-run
+python tools/gen_voice_local.py --beats vox-shorts/vox-2-thai-rice/beats.json
+```
+
+It defaults to the OpenAI `/v1/audio/speech` body shape, which most self-host wrappers
+already expose; `LOCAL_TTS_BODY` takes a JSON template for anything else. Verified end to
+end against a stand-in server: generates per line, measures the real durations, **reports
+which lines overflow their authored window**, mixes one timeline, and writes the measured
+timings back into `beats.json`. `--retime` rewrites the windows from the audio instead of
+keeping the estimates — use that when the VO is a different language or length from the
+plan, and move the composition's `CUE` table with it.
+
+**What it cannot do: per-word timestamps.** The `short-N` TSX track highlights the exact
+spoken word, and that needs them; ElevenLabs returns them from `/with-timestamps` and a raw
+TTS server does not. Recover them with forced alignment (whisperx / ctc-forced-aligner / MFA)
+over the audio this writes. **The vox track needs none of this** — its on-screen text carries
+the words, so a self-hosted voice is a straight drop-in there.
+
+### If the narration goes Thai, the on-screen text has a blocker
+
+Measured in this container on 2026-08-02, and it is not obvious until a render comes back
+full of empty boxes:
+
+- **None of the five bundled brand fonts covers Thai.** Space Grotesk, Inter, JetBrains Mono,
+  Spectral and Source Serif 4 are all latin-subset here, and even their full versions have no
+  Thai glyphs.
+- The headless Chromium has **59 fonts total**, and the only ones with Thai coverage are
+  `Loma`, `FreeSerif` and `Unifont` — a fallback stack, not a brand.
+
+The fix is small but it is real work: add a Thai family (Noto Serif Thai / Sarabun / IBM Plex
+Sans Thai — all OFL) to `WANTED` in `remotion/scripts/fetch-fonts.mjs`, re-run it, and give
+`FONT_EDITORIAL`/`FONT_BODY` a Thai fallback. Do it when the language is decided, not before.
+
+Thai also has **no spaces between words**, so per-word captions need a segmenter
+(`pythainlp` newmm) before an aligner can label anything. Another reason the vox track is the
+easier one to take Thai.
+
 ### What the money looks like
 
 - **ElevenLabs** — subscription, priced per character of TTS. A short is ~100 words, so the

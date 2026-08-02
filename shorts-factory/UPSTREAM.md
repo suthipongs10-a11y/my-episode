@@ -28,6 +28,8 @@ that upstream never had to care about. Diff against upstream to see them in isol
 | `remotion/src/fonts.gen.ts` | **new, generated** (~710 KB) | the inlined woff2 bytes. Never hand-edit; re-run `scripts/fetch-fonts.mjs`. |
 | `remotion/scripts/fetch-fonts.mjs` | **new** | downloads the faces with a client that does trust the CA, and writes `fonts.gen.ts` |
 | `media/library/fonts/` | **new** — 14 woff2 + `manifest.json` | the downloaded files. All five families are OFL-licensed, so redistributing them here is fine. |
+| `tools/gen_voice_local.py` | **new** | voice from a self-hosted TTS endpoint instead of ElevenLabs. Sibling of `gen_voice.py`, which is untouched. |
+| `.env.example` | the `LOCAL_TTS_*` block | configuration for the above — nothing secret, and nothing hardcoded |
 | `UPSTREAM.md`, `SETUP.md` | **new** | this file and the setup notes |
 
 The font change is worth keeping even off a sandbox: it makes renders offline and
