@@ -234,16 +234,121 @@ CATEGORIES: dict[str, Category] = {
     "business_listing": Category(
         key="business_listing",
         opportunity_type=OpportunityType.BUSINESS_LISTING,
-        description="Local citation sites (business listings with a website "
-                    "field).",
+        description="Business listing sites with a website field (non-geo).",
         placement_rank=45, base_ease=65, typical_link=LinkAttribute.NOFOLLOW,
         templates={
+            "neutral": [
+                '"{keyword}" inurl:add-business',
+                '"{keyword}" inurl:business-listing',
+            ],
             "en": [
                 '"{keyword}" "add your business"',
                 '"{keyword}" "list your business"',
+                '"{keyword}" "claim your listing"',
+                '"{keyword}" "business profile" "submit"',
             ],
             "th": [
                 '"{keyword}" "ลงประกาศธุรกิจ"',
+                '"{keyword}" "เพิ่มธุรกิจของคุณ"',
+                '"{keyword}" "ลงทะเบียนร้านค้า"',
+            ],
+        },
+    ),
+    "local_citation": Category(
+        key="local_citation",
+        opportunity_type=OpportunityType.LOCAL_CITATION,
+        description="Geo/local citations — NAP (name, address, phone) listings "
+                    "in a specific city or country. Use {city} in your keyword.",
+        placement_rank=50, base_ease=60, typical_link=LinkAttribute.NOFOLLOW,
+        templates={
+            "neutral": [
+                '"{keyword}" inurl:local',
+                '"{keyword}" inurl:city',
+            ],
+            "en": [
+                '"{keyword}" "local business directory"',
+                '"{keyword}" "add a local business"',
+                '"{keyword}" "business directory" "phone" "address"',
+                '"{keyword}" "near me" directory submit',
+            ],
+            "th": [
+                '"{keyword}" "ไดเรกทอรีธุรกิจท้องถิ่น"',
+                '"{keyword}" "ร้านค้าใกล้ฉัน" ลงประกาศ',
+                '"{keyword}" "สมุดหน้าเหลือง"',
+            ],
+        },
+    ),
+    "community": Category(
+        key="community",
+        opportunity_type=OpportunityType.COMMUNITY,
+        description="Community platforms — subreddits, groups, Discourse/Slack "
+                    "communities. Relationship-driven, strict on self-promotion.",
+        placement_rank=50, base_ease=50, typical_link=LinkAttribute.NOFOLLOW,
+        templates={
+            "neutral": [
+                '"{keyword}" inurl:community',
+                '"{keyword}" inurl:c/ discourse',
+                '"{keyword}" "powered by discourse"',
+            ],
+            "en": [
+                '"{keyword}" community "join the discussion"',
+                '"{keyword}" site:reddit.com',
+                '"{keyword}" "slack community"',
+                '"{keyword}" "discord server" list',
+                '"{keyword}" "facebook group"',
+            ],
+            "th": [
+                '"{keyword}" "กลุ่มเฟซบุ๊ก"',
+                '"{keyword}" ชุมชนออนไลน์',
+                '"{keyword}" site:pantip.com',
+            ],
+        },
+    ),
+    "blog": Category(
+        key="blog",
+        opportunity_type=OpportunityType.BLOG,
+        description="Topical blogs to build a relationship with — link inserts, "
+                    "round-ups, reviews, interviews, or a future guest post.",
+        placement_rank=70, base_ease=35, typical_link=LinkAttribute.DOFOLLOW,
+        templates={
+            "neutral": [
+                '"{keyword}" inurl:blog',
+                '"{keyword}" intitle:blog',
+            ],
+            "en": [
+                '"{keyword}" "best blogs" list',
+                '"{keyword}" blog "round-up"',
+                '"{keyword}" blog "product review" "contact"',
+                '"{keyword}" "top 10" blogs',
+            ],
+            "th": [
+                '"{keyword}" บล็อก แนะนำ',
+                '"{keyword}" "รีวิว" บล็อก',
+            ],
+        },
+    ),
+    "news": Category(
+        key="news",
+        opportunity_type=OpportunityType.NEWS,
+        description="News sites, press-release outlets, and journalist requests. "
+                    "Highest authority ceiling; needs a genuine story.",
+        placement_rank=95, base_ease=15, typical_link=LinkAttribute.DOFOLLOW,
+        templates={
+            "neutral": [
+                '"{keyword}" inurl:news',
+                '"{keyword}" inurl:press-release',
+                '"{keyword}" inurl:submit-news',
+            ],
+            "en": [
+                '"{keyword}" "submit a press release"',
+                '"{keyword}" "news tip" contact editor',
+                '"{keyword}" "sources wanted" journalist',
+                '"{keyword}" "expert commentary" media',
+            ],
+            "th": [
+                '"{keyword}" "ข่าวประชาสัมพันธ์" ส่งข่าว',
+                '"{keyword}" "ฝากข่าว"',
+                '"{keyword}" ข่าว ติดต่อกองบรรณาธิการ',
             ],
         },
     ),

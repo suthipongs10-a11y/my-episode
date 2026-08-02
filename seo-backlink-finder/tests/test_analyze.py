@@ -22,6 +22,25 @@ to get a great harvest every season with simple methods.</article>
 def test_registrable_domain():
     assert registrable_domain("https://www.example.co.uk/path") == "example.co.uk"
     assert registrable_domain("http://sub.blog.example.com/") == "example.com"
+    assert registrable_domain("https://example.co.th/x") == "example.co.th"
+
+
+def test_registrable_domain_unknown_tld():
+    """A TLD missing from the public suffix list must still yield the last two
+    labels — returning just 'test' would merge unrelated sites into one domain."""
+    assert registrable_domain("http://nothing.test") == "nothing.test"
+    assert registrable_domain("https://shop.brandnew.somegtld/x") == "brandnew.somegtld"
+
+
+def test_registrable_domain_with_port_and_userinfo():
+    assert registrable_domain("http://example.com:8099/a") == "example.com"
+    assert registrable_domain("http://user@example.com/a") == "example.com"
+
+
+def test_registrable_domain_ip_address():
+    """An IP has no registrable part; last-two-labels would give '0.1'."""
+    assert registrable_domain("http://127.0.0.1:8099/a") == "127.0.0.1"
+    assert registrable_domain("http://192.168.1.50/") == "192.168.1.50"
 
 
 def test_wordpress_and_comments():

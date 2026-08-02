@@ -281,12 +281,97 @@ def cmd_analyze(args) -> int:
     return 0
 
 
+def cmd_start(args) -> int:
+    """The one-command flow: a URL in, ranked targets out."""
+    cfg = _load(args)
+    from .run import Campaign, run_campaign
+
+    site = args.url or cfg.get("site.url")
+    if not site or "example.com" in site:
+        err("Give me your site: blf start https://yoursite.com")
+        return 1
+
+    campaign = Campaign()
+    out(f"[b]Starting campaign for {site}[/b]\n")
+    result = run_campaign(
+        site, cfg, campaign=campaign,
+        max_targets=args.limit or 60,
+        categories=[c.strip() for c in args.categories.split(",")] if args.categories else None,
+        use_seeds=not args.no_seeds,
+        on_event=lambda m: out_plain(m),
+    )
+    if result.get("error"):
+        err(f"campaign failed: {result['error']}")
+        return 1
+
+    prof = result.get("profile") or {}
+    out(f"\n[b]Site profile[/b]")
+    out_plain(f"  brand    : {prof.get('brand')}")
+    out_plain(f"  language : {prof.get('language')}"
+              + (f"  country: {prof.get('country')}" if prof.get("country") else ""))
+    out_plain(f"  topics   : {', '.join(prof.get('topics') or [])}")
+    out_plain(f"  keywords : {', '.join(prof.get('seed_keywords') or [])}")
+
+    store = _store(cfg)
+    rows = store.all(order_by="priority", limit=args.show or 20)
+    store.close()
+    if rows:
+        out(f"\n[b]Top targets[/b]")
+        _print_table(rows)
+    out(f"\nNext: [cyan]blf rank --min-tier B[/cyan] · "
+        f"[cyan]blf draft \"#1\"[/cyan] · [cyan]blf export --format html[/cyan]")
+    return 0
+
+
+def cmd_profile(args) -> int:
+    """Inspect what the tool thinks your site is about."""
+    cfg = _load(args)
+    from .profile import build_profile
+
+    site = args.url or cfg.get("site.url")
+    if not site:
+        err("give a URL: blf profile https://yoursite.com")
+        return 1
+    prof = build_profile(site, _fetcher(cfg), max_pages=args.pages,
+                         on_progress=lambda m: out_plain(f"  {m}"))
+    out(f"\n[b]{prof.domain}[/b]")
+    out_plain(f"  brand      : {prof.brand}")
+    out_plain(f"  title      : {prof.title}")
+    out_plain(f"  language   : {prof.language}  (drafts will use: {', '.join(prof.languages)})")
+    out_plain(f"  country    : {prof.country or '—'}"
+              + ("   [local business]" if prof.is_local_business else ""))
+    out_plain(f"  pages read : {len(prof.pages_read)}")
+    out("\n  [b]topics[/b]")
+    for phrase, sc in prof.keyphrases[:12]:
+        out_plain(f"    {sc:8.1f}  {phrase}")
+    out("\n  [b]search keywords[/b]")
+    for kw in prof.seed_keywords:
+        out_plain(f"    - {kw}")
+    out("\n  [b]categories to search[/b]")
+    out_plain(f"    {', '.join(prof.categories)}")
+    for note in prof.notes:
+        out_plain(f"  note: {note}")
+    if args.save:
+        prof.save(args.save)
+        out(f"\nSaved profile to {args.save}")
+    return 0
+
+
+def cmd_serve(args) -> int:
+    """Run the web UI."""
+    cfg = _load(args)
+    from .webui import serve
+    serve(cfg, host=args.host, port=args.port)
+    return 0
+
+
 def cmd_rank(args) -> int:
     cfg = _load(args)
     store = _store(cfg)
     rows = store.all(status=args.status, min_tier=args.min_tier,
                      opportunity_type=args.type, order_by=args.order,
-                     limit=args.limit or None)
+                     limit=args.limit or None,
+                     min_match=args.min_match)
     store.close()
     if not rows:
         out("No prospects match. Try 'blf analyze' first, or loosen the filters.")
@@ -454,25 +539,30 @@ def _default_kind(p: Prospect) -> str:
 def _print_table(rows: list[Prospect], store_for_ids=None) -> None:
     if _console:
         table = Table(show_lines=False, header_style="bold")
-        for col in ("Tier", "Prio", "Qual", "Ease", "Auth", "Type", "Link",
-                    "Lang", "Status", "Domain"):
+        for col in ("Tier", "Prio", "Qual", "Match", "Ease", "Auth", "Type",
+                    "Link", "Lang", "Status", "Domain"):
             table.add_column(col)
         tier_color = {"A": "green", "B": "cyan", "C": "yellow", "D": "dim"}
         for p in rows:
             tc = tier_color.get(p.scores.tier, "white")
+            match = p.scores.match
+            mc = "green" if match >= 60 else ("yellow" if match >= 30 else "dim")
             table.add_row(
                 f"[{tc}]{p.scores.tier}[/{tc}]",
-                str(p.scores.priority), str(p.scores.quality), str(p.scores.ease),
+                str(p.scores.priority), str(p.scores.quality),
+                f"[{mc}]{match}[/{mc}]", str(p.scores.ease),
                 "" if p.metrics.authority is None else str(p.metrics.authority),
                 p.opportunity_type.label, p.analysis.link_attribute.value,
                 p.analysis.content_lang or "", p.status.value, p.domain,
             )
         _console.print(table)
     else:
-        print(f"{'Tier':4} {'Prio':5} {'Qual':5} {'Ease':5} {'Type':16} {'Link':9} {'Domain'}")
+        print(f"{'Tier':4} {'Prio':5} {'Qual':5} {'Match':6} {'Ease':5} "
+              f"{'Type':16} {'Link':9} {'Domain'}")
         for p in rows:
             print(f"{p.scores.tier:4} {p.scores.priority:<5} {p.scores.quality:<5} "
-                  f"{p.scores.ease:<5} {p.opportunity_type.value:16} "
+                  f"{p.scores.match:<6} {p.scores.ease:<5} "
+                  f"{p.opportunity_type.value:16} "
                   f"{p.analysis.link_attribute.value:9} {p.domain}")
 
 
@@ -488,6 +578,27 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("init", help="create config.yaml and the database")
     sp.add_argument("--force", action="store_true")
     sp.set_defaults(func=cmd_init)
+
+    sp = sub.add_parser("start", help="one command: profile your site, then "
+                                      "find and rank backlink targets for it")
+    sp.add_argument("url", nargs="?", help="your website (defaults to site.url)")
+    sp.add_argument("--limit", type=int, help="max targets to analyze (default 60)")
+    sp.add_argument("--show", type=int, help="how many rows to print at the end")
+    sp.add_argument("--categories", help="comma-separated category keys")
+    sp.add_argument("--no-seeds", action="store_true",
+                    help="skip the built-in platform catalog")
+    sp.set_defaults(func=cmd_start)
+
+    sp = sub.add_parser("profile", help="show what the tool thinks your site is about")
+    sp.add_argument("url", nargs="?")
+    sp.add_argument("--pages", type=int, default=6, help="how many pages to read")
+    sp.add_argument("--save", help="write the profile to a JSON file")
+    sp.set_defaults(func=cmd_profile)
+
+    sp = sub.add_parser("serve", help="run the web UI (paste a URL, press Start)")
+    sp.add_argument("--host", default="127.0.0.1")
+    sp.add_argument("--port", type=int, default=8080)
+    sp.set_defaults(func=cmd_serve)
 
     sp = sub.add_parser("footprints", help="print search queries to run by hand")
     sp.add_argument("--keyword", help="niche keyword (defaults to first topic)")
@@ -523,7 +634,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--type")
     sp.add_argument("--status")
     sp.add_argument("--order", default="priority",
-                    choices=["priority", "quality", "ease", "authority", "domain"])
+                    choices=["priority", "quality", "match", "ease",
+                             "authority", "domain"])
+    sp.add_argument("--min-match", dest="min_match", type=float,
+                    help="only show targets matching your site at least this "
+                         "well (0-100)")
     sp.add_argument("--limit", type=int)
     sp.set_defaults(func=cmd_rank)
 

@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS prospects (
     quality         REAL,
     ease            REAL,
     priority        REAL,
+    match           REAL,
     tier            TEXT,
     authority       REAL,
     link_attribute  TEXT,
@@ -63,17 +64,18 @@ class Store:
         self.conn.execute(
             """
             INSERT INTO prospects (url, domain, opportunity_type, category,
-                status, quality, ease, priority, tier, authority,
+                status, quality, ease, priority, match, tier, authority,
                 link_attribute, content_lang, has_comment_form, contact_email,
                 notes, discovered_at, analyzed_at, data)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ON CONFLICT(url) DO UPDATE SET
                 domain=excluded.domain,
                 opportunity_type=excluded.opportunity_type,
                 category=excluded.category,
                 status=excluded.status,
                 quality=excluded.quality, ease=excluded.ease,
-                priority=excluded.priority, tier=excluded.tier,
+                priority=excluded.priority, match=excluded.match,
+                tier=excluded.tier,
                 authority=excluded.authority,
                 link_attribute=excluded.link_attribute,
                 content_lang=excluded.content_lang,
@@ -85,7 +87,7 @@ class Store:
             """,
             (
                 p.url, p.domain, p.opportunity_type.value, p.category,
-                p.status.value, s.quality, s.ease, s.priority, s.tier,
+                p.status.value, s.quality, s.ease, s.priority, s.match, s.tier,
                 m.authority, a.link_attribute.value, a.content_lang,
                 1 if a.has_comment_form else 0, a.contact_email, p.notes,
                 p.discovered_at, p.analyzed_at, p.to_json(),
@@ -137,6 +139,7 @@ class Store:
         order_by: str = "priority",
         limit: Optional[int] = None,
         only_unanalyzed: bool = False,
+        min_match: Optional[float] = None,
     ) -> list[Prospect]:
         clauses, params = [], []
         if status:
@@ -147,6 +150,9 @@ class Store:
             params.append(opportunity_type)
         if only_unanalyzed:
             clauses.append("analyzed_at IS NULL")
+        if min_match is not None:
+            clauses.append("match >= ?")
+            params.append(min_match)
         if min_tier:
             allowed = _tiers_at_least(min_tier)
             clauses.append("tier IN (%s)" % ",".join("?" * len(allowed)))
@@ -154,7 +160,7 @@ class Store:
         where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
         order_col = {
             "priority": "priority", "quality": "quality", "ease": "ease",
-            "authority": "authority", "domain": "domain",
+            "match": "match", "authority": "authority", "domain": "domain",
         }.get(order_by, "priority")
         sql = f"SELECT data FROM prospects {where} ORDER BY {order_col} DESC"
         if limit:

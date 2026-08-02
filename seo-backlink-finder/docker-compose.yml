@@ -1,0 +1,36 @@
+# Run the whole thing with:  docker compose up -d
+# Then open http://127.0.0.1:8080
+#
+# Secrets come from a .env file next to this one (see config.example.env).
+# .env is gitignored; never put keys in this file.
+
+services:
+  blf:
+    build: .
+    image: seo-backlink-finder:local
+    container_name: blf
+    restart: unless-stopped
+
+    # Bound to loopback on purpose. This UI has no authentication, so exposing
+    # it on 0.0.0.0 would put a crawler that runs arbitrary URLs on the public
+    # internet. Put a reverse proxy with auth in front before changing this.
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    volumes:
+      # Your config.yaml, backlinks.db and exported reports live here.
+      - ./data:/data
+
+    environment:
+      # All optional; the tool runs without any of them.
+      SERPAPI_KEY: "${SERPAPI_KEY:-}"
+      GOOGLE_CSE_KEY: "${GOOGLE_CSE_KEY:-}"
+      GOOGLE_CSE_CX: "${GOOGLE_CSE_CX:-}"
+      OPENPAGERANK_KEY: "${OPENPAGERANK_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+
+    # A crawler is bursty but small; these keep it from eating a shared box.
+    deploy:
+      resources:
+        limits:
+          memory: 1g

@@ -18,6 +18,7 @@ _COLUMNS = [
     ("tier", "Tier"),
     ("priority", "Priority"),
     ("quality", "Quality"),
+    ("match", "Match"),
     ("ease", "Ease"),
     ("authority", "Authority"),
     ("opportunity_type", "Type"),
@@ -34,6 +35,7 @@ def _row_values(p: Prospect) -> dict:
         "tier": p.scores.tier,
         "priority": p.scores.priority,
         "quality": p.scores.quality,
+        "match": p.scores.match,
         "ease": p.scores.ease,
         "authority": "" if p.metrics.authority is None else p.metrics.authority,
         "opportunity_type": p.opportunity_type.label,
@@ -93,10 +95,14 @@ def export_html(prospects: Iterable[Prospect], path: str, title: str = "Backlink
         warn = ""
         if p.analysis.link_attribute.value in ("nofollow", "ugc", "sponsored"):
             warn = ' title="link likely does not pass ranking value"'
+        match = v["match"]
+        mcolor = "#1a7f37" if match >= 60 else ("#d97706" if match >= 30 else "#9ca3af")
         cells = [
             f'<td><span class="tier" style="background:{color}">{tier}</span></td>',
             f'<td class="num">{v["priority"]}</td>',
             f'<td class="num">{v["quality"]}</td>',
+            f'<td class="num" style="color:{mcolor};font-weight:600" '
+            f'title="how well this site matches yours">{match}</td>',
             f'<td class="num">{v["ease"]}</td>',
             f'<td class="num">{v["authority"]}</td>',
             f'<td>{html.escape(str(v["opportunity_type"]))}</td>',

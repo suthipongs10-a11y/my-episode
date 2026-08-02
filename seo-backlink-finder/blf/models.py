@@ -21,16 +21,20 @@ class OpportunityType(str, Enum):
 
     GUEST_POST = "guest_post"          # editorial in-content link, you author the piece
     EDITORIAL_MENTION = "editorial"    # someone links you in their own content (PR/HARO)
+    NEWS = "news"                      # news site / press release / journalist request
     RESOURCE_PAGE = "resource_page"    # curated "useful links" list
-    DIRECTORY = "directory"            # niche/business directory listing
-    BUSINESS_LISTING = "business_listing"  # local citation (maps/yelp-style)
+    BLOG = "blog"                      # a blog that takes contributions or link inserts
+    WIKI = "wiki"                      # wiki external-links section
     QA = "qa"                          # question-and-answer site answer
+    COMMUNITY = "community"            # community platform (reddit-style, groups, slack)
+    DIRECTORY = "directory"            # niche/business directory listing
+    BUSINESS_LISTING = "business_listing"  # business listing with a website field
+    LOCAL_CITATION = "local_citation"  # NAP citation on a local/geo directory
+    WEB2 = "web2"                      # free hosted blog (medium/wordpress.com/...)
     FORUM = "forum"                    # forum post / signature
     BLOG_COMMENT = "blog_comment"      # comment under an article
     PROFILE = "profile"                # profile page with a website field
-    WEB2 = "web2"                      # free hosted blog (medium/wordpress.com/...)
     SOCIAL = "social"                  # social platform bio
-    WIKI = "wiki"                      # wiki external-links section
     BOOKMARK = "bookmark"              # social bookmarking site
     UNKNOWN = "unknown"
 
@@ -42,16 +46,20 @@ class OpportunityType(str, Enum):
 _TYPE_LABELS = {
     OpportunityType.GUEST_POST: "Guest post",
     OpportunityType.EDITORIAL_MENTION: "Editorial mention",
+    OpportunityType.NEWS: "News / PR",
     OpportunityType.RESOURCE_PAGE: "Resource page",
+    OpportunityType.BLOG: "Blog",
+    OpportunityType.WIKI: "Wiki",
+    OpportunityType.QA: "Q&A answer",
+    OpportunityType.COMMUNITY: "Community",
     OpportunityType.DIRECTORY: "Directory",
     OpportunityType.BUSINESS_LISTING: "Business listing",
-    OpportunityType.QA: "Q&A answer",
+    OpportunityType.LOCAL_CITATION: "Local citation",
+    OpportunityType.WEB2: "Web 2.0 blog",
     OpportunityType.FORUM: "Forum",
     OpportunityType.BLOG_COMMENT: "Blog comment",
     OpportunityType.PROFILE: "Profile",
-    OpportunityType.WEB2: "Web 2.0 blog",
     OpportunityType.SOCIAL: "Social bio",
-    OpportunityType.WIKI: "Wiki",
     OpportunityType.BOOKMARK: "Bookmark",
     OpportunityType.UNKNOWN: "Unknown",
 }
@@ -105,6 +113,7 @@ class Analysis:
     external_dofollow: int = 0
     contact_email: Optional[str] = None
     contact_url: Optional[str] = None
+    terms: dict = field(default_factory=dict)          # term vector for matching
     signals: list[str] = field(default_factory=list)   # human-readable evidence
     error: Optional[str] = None
 
@@ -146,6 +155,7 @@ class Scores:
     quality: float = 0.0        # 0-100, the number you rank by
     ease: float = 0.0           # 0-100, higher = easier to obtain
     priority: float = 0.0       # blend, quality-first
+    match: float = 0.0          # 0-100, how well this site fits YOUR site
     tier: str = "D"             # A/B/C/D
     breakdown: dict[str, float] = field(default_factory=dict)
 

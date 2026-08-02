@@ -116,6 +116,22 @@ def detect(text: Optional[str], declared: Optional[str] = None) -> tuple[str, fl
         # No stopwords matched at all; fall back to the declared language.
         return (declared or "en", 0.25)
     conf = best / total if total else 0.0
+
+    # A declared <html lang> outranks a weak vote. On a short page a single
+    # accidental match decides the whole result — "Pour Over Coffee" scores a
+    # French hit on "pour" — and the site's own declaration is better evidence
+    # than a one-word margin. It only loses to a vote that is clearly decisive.
+    if declared and declared != best_lang:
+        declared_score = scores.get(declared)
+        margin = best - (declared_score or 0)
+        weak_vote = best < 3 or margin < 2
+        if declared_score is not None and weak_vote:
+            return (declared, round(min(0.6, 0.35 + conf * 0.25), 3))
+        if declared_score is None and best < 3:
+            # We do not vote on the declared language at all (no stopword set),
+            # and the vote is thin — believe the page.
+            return (declared, 0.4)
+
     # A declared language that agrees with the vote raises confidence.
     if declared and declared == best_lang:
         conf = min(1.0, conf + 0.2)

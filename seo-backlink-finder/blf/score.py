@@ -25,10 +25,14 @@ from .models import LinkAttribute, OpportunityType, Prospect, Scores
 # how strong the domain is.
 PLACEMENT_RANK = {
     OpportunityType.EDITORIAL_MENTION: 100,
+    OpportunityType.NEWS: 95,
     OpportunityType.GUEST_POST: 90,
     OpportunityType.RESOURCE_PAGE: 75,
+    OpportunityType.BLOG: 70,
     OpportunityType.WIKI: 70,
     OpportunityType.QA: 55,
+    OpportunityType.COMMUNITY: 50,
+    OpportunityType.LOCAL_CITATION: 50,
     OpportunityType.DIRECTORY: 45,
     OpportunityType.BUSINESS_LISTING: 45,
     OpportunityType.WEB2: 45,
@@ -48,12 +52,16 @@ BASE_EASE = {
     OpportunityType.BLOG_COMMENT: 75,
     OpportunityType.DIRECTORY: 70,
     OpportunityType.BUSINESS_LISTING: 65,
+    OpportunityType.LOCAL_CITATION: 60,
     OpportunityType.SOCIAL: 60,
     OpportunityType.FORUM: 55,
+    OpportunityType.COMMUNITY: 50,
     OpportunityType.QA: 45,
     OpportunityType.RESOURCE_PAGE: 35,
+    OpportunityType.BLOG: 35,
     OpportunityType.WIKI: 25,
     OpportunityType.GUEST_POST: 20,
+    OpportunityType.NEWS: 15,
     OpportunityType.EDITORIAL_MENTION: 10,
     OpportunityType.UNKNOWN: 40,
 }
@@ -69,31 +77,72 @@ LINK_ATTR_VALUE = {
 _WORD_RE = re.compile(r"[^\W\d_]{3,}", re.UNICODE)
 
 
-def relevance_score(prospect: Prospect, topics: list[str]) -> Optional[float]:
-    """0..1 topical match between the page and your niche, or None if you have
-    not configured any topics (so relevance is simply unknown)."""
-    topics = [t for t in (topics or []) if t.strip()]
-    if not topics:
-        return None
+def relevance_score(
+    prospect: Prospect,
+    topics: list[str],
+    profile=None,
+) -> Optional[float]:
+    """0..1 — how well this prospect's page fits YOUR site.
+
+    Three independent signals, combined so that any one of them can carry a
+    genuine match:
+
+    * **phrase hits** — your topics appearing in the page's title, description,
+      URL or domain. Precise, but brittle: a relevant page may use synonyms.
+    * **vector similarity** — cosine between the page's terms and your site's
+      whole term profile. Catches the synonym case, and works for Thai and CJK
+      via character n-grams (see textrank).
+    * **language agreement** — a Thai site is a poor placement for a Thai
+      business's backlink only if the page is in another language; matching
+      language is a real relevance signal, not a cosmetic one.
+
+    Returns None when we have nothing to compare against, so the caller drops
+    the component and renormalises instead of scoring the prospect a zero.
+    """
+    topics = [t for t in (topics or []) if t and t.strip()]
     a = prospect.analysis
+
     haystack = " ".join(filter(None, [
         a.title, a.meta_description, prospect.url, prospect.domain,
     ])).lower()
-    if not haystack.strip():
-        return 0.0
-    matched = 0.0
-    for topic in topics:
-        t = topic.lower().strip()
-        if t and t in haystack:
-            matched += 1.0            # full phrase present
-            continue
-        words = _WORD_RE.findall(t)
-        if not words:
-            continue
-        hits = sum(1 for w in words if w in haystack)
-        if hits:
-            matched += hits / len(words) * 0.8   # partial credit
-    return min(1.0, matched / len(topics))
+
+    phrase = None
+    if topics and haystack.strip():
+        matched = 0.0
+        for topic in topics:
+            t = topic.lower().strip()
+            if t and t in haystack:
+                matched += 1.0                     # full phrase present
+                continue
+            words = _WORD_RE.findall(t)
+            if not words:
+                continue
+            hits = sum(1 for w in words if w in haystack)
+            if hits:
+                matched += hits / len(words) * 0.8  # partial credit
+        phrase = min(1.0, matched / len(topics))
+
+    vector = None
+    if profile is not None and getattr(profile, "terms", None) and a.terms:
+        from collections import Counter
+        from . import textrank
+        sim = textrank.cosine(Counter(profile.terms), Counter(a.terms))
+        # Cosine over real web pages rarely exceeds ~0.5 even for a strong
+        # topical match, so rescale into a usable 0..1 range rather than
+        # reporting every good match as "0.3".
+        vector = min(1.0, sim / 0.45)
+
+    lang_bonus = None
+    if profile is not None and getattr(profile, "language", None) and a.content_lang:
+        lang_bonus = 1.0 if a.content_lang == profile.language else 0.35
+
+    parts = [(p, w) for p, w in (
+        (phrase, 0.45), (vector, 0.40), (lang_bonus, 0.15)
+    ) if p is not None]
+    if not parts:
+        return None
+    total_w = sum(w for _, w in parts)
+    return round(sum(p * w for p, w in parts) / total_w, 4)
 
 
 def trust_score(prospect: Prospect) -> float:
@@ -117,18 +166,25 @@ def trust_score(prospect: Prospect) -> float:
     return sum(parts) / len(parts) if parts else 0.5
 
 
-def compute(prospect: Prospect, cfg) -> Scores:
+def compute(prospect: Prospect, cfg, profile=None) -> Scores:
+    """Score one prospect. `profile` is your SiteProfile, when you have one —
+    without it, relevance falls back to configured topics alone."""
     weights = dict(cfg.get("scoring.quality_weights", {}))
-    topics = cfg.get("site.topics", []) or []
+    topics = list(cfg.get("site.topics", []) or [])
+    if profile is not None and getattr(profile, "topics", None):
+        # The crawled profile is more current than whatever is in the config.
+        topics = list(dict.fromkeys(list(profile.topics) + topics))
 
     a = prospect.analysis
     otype = prospect.opportunity_type
+
+    relevance = relevance_score(prospect, topics, profile)
 
     # Component values in 0..1, or None if not computable.
     comps: dict[str, Optional[float]] = {
         "authority": (prospect.metrics.authority / 100.0
                       if prospect.metrics.authority is not None else None),
-        "relevance": relevance_score(prospect, topics),
+        "relevance": relevance,
         "link_attribute": LINK_ATTR_VALUE.get(a.link_attribute, 0.5),
         "placement": PLACEMENT_RANK.get(otype, 35) / 100.0,
         "trust": trust_score(prospect),
@@ -152,13 +208,19 @@ def compute(prospect: Prospect, cfg) -> Scores:
     quality = round(max(0.0, min(100.0, quality)), 1)
     ease = round(max(0.0, min(100.0, ease)), 1)
 
-    pref = float(cfg.get("scoring.quality_pref", 0.7))
+    pref = float(cfg.get("scoring.quality_pref", 0.8))
     priority = round(quality * pref + ease * (1 - pref), 1)
+
+    # "How well does this fit MY site" as its own headline number, separate
+    # from quality — a high-authority page in the wrong niche is a bad link.
+    match = round((relevance if relevance is not None else 0.0) * 100, 1)
+    if otype == OpportunityType.LOCAL_CITATION and profile is not None:
+        match = round(min(100.0, match * (1.15 if profile.country else 1.0)), 1)
 
     breakdown = {k: round((comps[k] or 0.0) * 100, 1) for k in comps}
     breakdown["_weights_used"] = {k: round(weights[k] / total_w, 3) for k in usable}
 
-    return Scores(quality=quality, ease=ease, priority=priority,
+    return Scores(quality=quality, ease=ease, priority=priority, match=match,
                   tier=tier_for(quality, cfg), breakdown=breakdown)
 
 

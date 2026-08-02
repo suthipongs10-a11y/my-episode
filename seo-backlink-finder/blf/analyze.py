@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-from . import language
+from . import language, textrank
 from .models import Analysis, LinkAttribute, OpportunityType
 
 try:
@@ -74,22 +74,34 @@ _COMMENT_FOOTPRINTS = [
 ]
 
 _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
+_IPV4_RE = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
 _TAG_RE = re.compile(r"<[^>]+>")
 _SCRIPT_STYLE_RE = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.S | re.I)
 
 
 def registrable_domain(url: str) -> str:
-    """example.com from https://www.example.com/path. Falls back to netloc."""
+    """example.com from https://www.example.com/path.
+
+    Uses the public suffix list so multi-part suffixes resolve correctly
+    (example.co.uk, example.co.th). When the TLD is not on that list — a new
+    gTLD the bundled snapshot predates, or a reserved name — tldextract reports
+    no suffix at all, and taking its `domain` alone would yield "test" for
+    "nothing.test". In that case fall back to the last two labels of the host,
+    which is the right answer for any ordinary domain.
+    """
     if _EXTRACT is not None:
         ext = _EXTRACT(url)
         if ext.domain and ext.suffix:
             return f"{ext.domain}.{ext.suffix}".lower()
-        if ext.domain:
-            return ext.domain.lower()
-    # crude fallback
-    m = re.sub(r"^https?://", "", url).split("/")[0].lower()
-    parts = m.split(".")
-    return ".".join(parts[-2:]) if len(parts) >= 2 else m
+    # No recognised suffix (or no tldextract): work from the host itself.
+    host = re.sub(r"^https?://", "", url).split("/")[0].split("@")[-1]
+    host = host.split(":")[0].lower().strip(".")
+    # An IP address has no registrable part — the whole address IS the host.
+    # Taking the last two labels would turn 127.0.0.1 into "0.1".
+    if _IPV4_RE.match(host) or ":" in host:
+        return host
+    parts = [p for p in host.split(".") if p]
+    return ".".join(parts[-2:]) if len(parts) >= 2 else host
 
 
 def _visible_text(html: str, soup) -> str:
@@ -220,6 +232,14 @@ def analyze_html(
     # Language of the actual content
     text = _visible_text(html, soup)
     a.content_lang, a.lang_confidence = language.detect(text[:20000], a.declared_lang)
+
+    # Term vector for topical matching. Title and description carry the page's
+    # subject far more reliably than body text, so they are repeated to weight
+    # them up before counting.
+    weighted = " ".join(filter(None, [
+        (a.title or "") * 3, (a.meta_description or "") * 2, text[:15000],
+    ]))
+    a.terms = dict(textrank.terms(weighted, a.content_lang).most_common(120))
 
     # Platform + comments
     a.platform = _detect_platform(html_lower)

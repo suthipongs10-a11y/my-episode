@@ -37,6 +37,23 @@ def test_declared_prior_on_empty():
     assert lang == "th"
 
 
+def test_declared_wins_over_one_word_accident():
+    """'Pour Over Coffee' hits the French stopword 'pour'. On a short page a
+    single accidental match must not override the page's own <html lang>."""
+    text = "Pour Over Coffee Brewing Guides. Espresso basics. About."
+    lang, _ = language.detect(text, declared="en")
+    assert lang == "en"
+
+
+def test_decisive_vote_still_beats_a_wrong_declaration():
+    """A page that declares the wrong language but is plainly written in
+    another one should follow the text, not the tag."""
+    text = ("Este es un artículo en español que explica cómo puedes usar esto "
+            "para tu sitio web con más información y una guía completa.")
+    lang, _ = language.detect(text, declared="en")
+    assert lang == "es"
+
+
 def test_normalise_and_name():
     assert language._normalise_lang("en-US") == "en"
     assert language.name("th") == "Thai"

@@ -21,8 +21,12 @@ def analyze_prospect(
     metrics_provider: Optional[MetricsProvider],
     cfg,
     authority_cache: Optional[dict] = None,
+    profile=None,
 ) -> Prospect:
-    """Fully enrich one prospect in place and return it."""
+    """Fully enrich one prospect in place and return it.
+
+    `profile` is your SiteProfile: passing it turns the relevance component
+    into a real topical match against your own site."""
     res = fetcher.get(prospect.url)
     if not res.ok:
         prospect.analysis = Analysis(fetched=False, http_status=res.status,
@@ -31,7 +35,7 @@ def analyze_prospect(
             else prospect.status
         prospect.analyzed_at = _now()
         # Still score what we have (placement/ease from type) so it's rankable.
-        prospect.scores = score.compute(prospect, cfg)
+        prospect.scores = score.compute(prospect, cfg, profile)
         return prospect
 
     prospect.analysis = analyze_html(
@@ -43,7 +47,7 @@ def analyze_prospect(
         prospect.metrics = metrics_provider.enrich(prospect.domain, authority_cache)
     # refine type from evidence, then score
     classify.apply(prospect)
-    prospect.scores = score.compute(prospect, cfg)
+    prospect.scores = score.compute(prospect, cfg, profile)
     if prospect.status == Status.NEW:
         prospect.status = Status.QUALIFIED
     prospect.analyzed_at = _now()
