@@ -1,0 +1,72 @@
+[
+	{
+		"family": "Space Grotesk",
+		"weight": "500",
+		"file": "space-grotesk-500.woff2"
+	},
+	{
+		"family": "Space Grotesk",
+		"weight": "600",
+		"file": "space-grotesk-600.woff2"
+	},
+	{
+		"family": "Space Grotesk",
+		"weight": "700",
+		"file": "space-grotesk-700.woff2"
+	},
+	{
+		"family": "Inter",
+		"weight": "400",
+		"file": "inter-400.woff2"
+	},
+	{
+		"family": "Inter",
+		"weight": "500",
+		"file": "inter-500.woff2"
+	},
+	{
+		"family": "Inter",
+		"weight": "600",
+		"file": "inter-600.woff2"
+	},
+	{
+		"family": "JetBrains Mono",
+		"weight": "400",
+		"file": "jetbrains-mono-400.woff2"
+	},
+	{
+		"family": "JetBrains Mono",
+		"weight": "500",
+		"file": "jetbrains-mono-500.woff2"
+	},
+	{
+		"family": "JetBrains Mono",
+		"weight": "700",
+		"file": "jetbrains-mono-700.woff2"
+	},
+	{
+		"family": "Spectral",
+		"weight": "500",
+		"file": "spectral-500.woff2"
+	},
+	{
+		"family": "Spectral",
+		"weight": "600",
+		"file": "spectral-600.woff2"
+	},
+	{
+		"family": "Source Serif Four",
+		"weight": "600",
+		"file": "source-serif-4-600.woff2"
+	},
+	{
+		"family": "Source Serif Four",
+		"weight": "700",
+		"file": "source-serif-4-700.woff2"
+	},
+	{
+		"family": "Source Serif Four",
+		"weight": "900",
+		"file": "source-serif-4-900.woff2"
+	}
+]

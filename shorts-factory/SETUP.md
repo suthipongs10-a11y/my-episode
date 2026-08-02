@@ -15,18 +15,33 @@ Checked in the Claude Code container on 2026-08-02:
 | Node | 18+ | **22.22.2** ✅ | |
 | npm | — | **10.9.7** ✅ | |
 | Python | 3.10+ | **3.11.15** ✅ | |
-| `ffmpeg` on PATH | yes | **missing** ❌ | `apt-get install -y ffmpeg` |
-| `ffprobe` on PATH | yes | **missing** ❌ | same package |
+| `ffmpeg` on PATH | yes | **installed 2026-08-02** ✅ | `apt-get update && apt-get install -y ffmpeg` |
+| `ffprobe` on PATH | yes | **installed** ✅ | same package |
 
 The `ffmpeg-linux` under `/opt/pw-browsers/ffmpeg-1011/` is Playwright's stripped build and
-ships no `ffprobe` — do not point the tools at it. Install the real package.
-
-Remotion also downloads a Chrome Headless Shell on first render (~150 MB), on top of
-`node_modules` (~500 MB). Neither is committed; both are disposable.
+ships no `ffprobe` — do not point the tools at it. Install the real package. (`apt-get
+install` fails with 404s until `apt-get update` runs; the image's index is stale.)
 
 ```bash
 cd shorts-factory/remotion && npm install && npm run gen
 ```
+
+### The renderer needs a browser, and it cannot download one
+
+Remotion fetches its own Chrome Headless Shell on first render, from `remotion.media` — a
+host this environment's egress policy does not allow. The container already ships a suitable
+build, so point the render scripts at it:
+
+```bash
+export REMOTION_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell
+```
+
+It must be the **headless shell**, not `chromium-1194/chrome-linux/chrome` — Remotion drives
+the old headless protocol, and full Chrome removed it ("Old Headless mode has been removed
+from the Chrome binary").
+
+Fonts are already local (`media/library/fonts/`, see UPSTREAM.md) so nothing else in a
+render touches the network.
 
 `npm run gen` regenerates `src/registry.gen.tsx` from `src/shots/`. It must be re-run after
 adding or renaming a shot — `frames.mjs` and `render-all.mjs` do **not** run it themselves.

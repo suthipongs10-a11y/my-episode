@@ -12,8 +12,25 @@ library are meant to become ours.
 | Copied on | 2026-08-02 |
 | Licence | MIT (`LICENSE`, kept verbatim — keep it) |
 
-Everything below `shorts-factory/` is upstream's, unmodified, except this file. The nested
-`.git` was removed; nothing else was touched, added or deleted.
+Everything below `shorts-factory/` is upstream's except the files listed under "Our changes"
+below. The nested `.git` was removed.
+
+## Our changes
+
+Kept deliberately small, and every one of them is about making a render work in a sandbox
+that upstream never had to care about. Diff against upstream to see them in isolation.
+
+| File | Change | Why |
+|---|---|---|
+| `remotion/scripts/frames.mjs` | honour `REMOTION_BROWSER_EXECUTABLE` | Remotion downloads its own Chrome Headless Shell on first render; `remotion.media` is not on this environment's egress allowlist, so it 403s. The container already ships a Chromium. |
+| `remotion/scripts/render-all.mjs` | same | same |
+| `remotion/src/fonts.ts` | load the 5 brand fonts from `media/library/fonts/` instead of `@remotion/google-fonts` | the google-fonts loaders fetch from `fonts.gstatic.com` **during** the render. Behind the TLS-terminating egress proxy every fetch dies with `ERR_CERT_AUTHORITY_INVALID` and the render aborts — Chrome Headless Shell reads neither the system CA store, nor the NSS db, nor enterprise policy, so there is no supported way to make it trust the proxy CA. |
+| `remotion/scripts/fetch-fonts.mjs` | **new** | downloads those fonts once, with a client that does trust the CA |
+| `media/library/fonts/` | **new** — 14 woff2 + `manifest.json` | the downloaded files. All five families are OFL-licensed, so redistributing them here is fine. |
+| `UPSTREAM.md`, `SETUP.md` | **new** | this file and the setup notes |
+
+The font change is worth keeping even off a sandbox: it makes renders offline and
+byte-identical run to run, instead of depending on a live CDN mid-render.
 
 ## Pulling upstream changes later
 
