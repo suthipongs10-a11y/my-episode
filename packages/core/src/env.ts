@@ -27,6 +27,9 @@ const Env = z.object({
   HTTP_USER_AGENT: z
     .string()
     .default("WGIAuditBot/0.1 (+https://example.com/bot; audit requested by site owner)"),
+  /** Milliseconds between requests to one domain. One second is the polite
+   *  default; tests and local fixture servers set it to 0. */
+  HTTP_DELAY_MS: z.coerce.number().default(1000),
   COST_BUDGET_THB: z.coerce.number().default(40),
   COST_HARD_STOP_THB: z.coerce.number().default(60),
 });

@@ -35,7 +35,12 @@ export async function runAudit(
       log.warn(th.cost.overBudget, { spentThb: spent, budgetThb: budget }),
   });
 
-  const http = new CachedFetch({ ledger, cacheDir: e.CACHE_DIR, userAgent: e.HTTP_USER_AGENT });
+  const http = new CachedFetch({
+    ledger,
+    cacheDir: e.CACHE_DIR,
+    userAgent: e.HTTP_USER_AGENT,
+    perDomainDelayMs: e.HTTP_DELAY_MS,
+  });
 
   return runPipeline({ db, http, ledger, log, client, run }, STAGE_REGISTRY, opts);
 }

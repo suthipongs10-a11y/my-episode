@@ -44,6 +44,13 @@ export async function applySchema(db: Db): Promise<void> {
 // ---------------------------------------------------------------------------
 export async function createPgliteDb(dataDir?: string): Promise<Db> {
   const { PGlite } = await import("@electric-sql/pglite");
+  if (dataDir) {
+    // PGlite creates its own directory but not the parents of it, so a fresh
+    // clone whose default is `.data/dev` would fail on the first command —
+    // the one thing that must work without any setup.
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(dataDir, { recursive: true });
+  }
   const pg = dataDir ? new PGlite(dataDir) : new PGlite();
 
   const db: Db = {

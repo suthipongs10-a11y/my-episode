@@ -1,42 +1,56 @@
 /**
- * M0 acceptance, as an executable test.
+ * The CLI, end to end.
  *
- * "Run the CLI and see an audit_run reach `done` in the database" — checked
- * here against a real (in-process) Postgres, so the milestone cannot silently
- * regress once M1 starts adding stages.
+ * Two kinds of test here:
+ *
+ *  - **plumbing** (`--dry-run`): client and run rows, argument handling, the
+ *    queue and the worker. No stage reaches outside.
+ *  - **the whole pipeline**, against a local server serving the fixtures. Still
+ *    no internet, still free, still deterministic — but every stage from intake
+ *    to scoring really runs, which is M1's acceptance criterion.
  */
+import { createServer, type Server } from "node:http";
+import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createDb, type Db } from "@core/db/client.ts";
 import { resetEnv } from "@core/env.ts";
+import { createLogger } from "@core/log/logger.ts";
+import { getFindings } from "@core/db/queries.ts";
 import { main, normaliseDomain, parseArgs } from "./cli.ts";
 import { tick } from "./index.ts";
-import { createLogger } from "@core/log/logger.ts";
+
+const FIXTURES = fileURLToPath(new URL("../../../fixtures/", import.meta.url));
+const read = (p: string) => readFileSync(join(FIXTURES, p), "utf8");
 
 let dir: string;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "wgi-cli-"));
-  // Point the CLI at a throwaway database and cache for this test only.
   process.env.PGLITE_DIR = join(dir, "db");
   process.env.CACHE_DIR = join(dir, "cache");
   delete process.env.DATABASE_URL;
+  delete process.env.PSI_API_KEY;
+  // The fixture server is ours and is on loopback; the one-second courtesy
+  // delay would only slow the suite down.
+  process.env.HTTP_DELAY_MS = "0";
   resetEnv();
 });
 
 afterEach(async () => {
   delete process.env.PGLITE_DIR;
   delete process.env.CACHE_DIR;
+  delete process.env.HTTP_DELAY_MS;
   resetEnv();
   await rm(dir, { recursive: true, force: true });
 });
 
-async function openDb(): Promise<Db> {
-  return createDb({ dataDir: join(dir, "db") });
-}
+const openDb = (): Promise<Db> => createDb({ dataDir: join(dir, "db") });
 
+// ---------------------------------------------------------------------------
 describe("parseArgs", () => {
   it("reads domain, areas and flags", () => {
     const a = parseArgs(["--domain=https://www.Example.com/path", "--area=ภูเก็ต,ป่าตอง", "--dry-run"]);
@@ -46,8 +60,7 @@ describe("parseArgs", () => {
   });
 
   it("keeps only real stage names in --only", () => {
-    const a = parseArgs(["--only=03-crawl,nonsense,05-psi"]);
-    expect(a.only).toEqual(["03-crawl", "05-psi"]);
+    expect(parseArgs(["--only=03-crawl,nonsense,05-psi"]).only).toEqual(["03-crawl", "05-psi"]);
   });
 });
 
@@ -58,24 +71,22 @@ describe("normaliseDomain", () => {
   });
 });
 
-describe("pnpm audit (M0 acceptance)", () => {
+// ---------------------------------------------------------------------------
+describe("plumbing", () => {
   it("creates a client and an audit_run that reaches done", async () => {
-    const code = await main(["--domain=phuketmaidservice.com", "--area=ภูเก็ต"]);
-    expect(code).toBe(0);
+    expect(await main(["--domain=phuketmaidservice.com", "--area=ภูเก็ต", "--dry-run"])).toBe(0);
 
     const db = await openDb();
-    const client = await db.one<{ id: string; domain: string; areas: string[] }>(
-      `select * from clients`,
-    );
+    const client = await db.one<{ domain: string; areas: string[] }>(`select * from clients`);
     expect(client?.domain).toBe("phuketmaidservice.com");
     expect(client?.areas).toEqual(["ภูเก็ต"]);
 
-    const run = await db.one<{ status: string; cost_thb: string | number }>(
+    const run = await db.one<{ status: string; cost_thb: string | number; stage: string }>(
       `select * from audit_runs`,
     );
     expect(run?.status).toBe("done");
-    // M0 registers no stages, so the run must have cost nothing.
-    expect(Number(run?.cost_thb)).toBe(0);
+    expect(run?.stage).toBe("12-scoring");   // every stage ran
+    expect(Number(run?.cost_thb)).toBe(0);   // and none of them spent anything
     await db.close();
   });
 
@@ -88,40 +99,138 @@ describe("pnpm audit (M0 acceptance)", () => {
   });
 
   it("accepts nationwide without an area", async () => {
-    expect(await main(["--domain=x.com", "--scope=nationwide"])).toBe(0);
+    expect(await main(["--domain=x.com", "--scope=nationwide", "--dry-run"])).toBe(0);
     const db = await openDb();
-    const c = await db.one<{ area_scope: string }>(`select * from clients`);
-    expect(c?.area_scope).toBe("nationwide");
+    expect((await db.one<{ area_scope: string }>(`select * from clients`))?.area_scope)
+      .toBe("nationwide");
     await db.close();
   });
 
   it("runs a second audit for the same domain against the same client", async () => {
-    await main(["--domain=x.com", "--area=ภูเก็ต"]);
-    await main(["--domain=x.com", "--area=ภูเก็ต"]);
+    await main(["--domain=x.com", "--area=ภูเก็ต", "--dry-run"]);
+    await main(["--domain=x.com", "--area=ภูเก็ต", "--dry-run"]);
     const db = await openDb();
     expect(await db.query(`select id from clients`)).toHaveLength(1);
     expect(await db.query(`select id from audit_runs`)).toHaveLength(2);
     await db.close();
   });
 
-  it("--queue leaves the run for the worker rather than running it", async () => {
-    expect(await main(["--domain=x.com", "--area=ภูเก็ต", "--queue"])).toBe(0);
+  it("fails the run, rather than hanging, when the site is not online", async () => {
+    // Port 1 has nothing listening; intake must stop the run immediately
+    // instead of letting six more stages spend time on a dead domain.
+    expect(await main(["--domain=127.0.0.1:1", "--area=ภูเก็ต"])).toBe(1);
+    const db = await openDb();
+    const run = await db.one<{ status: string; error: string }>(`select * from audit_runs`);
+    expect(run?.status).toBe("failed");
+    expect(run?.error).toContain("เปิดเว็บไซต์ไม่ได้");
+    await db.close();
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("the whole pipeline, against a local copy of the fixture site", () => {
+  let server: Server;
+  let origin: string;
+
+  beforeAll(async () => {
+    const routes: Record<string, { body: string; type: string }> = {
+      "/": { body: read("phuketmaid/index.html"), type: "text/html" },
+      "/services/deep-cleaning/": {
+        body: read("phuketmaid/services-deep-cleaning.html"), type: "text/html",
+      },
+      "/contact/": { body: read("phuketmaid/contact.html"), type: "text/html" },
+      "/robots.txt": { body: read("phuketmaid/robots.txt"), type: "text/plain" },
+    };
+    server = createServer((req, res) => {
+      const path = (req.url ?? "/").split("?")[0]!;
+      const route = routes[path] ?? routes[path.replace(/\/$/, "") + "/"];
+      if (!route) {
+        res.writeHead(404, { "content-type": "text/plain" });
+        res.end("not found");
+        return;
+      }
+      res.writeHead(200, { "content-type": route.type });
+      res.end(route.body);
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const addr = server.address();
+    const port = typeof addr === "object" && addr ? addr.port : 0;
+    origin = `127.0.0.1:${port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((r) => server.close(() => r()));
+  });
+
+  it("crawls, classifies, applies the rules and scores — with no internet", async () => {
+    expect(await main([`--domain=${origin}`, "--area=ภูเก็ต"])).toBe(0);
 
     const db = await openDb();
-    const run = await db.one<{ status: string }>(`select * from audit_runs`);
-    expect(run?.status).toBe("queued");
-    const job = await db.one<{ status: string }>(`select * from jobs`);
-    expect(job?.status).toBe("pending");
+    const run = await db.one<{ id: string; status: string; stage: string }>(
+      `select * from audit_runs`,
+    );
+    expect(run?.status).toBe("done");
+    expect(run?.stage).toBe("12-scoring");
 
-    // The worker picks it up and drives it to done.
+    // crawled and stored the pages
+    const pages = await db.query<{ url: string; page_type: string }>(
+      `select url, page_type from pages order by url`,
+    );
+    expect(pages.length).toBeGreaterThanOrEqual(3);
+    expect(pages.map((p) => p.page_type)).toContain("home");
+    expect(pages.map((p) => p.page_type)).toContain("contact");
+
+    // the findings this fixture is built to produce
+    const found = (await getFindings(db, run!.id)).map((f) => f.code);
+    for (const code of ["CVR-001", "CVR-002", "CVR-005", "ONP-002", "ONP-008", "TEC-004"]) {
+      expect(found, `expected ${code}`).toContain(code);
+    }
+
+    // the highest-impact fix leads the report
+    expect((await getFindings(db, run!.id))[0]!.code).toBe("CVR-001");
+
+    // scores were stored as a snapshot, with the formula version alongside
+    const snap = await db.one<{ data: { scoring_version: number; scores: { conversion: number } } }>(
+      `select data from snapshots where kind = 'site' and target = 'scores'`,
+    );
+    const data = typeof snap!.data === "string" ? JSON.parse(snap!.data as never) : snap!.data;
+    expect(data.scoring_version).toBe(1);
+    expect(data.scores.conversion).toBeLessThan(30);
+
+    // and it cost nothing: no paid API was called
+    const cost = await db.one<{ cost_thb: string | number }>(`select cost_thb from audit_runs`);
+    expect(Number(cost?.cost_thb)).toBe(0);
+    await db.close();
+  });
+
+  it("--queue hands the run to the worker, which drives it to done", async () => {
+    expect(await main([`--domain=${origin}`, "--area=ภูเก็ต", "--queue"])).toBe(0);
+
+    const db = await openDb();
+    expect((await db.one<{ status: string }>(`select * from audit_runs`))?.status).toBe("queued");
+    expect((await db.one<{ status: string }>(`select * from jobs`))?.status).toBe("pending");
+
     const log = createLogger({ stdout: false });
     expect(await tick(db, log)).toBe(true);
-    expect(await tick(db, log)).toBe(false); // queue now empty
+    expect(await tick(db, log)).toBe(false); // queue empty
 
-    const after = await db.one<{ status: string }>(`select * from audit_runs`);
-    expect(after?.status).toBe("done");
-    const doneJob = await db.one<{ status: string }>(`select * from jobs`);
-    expect(doneJob?.status).toBe("done");
+    expect((await db.one<{ status: string }>(`select * from audit_runs`))?.status).toBe("done");
+    expect((await db.one<{ status: string }>(`select * from jobs`))?.status).toBe("done");
+    await db.close();
+  });
+
+  it("re-running is free, because everything came from the cache", async () => {
+    await main([`--domain=${origin}`, "--area=ภูเก็ต"]);
+    await main([`--domain=${origin}`, "--area=ภูเก็ต"]);
+
+    const db = await openDb();
+    const rows = await db.query<{ cache_hit: boolean }>(
+      `select cache_hit from api_calls a
+         join audit_runs r on r.id = a.audit_run_id
+        order by r.created_at desc, a.id`,
+    );
+    // The second run's fetches were served from disk.
+    expect(rows.some((r) => r.cache_hit)).toBe(true);
     await db.close();
   });
 });

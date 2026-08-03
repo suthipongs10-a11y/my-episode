@@ -2,7 +2,9 @@
   "name": "wgi-audit",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "audit": "tsx apps/worker/src/cli.ts",
@@ -10,7 +12,7 @@
     "ctx": "tsx scripts/ctx.ts",
     "cost": "tsx apps/worker/src/cost-cli.ts",
     "db:push": "tsx scripts/db-push.ts",
-    "test": "vitest run",
+    "test": "vitest run --reporter=json --outputFile=.vitest.json --reporter=default; tsx scripts/record-tests.ts",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

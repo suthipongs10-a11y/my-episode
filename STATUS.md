@@ -11,15 +11,31 @@
 
 | หัวข้อ | ค่า |
 |---|---|
-| Milestone ปัจจุบัน | **M0 — Skeleton** |
-| สถานะ | ผ่าน acceptance แล้ว |
+| Milestone ปัจจุบัน | **M2 — Conversion** |
+| สถานะ | M0/M1/M2 ผ่าน acceptance แล้ว |
 | อัปเดตล่าสุด | 2026-08-03 |
-| git tag ล่าสุด | `m0` |
+| git tag ล่าสุด | `m2` |
 | ต้นทุน API สะสม | 0 บาท (ยังไม่ได้เรียก API ใดเลย) |
 
 ---
 
 ## รอบล่าสุดทำอะไรไป
+
+### M1 + M2 (รอบนี้)
+- `crawl/extract.ts` — อ่าน HTML ออกมาเป็นข้อมูลที่ rules ใช้ (pure function ทดสอบด้วย fixture ได้)
+  **นับคำภาษาไทยด้วยตัวอักษร** เพราะไทยไม่มีช่องว่างระหว่างคำ ถ้านับด้วยช่องว่างเว็บไทยทุกเว็บจะดู "เนื้อหาน้อย"
+- `crawl/classify.ts` — จัดประเภทหน้าด้วยกฎ (location > service > article) ยังไม่เรียก LLM
+- pipeline 01-intake / 02-discover / 03-crawl / 04-classify / 05-psi / 11-rules / 12-scoring
+- rules **ONP-001..009, TEC-001..008, CVR-001..010** (27 ข้อ) ทุกข้อ pure + มี evidence
+- `scoring/v1.ts` + snapshot test ที่ล็อกค่าไว้
+- fixtures 2 ชุด: เว็บที่มีปัญหา และ **เว็บที่ทำดี** (เพื่อพิสูจน์ว่า rules ไม่ได้ยิงมั่ว)
+- เทสต์ 153 ข้อ ไม่ยิงเน็ต
+
+**Acceptance M1 ผ่าน:** รัน CLI จริงกับ fixture ที่ serve บน localhost → crawl 4 หน้า →
+จัดประเภทถูก → findings 22 ข้อ (critical 5) → คะแนน → ต้นทุน 0 บาท
+**Acceptance M2 ผ่าน:** คะแนน conversion ถูกล็อกด้วย snapshot test และ CVR ทุกข้อมีเทสต์ทั้งเคสที่ควรยิงและไม่ควรยิง
+
+### M0 (รอบก่อน)
 
 - สร้าง repo `wgi-audit` แยกจาก repo เดิม (repo เดิมมี git history 167 MB ที่ลบไม่ได้)
 - pnpm workspace + TypeScript strict + vitest
@@ -39,15 +55,19 @@
 
 ## งานถัดไปที่ต้องทำ (เรียงตามลำดับ)
 
-### M1 — Crawl + On-page + Technical
-- [ ] pipeline 01-intake: normalize domain, ตาม redirect, เช็คว่าเว็บออนไลน์
-- [ ] pipeline 02-discover: robots.txt + sitemap.xml + crawl หน้าแรก
-- [ ] pipeline 03-crawl: ดึงหน้า + แยก field ตามตาราง `pages`
-- [ ] pipeline 04-classify: จัดประเภทด้วยกฎ (LLM ไว้ M3)
-- [ ] pipeline 05-psi: PageSpeed mobile 3 หน้า
-- [ ] rules ONP-001..009 + TEC-001..008
-- [ ] fixtures จาก `phuketmaidservice.com` (หน้าแรก + บริการ 2 + ติดต่อ)
-- **Acceptance:** รัน CLI แล้วได้ findings ONP/TEC ถูกต้อง โดย unit test ใช้ fixture ไม่ยิงเน็ต
+### M3 — Keyword + SERP + Competitor  ← ถัดไป
+- [ ] pipeline 06-keywords: seed จากโค้ด → LLM cheap เสนอเพิ่ม (**ห้ามใส่ volume**) → DataForSEO ดึง volume จริง → คัด 30 คำ
+- [ ] pipeline 07-serp: เช็คอันดับ 30 คำ + หาคู่แข่งจาก domain ที่โผล่บ่อย
+- [ ] pipeline 10-competitors: รัน 03-05 แบบย่อกับคู่แข่ง 3 ราย (crawl 50 หน้า)
+- [ ] rules CON-001..005 + CMP-001..003
+- [ ] `llm/router.ts` + `prompts/classify.md`, `prompts/keywords.md`
+- [ ] ส่งหน้าที่ `confidence < 0.6` ไปให้ LLM cheap แบบ batch (โค้ดเก็บ list ไว้แล้วที่ state `classify.unsure`)
+- **Acceptance:** ต้นทุน SERP ต่อ audit ≤ 15 บาท และอันดับตรงกับที่เช็คมือ 5 คำ
+- **ข้อควรระวัง (จาก `docs/pipeline.md`):** SERP 30 คำแบบ Live ยิงทีละคำ = ~300 วิ = ครึ่งงบเวลา ต้องยิงขนานหรือใช้ task-based
+
+### เก็บตกจาก M1/M2
+- [ ] เก็บ HTML ดิบลง Storage (ตอนนี้เก็บเฉพาะ field ที่แยกแล้วใน `pages` + snapshot)
+- [ ] Playwright fallback สำหรับเว็บ SPA (ตอนนี้นับหน้าที่ `wordCount < 20` ไว้ใน `crawl.emptyPages` แล้ว)
 
 ### ก่อนถึง M3/M4 — ทำมือ
 - [ ] สมัคร DataForSEO เติมเครดิตขั้นต่ำ → บันทึกราคาจริงต่อ SERP query
@@ -86,6 +106,11 @@
 | 2026-08-03 | เลื่อน Next.js (`apps/web`) ไป M6 | ไม่มี milestone ก่อน M6 ที่ใช้ ถ้าใส่ตอนนี้ต้องอัปเกรดก่อนได้ใช้จริง — **นี่คือส่วนที่ต่างจากสเปกเดิมที่ระบุ Next.js ไว้ใน M0** |
 | 2026-08-03 | robots.txt: บังคับกับคู่แข่ง ไม่บังคับกับเว็บลูกค้า | ลูกค้ากรอกฟอร์มขอ audit เอง = ให้ความยินยอมแล้ว · เว็บ SME จำนวนมากอยู่หลัง WAF หรือตั้ง `Disallow: /` ถ้าบังคับใช้ สินค้าจะพังกับลูกค้ากลุ่มเป้าหมายพอดี |
 | 2026-08-03 | ดึง robots.txt ด้วย User-Agent ของเราเอง | client ทั่วไปโดน WAF ตอบ 403 และมาตรฐานอ่าน 403 = "ห้ามทั้งเว็บ" ทำให้เว็บที่ยินดีให้อ่านดูเหมือนปิดสนิท |
+| 2026-08-03 | นับคำไทยด้วยจำนวนตัวอักษร ÷ 4 | ไทยไม่เว้นวรรคระหว่างคำ ถ้านับด้วยช่องว่าง หน้า 600 คำจะถูกนับเป็นไม่กี่คำ แล้ว ONP-005 จะยิงใส่เว็บไทยทุกเว็บ |
+| 2026-08-03 | ลิงก์ในเมนูนำทางไม่นับเป็น CTA | ทุกเว็บมี "ติดต่อเรา" ในเมนู ถ้านับ CVR-005 จะไม่มีวันยิงและกฎนั้นก็ไร้ประโยชน์ |
+| 2026-08-03 | ไม่ใช้ `\b` ใน regex ของ URL ภาษาไทย | JS ถือว่าอักษรไทยเป็น non-word `ติดต่อ\b` จึงไม่มีวัน match — ใช้ `(?![a-z0-9_])` แทน |
+| 2026-08-03 | CVR-010 คืนค่าว่างจนกว่าจะมีข้อมูล GBP และไม่ถูกนับในคะแนน | ถ้านับเป็น "ไม่ผ่าน" คะแนน conversion ของทุกเว็บจะต่ำกว่าความจริงด้วยเหตุผลที่เจ้าของแก้ไม่ได้ |
+| 2026-08-03 | คะแนน local/content = 50 เมื่อยังไม่มีข้อมูล (ไม่ใช่ 0) | 0 แปลว่า "วัดแล้วแย่" ซึ่งจะโกหกลูกค้า 50 แปลว่า "ยังไม่ได้วัด" |
 | 2026-08-03 | เทสต์ใช้ PGlite instance เดียวต่อไฟล์ แล้ว truncate | instance ละ ~2 วิ · 12 เทสต์ = 26 วิ → 7 วิ · เทสต์ที่ช้าคือเทสต์ที่ไม่มีใครรัน |
 | — | job table + polling แทน Redis/BullMQ | ปริมาณงานต่ำมาก ไม่คุ้มความซับซ้อนและค่า Redis |
 | — | ไม่สร้างตาราง `scores` | สูตรคะแนนจะเปลี่ยนแน่นอน เก็บคะแนนสำเร็จรูปแล้วประวัติย้อนหลังจะพัง |
@@ -112,7 +137,7 @@
 
 ## ไฟล์ที่แก้ล่าสุด
 
-`packages/core/src/{db,http,cost,log,pipeline,types,i18n}` · `apps/worker/src` · `scripts/ctx.ts`
+`packages/core/src/{crawl,rules,scoring,pipeline}` · `fixtures/` · `apps/worker/src/cli.test.ts`
 
 ## คำสั่งที่ใช้รันต่อจากจุดนี้
 
