@@ -68,5 +68,40 @@
 		"family": "Source Serif Four",
 		"weight": "900",
 		"file": "source-serif-4-900.woff2"
+	},
+	{
+		"family": "Noto Sans Thai",
+		"weight": "400",
+		"file": "noto-sans-thai-400.woff2"
+	},
+	{
+		"family": "Noto Sans Thai",
+		"weight": "500",
+		"file": "noto-sans-thai-500.woff2"
+	},
+	{
+		"family": "Noto Sans Thai",
+		"weight": "600",
+		"file": "noto-sans-thai-600.woff2"
+	},
+	{
+		"family": "Noto Sans Thai",
+		"weight": "700",
+		"file": "noto-sans-thai-700.woff2"
+	},
+	{
+		"family": "Noto Serif Thai",
+		"weight": "600",
+		"file": "noto-serif-thai-600.woff2"
+	},
+	{
+		"family": "Noto Serif Thai",
+		"weight": "700",
+		"file": "noto-serif-thai-700.woff2"
+	},
+	{
+		"family": "Noto Serif Thai",
+		"weight": "900",
+		"file": "noto-serif-thai-900.woff2"
 	}
 ]

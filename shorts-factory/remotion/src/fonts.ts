@@ -31,11 +31,19 @@ if (typeof document !== 'undefined' && !document.getElementById('brand-fonts')) 
 	document.head.appendChild(style);
 }
 
-export const FONT_DISPLAY = 'Space Grotesk';
-export const FONT_BODY = 'Inter';
-export const FONT_MONO = 'JetBrains Mono';
+// Each export is a STACK, not one family. CSS resolves font-family per glyph, so latin
+// comes from the brand face and Thai from the Noto face behind it — one string covers a
+// bilingual channel with no per-language branching in any shot.
+//
+// Without the Thai member, Thai text does not fail visibly: it silently falls through to
+// whatever the machine has (on a headless Chromium, Loma or Unifont) and the brand look
+// quietly dies. That is worse than a missing-glyph box, so the fallback is explicit.
+export const FONT_DISPLAY = "'Space Grotesk', 'Noto Sans Thai', sans-serif";
+export const FONT_BODY = "'Inter', 'Noto Sans Thai', sans-serif";
+// there is no Thai monospace worth the name; Noto Sans Thai keeps the weight consistent
+export const FONT_MONO = "'JetBrains Mono', 'Noto Sans Thai', monospace";
 // serif for the Claude Code wordmark clone (close match to the app's serif)
-export const FONT_SERIF = 'Spectral';
+export const FONT_SERIF = "'Spectral', 'Noto Serif Thai', serif";
 // heavy editorial serif for the vox collage engine's headlines (Publico-ish; Spectral maxes
 // at 600 and reads too light/bookish over collage layers)
-export const FONT_EDITORIAL = 'Source Serif Four';
+export const FONT_EDITORIAL = "'Source Serif Four', 'Noto Serif Thai', serif";

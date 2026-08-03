@@ -11,8 +11,27 @@
 - frames spot-checked back OUT of the MP4, not just from renderStill
 - 4 generated layers (Gemini) — see "Layers: what is real and what is drawn"
 
-Missing before this is publishable: the voice track (needs `ELEVENLABS_API_KEY`) and the
-SFX pass. Everything visual is done.
+Missing before this is publishable: the voice track and the SFX pass. Everything visual is
+done.
+
+### The voice is the channel's own clone, and that changes the language
+
+Decided 2026-08-03: narration comes from the channel's self-hosted voice server (the owner's
+cloned voice, OmniVoice-Thai), not ElevenLabs. That server speaks **Thai**, so the VO does
+too — `voice-job.th.json` here is the Thai script in that system's job format, mirrored to
+`tts-ai/voice-jobs/vox-2-thai-rice.json` in the TTS repo where its HANDOFF.md says jobs live.
+
+Two consequences, neither of them optional:
+
+1. **The on-screen text should follow the narration into Thai.** Thai narration over English
+   chips is incoherent for the audience it is now aimed at. The fonts are ready (Noto Serif
+   Thai + Noto Sans Thai are in the bundle behind the latin faces, so one string covers both
+   scripts), and Thai has been render-verified — but the conversion itself is a deliberate
+   pass over every string in the shot, not a half-measure. Not done yet.
+2. **`--fit-window` does not apply to this server.** Its `/tts` and `/job` endpoints take
+   text only; there is no `duration`. It returns `timing.json` with the real seconds per
+   segment instead, so the composition retimes to the audio rather than the audio being made
+   to fit — the `CUE` table moves, using those measured lengths.
 
 ### What the QA pass actually caught
 

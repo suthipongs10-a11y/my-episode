@@ -24,24 +24,31 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, '..', 'media', 'library', 'fonts');
 mkdirSync(outDir, { recursive: true });
 
-// Must stay in sync with src/fonts.ts — same families, same weights.
+// Must stay in sync with src/fonts.ts — same families, same weights, same subsets.
+//
+// The Thai pair is not decoration. None of the five latin families has a single Thai glyph,
+// and the only Thai-covering fonts on a headless Chromium are Loma/FreeSerif/Unifont — so
+// Thai narration with English-only fonts does not fail loudly, it silently falls back to a
+// system face and the brand look dies. These are declared SECOND in each stack in
+// src/fonts.ts, so CSS resolves per glyph: latin from the brand face, Thai from Noto.
 const WANTED = [
 	{ mod: 'SpaceGrotesk', slug: 'space-grotesk', weights: ['500', '600', '700'] },
 	{ mod: 'Inter', slug: 'inter', weights: ['400', '500', '600'] },
 	{ mod: 'JetBrainsMono', slug: 'jetbrains-mono', weights: ['400', '500', '700'] },
 	{ mod: 'Spectral', slug: 'spectral', weights: ['500', '600'] },
 	{ mod: 'SourceSerif4', slug: 'source-serif-4', weights: ['600', '700', '900'] },
+	{ mod: 'NotoSansThai', slug: 'noto-sans-thai', weights: ['400', '500', '600', '700'], subset: 'thai' },
+	{ mod: 'NotoSerifThai', slug: 'noto-serif-thai', weights: ['600', '700', '900'], subset: 'thai' },
 ];
 
-const SUBSET = 'latin';
 const manifest = [];
 
-for (const { mod, slug, weights } of WANTED) {
+for (const { mod, slug, weights, subset = 'latin' } of WANTED) {
 	const { getInfo } = await import(`@remotion/google-fonts/${mod}`);
 	const info = getInfo();
 	for (const weight of weights) {
-		const url = info.fonts?.normal?.[weight]?.[SUBSET];
-		if (!url) throw new Error(`${mod} has no normal/${weight}/${SUBSET} — check the weight list`);
+		const url = info.fonts?.normal?.[weight]?.[subset];
+		if (!url) throw new Error(`${mod} has no normal/${weight}/${subset} — check the weight list`);
 		const file = `${slug}-${weight}.woff2`;
 		const res = await fetch(url);
 		if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
