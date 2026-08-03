@@ -32,14 +32,23 @@ HOME_EN = """
 
 
 class FakeFetcher:
-    """Serves a dict of path -> html; anything else 404s."""
+    """Serves a dict of path -> html; anything else 404s.
 
-    def __init__(self, pages: dict):
+    `robots_blocks` mimics a site whose robots.txt disallows crawlers: any
+    fetch that does not pass ignore_robots comes back blocked.
+    """
+
+    def __init__(self, pages: dict, robots_blocks: bool = False):
         self.pages = pages
+        self.robots_blocks = robots_blocks
         self.calls = []
+        self.ignored_robots = []
 
-    def get(self, url: str) -> FetchResult:
+    def get(self, url: str, ignore_robots: bool = False) -> FetchResult:
         self.calls.append(url)
+        self.ignored_robots.append(ignore_robots)
+        if self.robots_blocks and not ignore_robots:
+            return FetchResult(url=url, ok=False, error="blocked by robots.txt")
         for path, html in self.pages.items():
             if url.rstrip("/").endswith(path.rstrip("/")) or url == path:
                 return FetchResult(url=url, ok=True, status=200,
@@ -88,6 +97,20 @@ def test_unreachable_site_still_returns_something():
     assert prof.notes                      # explains the failure
     assert prof.categories                 # still searchable
     assert prof.brand
+    # These drive the CLI's language line and the drafter's fallback; blank
+    # values printed an empty "drafts will use:" line.
+    assert prof.language
+    assert prof.languages
+
+
+def test_own_site_is_read_despite_robots_txt():
+    """Your own robots.txt must not stop the tool from reading your own site —
+    this broke `blf profile` for any site behind a WAF or a blanket Disallow."""
+    f = FakeFetcher({"http://payofflogic.test": HOME_TH}, robots_blocks=True)
+    prof = build_profile("http://payofflogic.test", f, max_pages=1)
+    assert prof.language == "th"
+    assert prof.topics, "profile came back empty — robots.txt was still applied"
+    assert all(f.ignored_robots), "every own-site fetch must bypass robots.txt"
 
 
 def test_seed_keywords_are_searchable_length():

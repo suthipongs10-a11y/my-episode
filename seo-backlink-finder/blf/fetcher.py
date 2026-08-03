@@ -97,20 +97,42 @@ class Fetcher:
             self._session.headers.update({"User-Agent": user_agent})
 
     # -- robots.txt ---------------------------------------------------------
+    def _load_robots(self, base: str) -> Optional[RobotFileParser]:
+        """Fetch and parse robots.txt using OUR user agent.
+
+        `RobotFileParser.read()` fetches with urllib's default agent, which
+        Cloudflare and most WAFs answer with 403 — and the parser treats 403 as
+        "disallow everything". A site perfectly happy to be read then looks
+        entirely off limits. Fetching it ourselves, with the same agent we use
+        for pages, asks the question the site actually intends to answer.
+        """
+        rp = RobotFileParser()
+        rp.set_url(base + "/robots.txt")
+        req = urllib.request.Request(
+            base + "/robots.txt", headers={"User-Agent": self.user_agent})
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                raw = resp.read(512_000)
+            rp.parse(_decode(raw, resp.headers.get_content_charset()).splitlines())
+            return rp
+        except urllib.error.HTTPError as exc:
+            if exc.code in (401, 403):
+                # Even with a real agent we are refused. Treat as disallowed —
+                # the page fetch would almost certainly fail the same way.
+                rp.disallow_all = True
+                return rp
+            return None          # 404 and friends: no robots.txt, crawl freely
+        except Exception:
+            return None          # unreachable: do not let it block the run
+
     def allowed(self, url: str) -> bool:
         if not self.respect_robots:
             return True
         parsed = urlparse(url)
         base = f"{parsed.scheme}://{parsed.netloc}"
-        rp = self._robots_cache.get(base)
-        if rp is None and base not in self._robots_cache:
-            rp = RobotFileParser()
-            rp.set_url(base + "/robots.txt")
-            try:
-                rp.read()
-            except Exception:
-                rp = None  # robots unreachable -> do not block
-            self._robots_cache[base] = rp
+        if base not in self._robots_cache:
+            self._robots_cache[base] = self._load_robots(base)
+        rp = self._robots_cache[base]
         if rp is None:
             return True
         try:
@@ -128,10 +150,17 @@ class Fetcher:
         self._last_request_at = time.monotonic()
 
     # -- fetch --------------------------------------------------------------
-    def get(self, url: str) -> FetchResult:
+    def get(self, url: str, ignore_robots: bool = False) -> FetchResult:
+        """Fetch a page. `ignore_robots` is for YOUR OWN site.
+
+        robots.txt is a request from a site owner to visiting crawlers. When
+        the site is yours and you explicitly asked this tool to read it, there
+        is no third party to be polite to — and refusing would break the one
+        step every run depends on. Third-party targets are never fetched this
+        way."""
         if not url.lower().startswith(("http://", "https://")):
             url = "https://" + url
-        if not self.allowed(url):
+        if not ignore_robots and not self.allowed(url):
             return FetchResult(url=url, ok=False, error="blocked by robots.txt")
         self._throttle()
         start = time.monotonic()

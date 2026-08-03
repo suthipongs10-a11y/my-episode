@@ -156,13 +156,13 @@ def _internal_links(soup, html: str, base_url: str, domain: str) -> list[str]:
 
 def _sitemap_urls(fetcher: Fetcher, base: str, limit: int = 20) -> list[str]:
     """A few URLs from sitemap.xml, if there is one."""
-    res = fetcher.get(urljoin(base, "/sitemap.xml"))
+    res = fetcher.get(urljoin(base, "/sitemap.xml"), ignore_robots=True)
     if not res.ok or not res.text:
         return []
     locs = re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", res.text, re.I)
     # A sitemap index points at more sitemaps; follow only the first.
     if locs and locs[0].lower().endswith(".xml"):
-        res2 = fetcher.get(locs[0])
+        res2 = fetcher.get(locs[0], ignore_robots=True)
         if res2.ok:
             locs = re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", res2.text, re.I)
     return locs[:limit]
@@ -185,7 +185,9 @@ def build_profile(
             on_progress(msg)
 
     progress(f"reading {domain}")
-    home = fetcher.get(url)
+    # This is the operator's own site — robots.txt does not apply (see
+    # Fetcher.get). Every page below is on the same domain.
+    home = fetcher.get(url, ignore_robots=True)
     if not home.ok:
         prof.notes.append(f"could not read the homepage: {home.error}")
         # Still return something usable: guess from the domain name itself.
@@ -193,6 +195,10 @@ def build_profile(
         prof.topics = [prof.brand.lower()]
         prof.seed_keywords = [prof.brand.lower()]
         prof.categories = list(_ALWAYS)
+        # Without these the CLI prints an empty language line and the drafter
+        # has nothing to fall back on.
+        prof.language = "en"
+        prof.languages = ["en"]
         return prof
 
     base_url = home.final_url or url
@@ -210,7 +216,7 @@ def build_profile(
         if link in prof.pages_read:
             continue
         progress(f"reading {urlparse(link).path or '/'}")
-        res = fetcher.get(link)
+        res = fetcher.get(link, ignore_robots=True)
         if res.ok and res.text:
             pages.append((res.final_url or link, res.text))
             prof.pages_read.append(res.final_url or link)
