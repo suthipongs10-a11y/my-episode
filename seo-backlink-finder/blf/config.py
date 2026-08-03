@@ -23,7 +23,7 @@ DEFAULTS: dict[str, Any] = {
         "languages": ["en"],
     },
     "discovery": {
-        "provider": "manual",
+        "provider": "auto",
         "results_per_query": 20,
         "categories": [
             "guest_post",

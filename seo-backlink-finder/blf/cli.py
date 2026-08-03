@@ -148,14 +148,23 @@ def cmd_init(args) -> int:
             content = fh.read()
         with open(target, "w", encoding="utf-8") as fh:
             fh.write(content)
-        out(f"Wrote {target} — edit site.url / site.topics / site.languages, then run 'blf footprints'.")
+        out(f"Wrote {target}.")
     else:
         err("config.example.yaml not found next to the package; writing minimal config")
         with open(target, "w", encoding="utf-8") as fh:
             fh.write("site:\n  url: https://example.com\n  topics: []\n  languages: [en]\n")
     cfg = _load(args)
     _store(cfg).close()  # create the db
-    out(f"Initialised database at {cfg.get('storage.db_path')}")
+    out(f"Initialised database at {cfg.get('storage.db_path')}\n")
+    out("[b]Next:[/b] you do not have to edit anything to begin — "
+        "the site profile is read from your URL.")
+    out("  [cyan]blf start https://yoursite.com[/cyan]    one command, end to end")
+    out("  [cyan]blf serve[/cyan]                          web UI on http://127.0.0.1:8080")
+    out("  [cyan]blf profile https://yoursite.com[/cyan]  check what it thinks your site is about")
+    if not cfg.secret("serpapi") and not cfg.secret("google_cse_key"):
+        out("\n[yellow]No search API key set.[/yellow] It will still run, using the "
+            "built-in platform catalog.\n  For niche targets, add GOOGLE_CSE_KEY + "
+            "GOOGLE_CSE_CX (free tier) — see config.example.env.")
     return 0
 
 
@@ -186,7 +195,11 @@ def cmd_footprints(args) -> int:
 
 def cmd_discover(args) -> int:
     cfg = _load(args)
-    provider_name = args.provider or cfg.get("discovery.provider", "manual")
+    from .search_providers import resolve_provider_name
+    requested = args.provider or cfg.get("discovery.provider", "auto")
+    # An explicit --provider manual with an --input file must stay manual.
+    provider_name = (requested if (requested == "manual" and args.input)
+                     else resolve_provider_name(requested, cfg))
     provider = get_provider(provider_name, cfg, args.input)
     if not provider.available():
         err(f"provider '{provider_name}' is not configured (missing API key?). "
@@ -609,7 +622,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("discover", help="gather prospect URLs via a search provider")
     sp.add_argument("--keyword")
     sp.add_argument("--categories")
-    sp.add_argument("--provider", choices=["serpapi", "google_cse", "manual", "none"])
+    sp.add_argument("--provider",
+                    choices=["auto", "serpapi", "google_cse", "manual", "none"])
     sp.add_argument("--input", help="URL file for --provider manual")
     sp.add_argument("--limit", type=int, help="results per query")
     sp.set_defaults(func=cmd_discover)

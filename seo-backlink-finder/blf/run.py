@@ -24,7 +24,7 @@ from .fetcher import Fetcher
 from .metrics import MetricsProvider
 from .models import Prospect, Status
 from .profile import SiteProfile
-from .search_providers import get_provider
+from .search_providers import get_provider, resolve_provider_name
 from .store import Store
 
 
@@ -155,8 +155,10 @@ def run_campaign(
         known = store.known_urls()
         found: list[Prospect] = []
 
-        # 2a. Search discovery, when a provider is configured.
-        provider_name = cfg.get("discovery.provider", "manual")
+        # 2a. Search discovery, when a provider is configured. 'auto' resolves
+        # to whichever backend has keys, so a key in the environment is enough.
+        provider_name = resolve_provider_name(
+            cfg.get("discovery.provider", "auto"), cfg)
         provider = get_provider(provider_name, cfg, None)
         if provider_name not in ("manual", "none") and provider.available():
             emit(f"Searching with {provider_name}…")
@@ -175,9 +177,9 @@ def run_campaign(
                 found.extend(got)
                 emit(f"  '{kw}' → {len(got)} new targets", found=len(found))
         else:
-            emit(f"No search provider configured ({provider_name}) — "
-                 "using the built-in platform catalog only. "
-                 "Add SERPAPI_KEY or GOOGLE_CSE_KEY to find niche targets.")
+            emit("No search API key found — using the built-in platform "
+                 "catalog only. Set GOOGLE_CSE_KEY + GOOGLE_CSE_CX (free tier) "
+                 "or SERPAPI_KEY to discover niche targets in your topic.")
 
         # 2b. The always-available catalog.
         if use_seeds and not campaign.should_stop():

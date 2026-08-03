@@ -229,23 +229,62 @@ blf export --format html --out report.html
 
 ---
 
-## 7. การตั้งค่า (`config.yaml`) และ API keys
+## 7. API ที่ต้องสมัคร (ทุกตัวไม่บังคับ) และวิธีเปิดใช้
 
-- **`config.yaml`** เก็บ *การตั้งค่า* เท่านั้น — ปลอดภัยที่จะ commit
-  (ดูตัวอย่างเต็มใน `config.example.yaml`) จุดที่ต้องแก้แน่ ๆ:
-  `site.url`, `site.name`, `site.topics`, `site.languages`
-- **ความลับ (API keys)** อ่านจาก *environment variable* เท่านั้น ไม่เก็บในไฟล์
-  (ดู `config.example.env`) — ทุกตัว **ไม่บังคับ**:
+**เครื่องมือรันได้ทันทีโดยไม่ต้องสมัครอะไรเลย** — แต่ละ key ที่เพิ่มเข้ามาจะปลดล็อก
+ความสามารถหนึ่งอย่าง ถ้าไม่มีระบบก็ทำงานต่อได้โดยลดความสามารถลง ไม่พังและไม่หยุด
 
-| ตัวแปร | ให้อะไร | ถ้าไม่มี |
-|---|---|---|
-| `SERPAPI_KEY` | ผล Google จริงสำหรับ `discover` | ใช้ทาง manual/import แทน |
-| `GOOGLE_CSE_KEY`, `GOOGLE_CSE_CX` | Google Custom Search | เหมือนกัน |
-| `OPENPAGERANK_KEY` | Domain Authority 0–100 (ฟรี) | คะแนนปรับน้ำหนักองค์ประกอบที่เหลือ |
-| `ANTHROPIC_API_KEY` | ให้ Claude ช่วยร่าง (โหมด LLM) | ใช้เทมเพลตแทน |
+| ลำดับความสำคัญ | ตัวแปร | ให้อะไร | ถ้าไม่มีจะเป็นยังไง |
+|---|---|---|---|
+| ⭐ **1 — ควรสมัคร** | `GOOGLE_CSE_KEY` + `GOOGLE_CSE_CX` | ค้นหาเป้าหมายเฉพาะทางในหัวข้อของคุณจริง ๆ | ได้แค่ catalog แพลตฟอร์มที่มีให้ในตัว (ประมาณ 50 เป้าหมาย) ซึ่งเป็นแค่พื้นฐาน |
+| ⭐ **2 — ควรสมัคร** | `OPENPAGERANK_KEY` | คะแนนความแข็งแรงโดเมน 0–100 | คะแนนคุณภาพยังคำนวณได้ แต่ตัดองค์ประกอบ authority ออกแล้วปรับน้ำหนักที่เหลือใหม่ |
+| ทางเลือก | `SERPAPI_KEY` | ผล Google จริง คุณภาพดีกว่า CSE ไม่ต้องตั้งค่า search engine เอง | ใช้ CSE แทนได้ |
+| ทางเลือก | `ANTHROPIC_API_KEY` | ให้ Claude เขียนร่างคอมเมนต์/อีเมลแทนเทมเพลต และเขียนได้**ทุกภาษา** | ใช้เทมเพลต (ไทย/อังกฤษ) ภาษาอื่นจะเตือนให้แปลก่อนโพสต์ |
+
+**เลือกอย่างเดียวได้:** `GOOGLE_CSE` หรือ `SERPAPI` อย่างใดอย่างหนึ่งพอ (ถ้ามีทั้งคู่
+ระบบเลือก SerpAPI ให้)
+
+### วิธีสมัครแต่ละตัว
+
+**Google Custom Search (แนะนำให้เริ่มที่นี่ — มีโควตาฟรีต่อวัน)**
+1. สร้าง Programmable Search Engine ที่ <https://programmablesearchengine.google.com/>
+   — ตั้งให้ **ค้นทั้งเว็บ** ("Search the entire web") แล้วคัดลอก **Search engine ID**
+   → นี่คือ `GOOGLE_CSE_CX`
+2. เปิด Custom Search API + สร้าง API key ที่ <https://console.cloud.google.com/>
+   → นี่คือ `GOOGLE_CSE_KEY`
+
+**Open PageRank (ฟรี)** — สมัครที่ <https://www.domcop.com/openpagerank/> รับ key ทางอีเมล
+
+**SerpAPI (เสียเงิน มีโควตาทดลอง)** — <https://serpapi.com/>
+
+**Anthropic API (จ่ายตามการใช้งาน)** — <https://console.anthropic.com/>
+แล้วตั้ง `assist.llm: true` ใน `config.yaml` ด้วย
+
+> โควตาและราคาของทุกเจ้าเปลี่ยนได้ ตรวจหน้าราคาปัจจุบันของแต่ละเจ้าก่อนสมัครนะครับ
+
+### วิธีใส่ key
+
+```bash
+cp config.example.env .env     # แล้วแก้ .env ใส่ค่าที่ได้มา
+set -a; source .env; set +a    # โหลดเข้า shell (Linux/macOS)
+blf start https://yoursite.com
+```
+
+Windows PowerShell: `$env:GOOGLE_CSE_KEY="..."`
+Docker: ใส่ใน `.env` ข้าง ๆ `docker-compose.yml` แล้วมันอ่านให้เอง
+
+**ใส่ key แล้วไม่ต้องแก้ `config.yaml`** — `discovery.provider` ตั้งเป็น `auto` ไว้
+ระบบจะตรวจว่ามี key ตัวไหนแล้วเลือกใช้เอง (ลำดับ: SerpAPI → Google CSE → catalog)
+
+### เรื่อง config
+
+- **`config.yaml`** เก็บ *การตั้งค่า* เท่านั้น ปลอดภัยที่จะ commit
+- **ไม่ต้องแก้อะไรก่อนเริ่มใช้** — `blf start` อ่านหัวข้อ/ภาษา/ประเทศจากเว็บคุณเอง
+  (`site.topics` ใน config เป็นแค่ตัวเสริม ไม่ใช่สิ่งที่ต้องกรอก)
+- **ความลับอ่านจาก environment variable เท่านั้น** ไม่เก็บลงไฟล์ config
 
 > **ไม่ scrape Google/Bing โดยตรง** เพราะผิด ToS พังบ่อย และโดนบล็อก — ให้ใช้ API
-> ที่เป็นทางการ หรือค้นเองแล้ว `import`
+> ที่เป็นทางการ หรือค้นเองแล้ว `blf import`
 
 ---
 

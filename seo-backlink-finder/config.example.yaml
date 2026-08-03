@@ -21,12 +21,14 @@ site:
 
 # --- Discovery --------------------------------------------------------------
 discovery:
-  # Which search provider to use for `blf discover`.
+  # Which search provider to use.
+  #   auto        -> use whichever keys are present (recommended). With no key
+  #                  it falls back to the built-in platform catalog.
   #   serpapi     -> real Google results   (needs SERPAPI_KEY)
   #   google_cse  -> Google Custom Search  (needs GOOGLE_CSE_KEY + GOOGLE_CSE_CX)
   #   manual      -> read URLs from a file you paste search results into
   #   none        -> discovery disabled; add prospects by URL with `blf add`
-  provider: "manual"
+  provider: "auto"
   results_per_query: 20
   # Categories of opportunity to search for. See `blf footprints --list`.
   categories:

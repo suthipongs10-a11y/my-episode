@@ -132,6 +132,28 @@ def load_urls_from_file(path: str) -> list[str]:
     return urls
 
 
+def resolve_provider_name(name: str, cfg) -> str:
+    """Turn a configured provider name into the one we will actually use.
+
+    'auto' (the default) picks whichever search backend has its keys present,
+    so adding a key to the environment is enough to enable real discovery —
+    no config edit. It also upgrades 'manual'/'none' when a key exists, because
+    the alternative is a user who sets a key and silently gets no search
+    results.
+    """
+    name = (name or "auto").lower()
+    has_serp = bool(cfg.secret("serpapi"))
+    has_cse = bool(cfg.secret("google_cse_key") and cfg.secret("google_cse_cx"))
+
+    if name in ("auto", "manual", "none"):
+        if has_serp:
+            return "serpapi"
+        if has_cse:
+            return "google_cse"
+        return "manual" if name != "none" else "none"
+    return name
+
+
 def get_provider(name: str, cfg, input_file: Optional[str] = None) -> SearchProvider:
     name = (name or "none").lower()
     if name == "serpapi":
