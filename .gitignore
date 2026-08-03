@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.data/          # PGlite local database
+.cache/         # cached-fetch disk cache
+.ctx-tests      # last test result for `pnpm ctx`
+reports/        # generated PDFs
+.env
+.env.local
+*.log
+.DS_Store
