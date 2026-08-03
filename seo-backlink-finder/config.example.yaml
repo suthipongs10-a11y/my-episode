@@ -78,6 +78,10 @@ assist:
   # llm is true, drafts are written by Claude for higher quality.
   llm: false
   llm_model: "claude-fable-5"
+  # Language for the how-to guides (`blf guide`, the How-to button in the UI).
+  # These are read by YOU, not by the target site, so they follow your own
+  # language. "th" or "en"; leave blank to infer from your site.
+  guide_language: ""
   # Hard guardrail: the tool NEVER auto-submits to third-party sites. It drafts
   # for your review. Leave this true. See README "Why not bulk auto-posting".
   human_review_required: true

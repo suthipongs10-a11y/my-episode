@@ -110,6 +110,25 @@ def _metrics(cfg: Config) -> Optional[MetricsProvider]:
     )
 
 
+def _saved_profile(cfg):
+    """The site profile from the last `blf start`, if there is one.
+
+    Guides and drafts read better with it (right language, right topics), and
+    it costs one small query — but everything still works when it is absent."""
+    try:
+        store = Store(cfg.get("storage.db_path", "backlinks.db"))
+        try:
+            data = store.get_meta("site_profile")
+        finally:
+            store.close()
+        if not data:
+            return None
+        from .profile import SiteProfile
+        return SiteProfile.from_dict(data)
+    except Exception:
+        return None
+
+
 def _resolve(store: Store, ref: str) -> Optional[Prospect]:
     """A prospect reference is a URL or '#<rowid>'."""
     if ref.startswith("#"):
@@ -469,6 +488,59 @@ def cmd_draft(args) -> int:
     return 0
 
 
+def cmd_guide(args) -> int:
+    """Step-by-step: how to actually get a link from this site."""
+    cfg = _load(args)
+    from .models import APPROVAL_LABELS_TH
+    from .playbook import guide_for
+
+    store = _store(cfg)
+    p = _resolve(store, args.ref)
+    store.close()
+    if not p:
+        err(f"not found: {args.ref}")
+        return 1
+
+    g = guide_for(p, cfg, profile=_saved_profile(cfg))
+    is_th = g.language == "th"
+    approval_text = (APPROVAL_LABELS_TH.get(g.approval, g.approval.value)
+                     if is_th else g.approval.label)
+    colour = {"instant": "green", "moderated": "yellow", "editorial": "cyan",
+              "verification": "magenta", "paid": "red"}.get(g.approval.value, "white")
+
+    out(f"[b]{p.domain}[/b]  ·  {p.opportunity_type.label}")
+    out(f"[{colour}]● {approval_text}[/{colour}]"
+        + (f"   ⏱ {esc(g.effort)}" if g.effort else ""))
+    if g.summary:
+        out_plain(f"\n{g.summary}")
+
+    def section(title: str, items: list, bullet: str = "•") -> None:
+        if not items:
+            return
+        out(f"\n[b]{title}[/b]")
+        for i, item in enumerate(items, 1):
+            mark = f"{i}." if bullet == "#" else bullet
+            out_plain(f"  {mark} {item}")
+
+    label = {
+        True: ("สิ่งที่พบในหน้านี้", "เตรียมให้พร้อมก่อน", "ขั้นตอน",
+               "ข้อผิดพลาดที่ทำให้ไม่ผ่าน", "ตรวจว่าสำเร็จแล้วหรือยัง"),
+        False: ("What we found on this page", "Prepare first", "Steps",
+                "Why submissions get rejected", "Confirm it worked"),
+    }[is_th]
+
+    section(label[0], g.facts)
+    section(label[1], g.prep)
+    section(label[2], g.steps, bullet="#")
+    section(label[3], g.pitfalls, bullet="⚠")
+    section(label[4], g.verify, bullet="☐")
+
+    out("\n" + ("[dim]เมื่อทำแล้ว: blf status \"%s\" contacted[/dim]" % p.url
+                if is_th else
+                "[dim]When done: blf status \"%s\" contacted[/dim]" % p.url))
+    return 0
+
+
 def cmd_status(args) -> int:
     cfg = _load(args)
     store = _store(cfg)
@@ -667,6 +739,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--link", action="store_true",
                     help="for comments: include an optional resource link line")
     sp.set_defaults(func=cmd_draft)
+
+    sp = sub.add_parser("guide", help="how to actually get a link from this site")
+    sp.add_argument("ref", help="URL or #rowid")
+    sp.set_defaults(func=cmd_guide)
 
     sp = sub.add_parser("status", help="update a prospect's pipeline status")
     sp.add_argument("ref", help="URL or #rowid")

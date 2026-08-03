@@ -75,6 +75,45 @@ class LinkAttribute(str, Enum):
     UNKNOWN = "unknown"
 
 
+class Approval(str, Enum):
+    """How a link gets accepted at a target — the thing you want to know before
+    spending an hour on it.
+
+    Ordered from least to most effort. This is a *typical* expectation, not a
+    promise: any site can change its moderation policy without telling anyone.
+    """
+
+    INSTANT = "instant"            # posts immediately, no review
+    MODERATED = "moderated"        # a human or filter reviews it first
+    EDITORIAL = "editorial"        # a person decides whether to publish you
+    VERIFICATION = "verification"  # you must prove you own the business
+    PAID = "paid"                  # money is required
+    UNKNOWN = "unknown"
+
+    @property
+    def label(self) -> str:
+        return _APPROVAL_LABELS.get(self, self.value)
+
+
+_APPROVAL_LABELS = {
+    Approval.INSTANT: "Instant",
+    Approval.MODERATED: "Moderated",
+    Approval.EDITORIAL: "Editorial",
+    Approval.VERIFICATION: "Verification",
+    Approval.PAID: "Paid",
+    Approval.UNKNOWN: "Unknown",
+}
+
+APPROVAL_LABELS_TH = {
+    Approval.INSTANT: "ขึ้นทันที",
+    Approval.MODERATED: "รออนุมัติ",
+    Approval.EDITORIAL: "ต้องให้คนตัดสิน",
+    Approval.VERIFICATION: "ต้องยืนยันตัวตน",
+    Approval.PAID: "ต้องจ่ายเงิน",
+    Approval.UNKNOWN: "ไม่ทราบ",
+}
+
+
 class Status(str, Enum):
     """Where a prospect sits in your outreach pipeline."""
 

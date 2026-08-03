@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS prospects (
 CREATE INDEX IF NOT EXISTS idx_priority ON prospects(priority DESC);
 CREATE INDEX IF NOT EXISTS idx_domain   ON prospects(domain);
 CREATE INDEX IF NOT EXISTS idx_status   ON prospects(status);
+
+-- Small key/value side table. Holds the site profile so that scoring, guides
+-- and drafts stay consistent between runs instead of being recomputed (or
+-- silently lost) every time the process restarts.
+CREATE TABLE IF NOT EXISTS meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
+);
 """
 
 
@@ -111,6 +119,26 @@ class Store:
             row.notes = (row.notes + "\n" if row.notes else "") + note
         self.upsert(row)
         return True
+
+    # -- key/value meta -----------------------------------------------------
+    def set_meta(self, key: str, value) -> None:
+        """Store a JSON-serialisable value under `key`."""
+        self.conn.execute(
+            "INSERT INTO meta (key, value) VALUES (?,?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (key, json.dumps(value, ensure_ascii=False)),
+        )
+        self.conn.commit()
+
+    def get_meta(self, key: str, default=None):
+        cur = self.conn.execute("SELECT value FROM meta WHERE key=?", (key,))
+        row = cur.fetchone()
+        if not row:
+            return default
+        try:
+            return json.loads(row["value"])
+        except (ValueError, TypeError):
+            return default
 
     def set_analyzed_now(self, p: Prospect) -> None:
         p.analyzed_at = datetime.now(timezone.utc).isoformat(timespec="seconds")

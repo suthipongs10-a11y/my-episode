@@ -140,7 +140,7 @@ def _target_lang(prospect: Prospect, cfg) -> tuple[str, str, bool]:
     if site_lang in SUPPORTED_LANGS:
         return site_lang, site_lang, True
     # Fall back to the first of the operator's languages that we can template.
-    my_langs = [l.lower() for l in (cfg.get("site.languages", ["en"]) or ["en"])]
+    my_langs = [str(l).lower() for l in (cfg.get("site.languages", ["en"]) or ["en"])]
     for l in my_langs:
         if l in SUPPORTED_LANGS:
             return l, site_lang, True

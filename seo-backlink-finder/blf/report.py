@@ -13,6 +13,7 @@ from typing import Iterable
 
 from .language import name as lang_name
 from .models import Prospect
+from .playbook import approval_for
 
 _COLUMNS = [
     ("tier", "Tier"),
@@ -22,6 +23,7 @@ _COLUMNS = [
     ("ease", "Ease"),
     ("authority", "Authority"),
     ("opportunity_type", "Type"),
+    ("approval", "Approval"),
     ("link_attribute", "Link"),
     ("content_lang", "Lang"),
     ("status", "Status"),
@@ -39,6 +41,7 @@ def _row_values(p: Prospect) -> dict:
         "ease": p.scores.ease,
         "authority": "" if p.metrics.authority is None else p.metrics.authority,
         "opportunity_type": p.opportunity_type.label,
+        "approval": approval_for(p).label,
         "link_attribute": p.analysis.link_attribute.value,
         "content_lang": p.analysis.content_lang or "",
         "status": p.status.value,
@@ -106,6 +109,8 @@ def export_html(prospects: Iterable[Prospect], path: str, title: str = "Backlink
             f'<td class="num">{v["ease"]}</td>',
             f'<td class="num">{v["authority"]}</td>',
             f'<td>{html.escape(str(v["opportunity_type"]))}</td>',
+            f'<td><span class="ap ap-{html.escape(approval_for(p).value)}">'
+            f'{html.escape(str(v["approval"]))}</span></td>',
             f'<td{warn}>{html.escape(v["link_attribute"])}</td>',
             f'<td>{html.escape(lang_name(v["content_lang"]) if v["content_lang"] else "")}</td>',
             f'<td>{html.escape(v["status"])}</td>',
@@ -151,6 +156,11 @@ _HTML_TEMPLATE = """<!doctype html>
   td.url {{ max-width: 380px; overflow: hidden; text-overflow: ellipsis; }}
   .tier {{ display: inline-block; min-width: 1.4em; text-align: center;
           padding: .1em .4em; border-radius: 4px; color: #fff; font-weight: 600; }}
+  .ap {{ display: inline-block; padding: .1em .5em; border-radius: 99px;
+        font-size: .78rem; border: 1px solid currentColor; white-space: nowrap; }}
+  .ap-instant {{ color: #1a7f37; }}      .ap-moderated {{ color: #d97706; }}
+  .ap-editorial {{ color: #3b82f6; }}    .ap-verification {{ color: #9333ea; }}
+  .ap-paid {{ color: #dc2626; }}         .ap-unknown {{ color: #9ca3af; }}
   tr:hover td {{ background: #3b82f611; }}
   a {{ color: #3b82f6; text-decoration: none; }}
 </style></head><body>

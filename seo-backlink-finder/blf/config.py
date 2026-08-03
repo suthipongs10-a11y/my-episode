@@ -60,6 +60,7 @@ DEFAULTS: dict[str, Any] = {
     "assist": {
         "llm": False,
         "llm_model": "claude-fable-5",
+        "guide_language": "",
         "human_review_required": True,
     },
     "storage": {

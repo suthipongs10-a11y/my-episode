@@ -113,6 +113,8 @@ def _handler_factory(state: _State):
                 self._json(self._results(query))
             elif path == "/api/draft":
                 self._json(self._draft(query))
+            elif path == "/api/guide":
+                self._json(self._guide(query))
             else:
                 self._json({"error": "not found"}, 404)
 
@@ -137,6 +139,38 @@ def _handler_factory(state: _State):
                 self._json({"error": "not found"}, 404)
 
         # -- data -------------------------------------------------------
+        def _profile(self):
+            """The saved site profile, so guides and drafts match your site."""
+            store = Store(state.cfg.get("storage.db_path", "backlinks.db"))
+            try:
+                data = store.get_meta("site_profile")
+            finally:
+                store.close()
+            if not data:
+                return None
+            from .profile import SiteProfile
+            return SiteProfile.from_dict(data)
+
+        def _guide(self, query) -> dict:
+            from .models import APPROVAL_LABELS_TH
+            from .playbook import guide_for
+            url = (query.get("url") or [""])[0]
+            store = Store(state.cfg.get("storage.db_path", "backlinks.db"))
+            try:
+                p = store.get(url)
+            finally:
+                store.close()
+            if not p:
+                return {"error": "prospect not found"}
+            g = guide_for(p, state.cfg, profile=self._profile())
+            d = g.to_dict()
+            d["approval_label"] = (APPROVAL_LABELS_TH.get(g.approval, g.approval.value)
+                                   if g.language == "th" else g.approval.label)
+            d["domain"] = p.domain
+            d["url"] = p.url
+            d["type"] = p.opportunity_type.label
+            return d
+
         def _results(self, query) -> dict:
             store = Store(state.cfg.get("storage.db_path", "backlinks.db"))
             try:
@@ -152,6 +186,17 @@ def _handler_factory(state: _State):
                 stats = store.stats()
             finally:
                 store.close()
+            from .models import APPROVAL_LABELS_TH
+            from .playbook import approval_for
+            th = (state.cfg.get("assist.guide_language") or "").lower().startswith("th")
+
+            def approval(p):
+                a = approval_for(p)
+                return {
+                    "key": a.value,
+                    "label": APPROVAL_LABELS_TH.get(a, a.value) if th else a.label,
+                }
+
             return {
                 "stats": stats,
                 "rows": [{
@@ -159,6 +204,8 @@ def _handler_factory(state: _State):
                     "domain": p.domain,
                     "type": p.opportunity_type.label,
                     "type_key": p.opportunity_type.value,
+                    "approval": approval(p)["key"],
+                    "approval_label": approval(p)["label"],
                     "tier": p.scores.tier,
                     "priority": p.scores.priority,
                     "quality": p.scores.quality,
@@ -273,6 +320,19 @@ PAGE = r"""<!doctype html>
        border-radius:4px;color:#fff;font-weight:700;font-size:.78rem}
   .A{background:#1a7f37}.B{background:#3b82f6}.C{background:#d97706}.D{background:#9ca3af}
   .mhi{color:#1a7f37;font-weight:600}.mmd{color:#d97706}.mlo{color:var(--mut)}
+  .ap{display:inline-block;padding:.1em .5em;border-radius:99px;font-size:.75rem;
+      white-space:nowrap;border:1px solid currentColor}
+  .ap-instant{color:#1a7f37}.ap-moderated{color:#d97706}.ap-editorial{color:#3b82f6}
+  .ap-verification{color:#9333ea}.ap-paid{color:#dc2626}.ap-unknown{color:var(--mut)}
+  td.acts{display:flex;gap:.3rem}
+  td.acts button{padding:.3rem .6rem;font-size:.78rem}
+  .gsec{margin-top:.9rem}
+  .gsec h4{margin:0 0 .35rem;font-size:.9rem}
+  .gsec ol,.gsec ul{margin:0;padding-left:1.4rem;font-size:.87rem;line-height:1.65}
+  .gsec li{margin-bottom:.3rem}
+  .gwarn li{color:#b45309}
+  .gfact{background:#3b82f611;border-left:3px solid var(--acc);padding:.5rem .7rem;
+         border-radius:0 6px 6px 0;font-size:.85rem;line-height:1.6}
   a{color:var(--acc);text-decoration:none}
   dialog{border:1px solid var(--bd);border-radius:10px;padding:1rem;max-width:min(680px,92vw);
        background:Canvas;color:CanvasText}
@@ -323,11 +383,25 @@ PAGE = r"""<!doctype html>
   </div>
   <div class="wrap"><table id="t">
     <thead><tr><th>Tier</th><th>Prio</th><th>Qual</th><th>Match</th><th>Ease</th>
-      <th>Auth</th><th>ประเภท</th><th>Link</th><th>ภาษา</th><th>สถานะ</th>
-      <th>โดเมน</th><th></th></tr></thead>
-    <tbody id="tb"><tr><td colspan="12" class="muted">ยังไม่มีข้อมูล — กด Start</td></tr></tbody>
+      <th>Auth</th><th>ประเภท</th><th>การอนุมัติ</th><th>Link</th><th>ภาษา</th>
+      <th>สถานะ</th><th>โดเมน</th><th></th></tr></thead>
+    <tbody id="tb"><tr><td colspan="13" class="muted">ยังไม่มีข้อมูล — กด Start</td></tr></tbody>
   </table></div>
 </div>
+
+<dialog id="gdlg">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+    <b id="gtitle"></b>
+    <button class="ghost" onclick="document.getElementById('gdlg').close()">ปิด</button>
+  </div>
+  <div id="gmeta" class="muted" style="margin:.3rem 0 .5rem"></div>
+  <div id="gbody"></div>
+  <div class="row" style="margin-top:.9rem">
+    <button id="gdone">ทำแล้ว → ตั้งเป็น contacted</button>
+    <a id="gopen" href="#" target="_blank" rel="noopener">
+      <button class="ghost" type="button">เปิดเว็บนั้น</button></a>
+  </div>
+</dialog>
 
 <dialog id="dlg">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
@@ -416,17 +490,58 @@ async function loadResults() {
   $('total').textContent = rows.length ? `(${rows.length})` : '';
   $('tb').innerHTML = rows.length ? rows.map(r => {
     const mc = r.match >= 60 ? 'mhi' : (r.match >= 30 ? 'mmd' : 'mlo');
+    const u = r.url.replace(/'/g, "\\'");
     return `<tr>
       <td><span class="tier ${r.tier}">${r.tier}</span></td>
       <td class="num">${r.priority}</td><td class="num">${r.quality}</td>
       <td class="num ${mc}">${r.match}</td><td class="num">${r.ease}</td>
       <td class="num">${r.authority ?? ''}</td>
-      <td>${esc(r.type)}</td><td>${esc(r.link)}</td><td>${esc(r.lang)}</td>
+      <td>${esc(r.type)}</td>
+      <td><span class="ap ap-${esc(r.approval)}">${esc(r.approval_label)}</span></td>
+      <td>${esc(r.link)}</td><td>${esc(r.lang)}</td>
       <td>${esc(r.status)}</td>
       <td><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.domain)}</a></td>
-      <td><button class="ghost" onclick="draft('${esc(r.url)}')">ร่าง</button></td>
+      <td class="acts">
+        <button onclick="guide('${u}')">วิธีทำ</button>
+        <button class="ghost" onclick="draft('${u}')">ร่าง</button>
+      </td>
     </tr>`;
-  }).join('') : '<tr><td colspan="12" class="muted">ยังไม่มีข้อมูล</td></tr>';
+  }).join('') : '<tr><td colspan="13" class="muted">ยังไม่มีข้อมูล</td></tr>';
+}
+
+async function guide(url) {
+  const d = await api('/api/guide?' + new URLSearchParams({url}));
+  if (d.error) { alert(d.error); return; }
+  $('gtitle').textContent = 'วิธีสร้าง Backlink: ' + d.domain;
+  $('gmeta').innerHTML =
+    `<span class="ap ap-${esc(d.approval)}">${esc(d.approval_label)}</span>`
+    + (d.effort ? ` &nbsp;⏱ ${esc(d.effort)}` : '')
+    + ` &nbsp;·&nbsp; ${esc(d.type)}`;
+
+  const list = (title, items, tag, cls) => (items && items.length)
+    ? `<div class="gsec ${cls||''}"><h4>${title}</h4><${tag}>`
+      + items.map(x => `<li>${esc(x)}</li>`).join('') + `</${tag}></div>`
+    : '';
+
+  $('gbody').innerHTML =
+    (d.summary ? `<div style="font-size:.92rem;margin-bottom:.6rem">${esc(d.summary)}</div>` : '')
+    + (d.facts && d.facts.length
+        ? `<div class="gfact"><b>สิ่งที่พบในหน้านี้</b><ul style="margin:.3rem 0 0;padding-left:1.1rem">`
+          + d.facts.map(f => `<li>${esc(f)}</li>`).join('') + `</ul></div>` : '')
+    + list('เตรียมให้พร้อมก่อน', d.prep, 'ul')
+    + list('ขั้นตอน', d.steps, 'ol')
+    + list('ข้อผิดพลาดที่ทำให้ไม่ผ่าน', d.pitfalls, 'ul', 'gwarn')
+    + list('ตรวจว่าสำเร็จแล้วหรือยัง', d.verify, 'ul');
+
+  $('gopen').href = d.url;
+  $('gdone').onclick = async () => {
+    await api('/api/status-set', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url: d.url, state: 'contacted'})
+    });
+    $('gdlg').close(); loadResults();
+  };
+  $('gdlg').showModal();
 }
 
 async function draft(url) {

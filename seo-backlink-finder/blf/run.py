@@ -132,6 +132,9 @@ def run_campaign(
             on_progress=lambda m: emit(f"  {m}"),
         )
         campaign.emit(profile=prof.to_dict())
+        # Persist it: guides, drafts and re-scoring all need the profile, and
+        # without this it would vanish when the process exits.
+        store.set_meta("site_profile", prof.to_dict())
         if prof.topics:
             emit(f"Topics detected: {', '.join(prof.topics[:6])}")
         else:
