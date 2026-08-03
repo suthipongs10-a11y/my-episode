@@ -151,8 +151,17 @@ create table if not exists api_calls (
   provider text, endpoint text,
   units numeric, cost_thb numeric(10,4),
   cache_hit boolean default false,
+  -- LLM calls only. The prompt itself is not stored — it contains the client's
+  -- page content — but its hash makes an answer traceable to what asked for it.
+  model text, prompt_hash text,
+  tokens_in int, tokens_out int,
   created_at timestamptz default now()
 );
+-- For databases created before M3 added the four columns above.
+alter table api_calls add column if not exists model text;
+alter table api_calls add column if not exists prompt_hash text;
+alter table api_calls add column if not exists tokens_in int;
+alter table api_calls add column if not exists tokens_out int;
 create index if not exists api_calls_run_idx on api_calls (audit_run_id);
 
 -- ---------------------------------------------------------------------------

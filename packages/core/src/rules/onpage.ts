@@ -170,16 +170,28 @@ export const onp008: Rule = (facts) => {
   ];
 };
 
-/** ONP-009 — no FAQ structured data anywhere on the site. */
+/**
+ * ONP-009 — there is an FAQ, but Google cannot show it as one.
+ *
+ * Scoped to sites that *have* FAQ content on purpose. A site with no FAQ at all
+ * has a content problem rather than a markup one, and CON-004 says so; firing
+ * both would charge the owner twice for one gap and bury the cheaper fix under
+ * the more expensive one.
+ */
 export const onp009: Rule = (facts) => {
   const pages = fetchedPages(facts);
   if (pages.length === 0) return [];
   if (pages.some((p) => p.schemaTypes.includes("FAQPage"))) return [];
+
+  const faqPages = pages.filter((p) => p.pageType === "faq");
+  if (faqPages.length === 0) return []; // nothing to mark up — that is CON-004
+
   return [
-    finding("ONP-009", {
-      pages_checked: pages.length,
-      has_faq_page: pages.some((p) => p.pageType === "faq"),
-    }),
+    finding(
+      "ONP-009",
+      { pages_checked: pages.length, faq_pages: faqPages.length },
+      faqPages.map((p) => p.url),
+    ),
   ];
 };
 

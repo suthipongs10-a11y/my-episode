@@ -17,12 +17,26 @@ import type { DiscoverResult } from "./02-discover.ts";
 import type { IntakeResult } from "./01-intake.ts";
 
 export const MAX_CLIENT_PAGES = 150;
+export const MAX_COMPETITOR_PAGES = 50;
 export const MAX_DEPTH = 3;
 
 export interface CrawlResult {
   pages: ExtractedPage[];
   brokenUrls: { url: string; status: number; linkedFrom: string[] }[];
   emptyPages: string[];
+}
+
+export interface CrawlOptions {
+  domain: string;
+  seeds: string[];
+  maxPages: number;
+  /**
+   * Honour robots.txt. False for the client, who asked for this audit; true for
+   * a competitor, who did not. This is the whole of project rule #6 and there
+   * is no default that is right for both, so callers state it.
+   */
+  respectRobots: boolean;
+  isCompetitor: boolean;
 }
 
 export const crawlStage: PipelineStage = {
@@ -36,7 +50,13 @@ export const crawlStage: PipelineStage = {
     const discover = ctx.state.get("discover") as DiscoverResult | undefined;
     const base = intake?.baseUrl ?? `https://${ctx.client.domain}/`;
 
-    const result = await crawlSite(ctx, base, discover?.seedUrls ?? [base]);
+    const result = await crawlSite(ctx, {
+      domain: ctx.client.domain,
+      seeds: discover?.seedUrls ?? [base],
+      maxPages: MAX_CLIENT_PAGES,
+      respectRobots: false, // the client submitted this domain themselves
+      isCompetitor: false,
+    });
     ctx.state.set("crawl", result);
 
     for (const page of result.pages) {
@@ -51,27 +71,32 @@ export const crawlStage: PipelineStage = {
   },
 };
 
-async function crawlSite(
-  ctx: StageContext, base: string, seeds: string[],
+/** The crawl loop, shared by the client (stage 03) and competitors (stage 10). */
+export async function crawlSite(
+  ctx: StageContext, opts: CrawlOptions,
 ): Promise<CrawlResult> {
-  const domain = ctx.client.domain;
+  const { domain, maxPages } = opts;
   const queue: { url: string; depth: number; from: string | null }[] =
-    [...new Set(seeds)].map((url) => ({ url, depth: 0, from: null }));
+    [...new Set(opts.seeds)].map((url) => ({ url, depth: 0, from: null }));
   const seen = new Set<string>();
   const pages: ExtractedPage[] = [];
   const broken = new Map<string, { status: number; linkedFrom: string[] }>();
   const emptyPages: string[] = [];
 
-  while (queue.length > 0 && pages.length < MAX_CLIENT_PAGES) {
+  while (queue.length > 0 && pages.length < maxPages) {
     const item = queue.shift()!;
     const url = normalise(item.url);
     if (seen.has(url) || !sameDomain(url, domain)) continue;
     seen.add(url);
 
-    // The client asked for this audit, so their robots.txt does not gate us.
-    const res = await ctx.http.get(url, { kind: "html", respectRobots: false });
+    const res = await ctx.http.get(url, {
+      kind: "html", respectRobots: opts.respectRobots,
+    });
 
     if (!res.ok) {
+      // A page robots.txt closed is not a broken link on the site — recording
+      // it as one would invent a 404 for a competitor and put it in a report.
+      if (res.blockedByRobots) continue;
       const existing = broken.get(url);
       broken.set(url, {
         status: res.status,
@@ -81,7 +106,7 @@ async function crawlSite(
     }
 
     const page = extractPage(res.finalUrl || url, res.body, {
-      domain, statusCode: res.status,
+      domain, statusCode: res.status, isCompetitor: opts.isCompetitor,
     });
     pages.push(page);
     if (page.wordCount < 20) emptyPages.push(page.url);
@@ -102,7 +127,7 @@ async function crawlSite(
   };
 }
 
-async function savePage(ctx: StageContext, p: ExtractedPage): Promise<void> {
+export async function savePage(ctx: StageContext, p: ExtractedPage): Promise<void> {
   await ctx.db.query(
     `insert into pages (audit_run_id, domain, is_competitor, url, status_code,
        page_type, title, title_len, meta_desc, meta_desc_len, h1, h1_count,

@@ -55,6 +55,18 @@ export const CATALOG: Record<FindingCode, RuleMeta> = {
   "CVR-008": { code: "CVR-008", category: "conversion", severity: "medium",   effortHours: 6, impact: 5 },
   "CVR-009": { code: "CVR-009", category: "conversion", severity: "medium",   effortHours: 2, impact: 4 },
   "CVR-010": { code: "CVR-010", category: "conversion", severity: "high",     effortHours: 1, impact: 7 },
+
+  // -- Content — effort is high here because these are pages somebody writes --
+  "CON-001": { code: "CON-001", category: "content", severity: "high",     effortHours: 16, impact: 7 },
+  "CON-002": { code: "CON-002", category: "content", severity: "critical", effortHours: 8,  impact: 9 },
+  "CON-003": { code: "CON-003", category: "content", severity: "medium",   effortHours: 20, impact: 4 },
+  "CON-004": { code: "CON-004", category: "content", severity: "medium",   effortHours: 4,  impact: 5 },
+  "CON-005": { code: "CON-005", category: "content", severity: "high",     effortHours: 12, impact: 8 },
+
+  // -- Competitor -----------------------------------------------------------
+  "CMP-001": { code: "CMP-001", category: "competitor", severity: "high",   effortHours: 20, impact: 7 },
+  "CMP-002": { code: "CMP-002", category: "competitor", severity: "high",   effortHours: 12, impact: 6 },
+  "CMP-003": { code: "CMP-003", category: "competitor", severity: "medium", effortHours: 4,  impact: 5 },
 };
 
 /** Severity order for sorting; higher is worse. */

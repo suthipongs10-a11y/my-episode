@@ -100,4 +100,93 @@ suite("real Postgres", () => {
     expect(await claimJob(db)).not.toBeNull();
     expect(await claimJob(db)).toBeNull();
   });
+
+  // -- M3 -------------------------------------------------------------------
+  it("stores keywords, and keeps a null volume null rather than zero", async () => {
+    const { replaceGeneratedKeywords } = await import("./queries.ts");
+    const client = await db.one<{ id: string }>(`select id from clients limit 1`);
+    const rows = await replaceGeneratedKeywords(db, client!.id, [
+      { term: "รับล้างแอร์ ภูเก็ต", area: "ภูเก็ต", intent: "transactional", volume: 480 },
+      { term: "ไม่มีข้อมูล", intent: "transactional", volume: null },
+    ]);
+    expect(rows).toHaveLength(2);
+
+    const stored = await db.query<{ term: string; volume: number | null }>(
+      `select term, volume from keywords order by volume desc nulls last`,
+    );
+    expect(stored[0]).toEqual({ term: "รับล้างแอร์ ภูเก็ต", volume: 480 });
+    expect(stored[1]!.volume).toBeNull();
+  });
+
+  it("replaces generated keywords but never a human's own", async () => {
+    const { replaceGeneratedKeywords } = await import("./queries.ts");
+    const client = await db.one<{ id: string }>(`select id from clients limit 1`);
+    await replaceGeneratedKeywords(db, client!.id, [{ term: "รอบแรก" }]);
+    await db.query(
+      `insert into keywords (client_id, term, source) values ($1,'คำที่คนใส่เอง','manual')`,
+      [client!.id],
+    );
+    await replaceGeneratedKeywords(db, client!.id, [{ term: "รอบสอง" }]);
+
+    const terms = (await db.query<{ term: string }>(`select term from keywords order by term`))
+      .map((r) => r.term);
+    expect(terms).toContain("รอบสอง");
+    expect(terms).toContain("คำที่คนใส่เอง");
+    expect(terms).not.toContain("รอบแรก");
+  });
+
+  it("stores a ranking of 'nowhere' as null, which text[] and int both allow", async () => {
+    const { replaceGeneratedKeywords, saveRankings } = await import("./queries.ts");
+    const client = await db.one<{ id: string }>(`select id from clients limit 1`);
+    const [kw] = await replaceGeneratedKeywords(db, client!.id, [{ term: "ranked" }]);
+    await saveRankings(db, runId, [
+      { keywordId: kw!.id, engine: "google_web", domain: "integration.test", position: null },
+    ]);
+    const row = await db.one<{ position: number | null }>(`select position from rankings`);
+    expect(row!.position).toBeNull();
+  });
+
+  it("does not add the same competitor twice", async () => {
+    const { upsertCompetitor } = await import("./queries.ts");
+    const client = await db.one<{ id: string }>(`select id from clients limit 1`);
+    const a = await upsertCompetitor(db, client!.id, { domain: "rival.test", source: "serp" });
+    const b = await upsertCompetitor(db, client!.id, { domain: "rival.test", source: "manual" });
+    expect(a!.id).toBe(b!.id);
+    expect(await db.query(`select id from competitors`)).toHaveLength(1);
+  });
+
+  it("records LLM metadata on api_calls — the columns M3 added", async () => {
+    const { Ledger } = await import("../cost/ledger.ts");
+    await new Ledger(db, runId).record({
+      provider: "llm", endpoint: "llm", costThb: 0.42,
+      model: "some-cheap-model", promptHash: "abcdef0123456789",
+      tokensIn: 1200, tokensOut: 340,
+    });
+    const row = await db.one<{
+      model: string; prompt_hash: string; tokens_in: number; tokens_out: number;
+    }>(`select model, prompt_hash, tokens_in, tokens_out from api_calls
+         where provider = 'llm'`);
+    expect(row).toEqual({
+      model: "some-cheap-model", prompt_hash: "abcdef0123456789",
+      tokens_in: 1200, tokens_out: 340,
+    });
+  });
+
+  /**
+   * The `alter table ... add column if not exists` lines in schema.sql exist so
+   * a database created before M3 picks the columns up. This proves they are
+   * genuinely idempotent on a real server rather than only on PGlite.
+   */
+  it("re-applies the schema over an existing database without complaint", async () => {
+    await applySchema(db);
+    await applySchema(db);
+    const cols = await db.query<{ column_name: string }>(
+      `select column_name from information_schema.columns
+        where table_name = 'api_calls' order by 1`,
+    );
+    const names = cols.map((c) => c.column_name);
+    for (const c of ["model", "prompt_hash", "tokens_in", "tokens_out"]) {
+      expect(names, `api_calls.${c}`).toContain(c);
+    }
+  });
 });

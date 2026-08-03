@@ -27,7 +27,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import type { Ledger } from "../cost/ledger.ts";
+import type { CostEntry, Ledger } from "../cost/ledger.ts";
 import { env } from "../env.ts";
 
 export type CacheKind = "html" | "robots" | "sitemap" | "psi" | "serp" | "places" | "llm";
@@ -56,6 +56,16 @@ export interface FetchOptions {
   provider?: string;
   /** Skip the cache read (still writes). */
   noCache?: boolean;
+  /**
+   * Derive cost and ledger metadata from the response.
+   *
+   * Some APIs are priced by what they return rather than by what you ask for —
+   * an LLM bills for tokens it decided to emit. Returning the cost from here
+   * keeps that as one ledger row with the real number, instead of a guess at
+   * call time plus a correction afterwards. On a cache hit the metadata is
+   * still recorded but the cost is forced to 0, which is the point of caching.
+   */
+  onCost?: (result: FetchResult) => Partial<CostEntry>;
 }
 
 export interface FetchResult {
@@ -115,7 +125,8 @@ export class CachedFetch {
         await this.deps.ledger?.record({
           provider: opts.provider ?? hostOf(url),
           endpoint: opts.kind,
-          costThb: 0,
+          ...(opts.onCost?.(hit) ?? {}),
+          costThb: 0, // last: a cache hit is free whatever onCost worked out
           cacheHit: true,
         });
         return { ...hit, cacheHit: true, elapsedMs: this.now() - started };
@@ -152,6 +163,7 @@ export class CachedFetch {
       endpoint: opts.kind,
       costThb: opts.costThb ?? 0,
       cacheHit: false,
+      ...(result.ok ? (opts.onCost?.(result) ?? {}) : {}),
     });
 
     if (result.ok) await this.writeCache(key, result);

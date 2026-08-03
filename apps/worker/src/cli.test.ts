@@ -20,6 +20,7 @@ import { createDb, type Db } from "@core/db/client.ts";
 import { resetEnv } from "@core/env.ts";
 import { createLogger } from "@core/log/logger.ts";
 import { getFindings } from "@core/db/queries.ts";
+import { CURRENT_SCORING_VERSION } from "@core/scoring/index.ts";
 import { main, normaliseDomain, parseArgs } from "./cli.ts";
 import { tick } from "./index.ts";
 
@@ -194,7 +195,7 @@ describe("the whole pipeline, against a local copy of the fixture site", () => {
       `select data from snapshots where kind = 'site' and target = 'scores'`,
     );
     const data = typeof snap!.data === "string" ? JSON.parse(snap!.data as never) : snap!.data;
-    expect(data.scoring_version).toBe(1);
+    expect(data.scoring_version).toBe(CURRENT_SCORING_VERSION);
     expect(data.scores.conversion).toBeLessThan(30);
 
     // and it cost nothing: no paid API was called

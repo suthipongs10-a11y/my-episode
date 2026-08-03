@@ -18,6 +18,12 @@ export interface CostEntry {
   units?: number;
   costThb?: number;
   cacheHit?: boolean;
+  /** LLM calls only. `promptHash` makes an answer traceable to what asked for
+   *  it without storing the prompt, which may contain the client's content. */
+  model?: string;
+  promptHash?: string;
+  tokensIn?: number;
+  tokensOut?: number;
 }
 
 export class BudgetExceededError extends Error {
@@ -68,8 +74,9 @@ export class Ledger {
     this.spent += cost;
 
     await this.db.query(
-      `insert into api_calls (audit_run_id, provider, endpoint, units, cost_thb, cache_hit)
-       values ($1,$2,$3,$4,$5,$6)`,
+      `insert into api_calls (audit_run_id, provider, endpoint, units, cost_thb,
+         cache_hit, model, prompt_hash, tokens_in, tokens_out)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
       [
         this.auditRunId,
         entry.provider,
@@ -77,6 +84,10 @@ export class Ledger {
         entry.units ?? 1,
         cost,
         entry.cacheHit ?? false,
+        entry.model ?? null,
+        entry.promptHash ?? null,
+        entry.tokensIn ?? null,
+        entry.tokensOut ?? null,
       ],
     );
 

@@ -5,6 +5,7 @@
  * of the data, and the SQL that runs is the SQL you read.
  */
 import { json, type Db } from "./client.ts";
+import { CURRENT_SCORING_VERSION } from "../scoring/index.ts";
 import type {
   AreaScope, AuditRun, Client, Finding, JobStatus, RunStatus, Stage,
 } from "../types/index.ts";
@@ -88,8 +89,13 @@ export async function upsertClient(db: Db, input: NewClient): Promise<Client> {
 // ---------------------------------------------------------------------------
 // audit runs
 // ---------------------------------------------------------------------------
+/**
+ * New runs get the current formula version, recorded on the row. Stage 12 reads
+ * it back rather than using the newest, so a run resumed after a version bump
+ * still scores under the formula it started with.
+ */
 export async function createAuditRun(
-  db: Db, clientId: string, scoringVersion = 1,
+  db: Db, clientId: string, scoringVersion: number = CURRENT_SCORING_VERSION,
 ): Promise<AuditRun> {
   const row = await db.one<AuditRun>(
     `insert into audit_runs (client_id, scoring_version) values ($1,$2) returning *`,
@@ -221,6 +227,124 @@ export async function saveFindings(
       ],
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// keywords, rankings, competitors — M3
+// ---------------------------------------------------------------------------
+export interface KeywordInput {
+  term: string;
+  area?: string | null;
+  intent?: string | null;
+  source?: "generated" | "manual";
+  volume?: number | null;
+  volumeSource?: string | null;
+}
+
+export interface KeywordRow {
+  id: string;
+  term: string;
+  area: string | null;
+  intent: string | null;
+  source: string | null;
+  volume: number | null;
+}
+
+/**
+ * Replace the generated keyword list for a client, returning the stored rows.
+ *
+ * Generated keywords are derived from the site and should track it, so a second
+ * audit replaces them. Anything a human added by hand (`source = 'manual'`)
+ * survives — losing an operator's own edits to an automated re-run is the kind
+ * of thing that gets a tool switched off.
+ */
+export async function replaceGeneratedKeywords(
+  db: Db, clientId: string, keywords: KeywordInput[],
+): Promise<KeywordRow[]> {
+  await db.query(`delete from keywords where client_id = $1 and source = 'generated'`, [
+    clientId,
+  ]);
+
+  const out: KeywordRow[] = [];
+  for (const k of keywords) {
+    const row = await db.one<KeywordRow>(
+      `insert into keywords (client_id, term, area, intent, source, volume, volume_source)
+       values ($1,$2,$3,$4,$5,$6,$7)
+       returning id, term, area, intent, source, volume`,
+      [
+        clientId, k.term, k.area ?? null, k.intent ?? null,
+        k.source ?? "generated", k.volume ?? null, k.volumeSource ?? null,
+      ],
+    );
+    if (row) out.push(row);
+  }
+  return out;
+}
+
+export async function getKeywords(db: Db, clientId: string): Promise<KeywordRow[]> {
+  return db.query<KeywordRow>(
+    `select id, term, area, intent, source, volume from keywords
+      where client_id = $1 order by volume desc nulls last, term`,
+    [clientId],
+  );
+}
+
+export interface RankingInput {
+  keywordId: string;
+  engine: "google_web" | "google_maps";
+  domain: string;
+  /** Null means "not found in what we looked at", not "position zero". */
+  position: number | null;
+  urlFound?: string | null;
+}
+
+export async function saveRankings(
+  db: Db, auditRunId: string, rows: RankingInput[],
+): Promise<void> {
+  for (const r of rows) {
+    await db.query(
+      `insert into rankings (audit_run_id, keyword_id, engine, domain, position, url_found)
+       values ($1,$2,$3,$4,$5,$6)`,
+      [auditRunId, r.keywordId, r.engine, r.domain, r.position, r.urlFound ?? null],
+    );
+  }
+}
+
+export interface CompetitorRow {
+  id: string;
+  domain: string;
+  name: string | null;
+  source: string;
+  is_primary: boolean;
+}
+
+/** Add a competitor if this client does not already have that domain. */
+export async function upsertCompetitor(
+  db: Db,
+  clientId: string,
+  input: { domain: string; name?: string | null; source: string; isPrimary?: boolean },
+): Promise<CompetitorRow | null> {
+  const existing = await db.one<CompetitorRow>(
+    `select id, domain, name, source, is_primary from competitors
+      where client_id = $1 and domain = $2`,
+    [clientId, input.domain],
+  );
+  if (existing) return existing;
+
+  return db.one<CompetitorRow>(
+    `insert into competitors (client_id, domain, name, source, is_primary)
+     values ($1,$2,$3,$4,$5)
+     returning id, domain, name, source, is_primary`,
+    [clientId, input.domain, input.name ?? null, input.source, input.isPrimary ?? false],
+  );
+}
+
+export async function getCompetitors(db: Db, clientId: string): Promise<CompetitorRow[]> {
+  return db.query<CompetitorRow>(
+    `select id, domain, name, source, is_primary from competitors
+      where client_id = $1 order by is_primary desc, domain`,
+    [clientId],
+  );
 }
 
 export async function getFindings(db: Db, auditRunId: string): Promise<Finding[]> {

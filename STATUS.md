@@ -11,18 +11,65 @@
 
 | หัวข้อ | ค่า |
 |---|---|
-| Milestone ปัจจุบัน | **M2 — Conversion** |
-| สถานะ | M0/M1/M2 ผ่าน acceptance แล้ว + ตรวจซ้ำกับ Postgres จริงแล้ว |
+| Milestone ปัจจุบัน | **M3 — Keyword + SERP + Competitor** |
+| สถานะ | M0–M3 ผ่าน acceptance แล้ว + ตรวจซ้ำกับ Postgres จริงแล้ว |
 | อัปเดตล่าสุด | 2026-08-03 |
-| git tag ล่าสุด | `m2` |
-| เทสต์ | 155 ผ่าน / 5 ข้าม (offline) · 5/5 ผ่านกับ Postgres 16 จริง |
-| ต้นทุน API สะสม | 0 บาท (ยังไม่ได้เรียก API ใดเลย) |
+| git tag ล่าสุด | `m3` |
+| เทสต์ | 281 ผ่าน / 11 ข้าม (offline) · 25/25 ผ่านกับ Postgres 16 จริง |
+| pipeline | 10 ขั้น · rules 35 ข้อ · scoring v2 |
+| ต้นทุน API สะสม | 0 บาท (ยังไม่ได้สมัคร vendor ใดเลย) |
 
 ---
 
 ## รอบล่าสุดทำอะไรไป
 
-### M1 + M2 (รอบนี้)
+### M3 (รอบนี้)
+
+- `llm/router.ts` — 2 tier (cheap/smart) ชื่อรุ่นจาก `.env` · บังคับ JSON → zod →
+  retry 1 ครั้งโดยส่ง error กลับไป → คืน null ให้ caller ใช้ fallback ของตัวเอง
+  **บันทึก `model` / `prompt_hash` / tokens ลง `api_calls` แต่ไม่เก็บตัว prompt**
+  (prompt มีเนื้อหาเว็บลูกค้าอยู่)
+- `keywords/seed.ts` — สร้าง keyword จากหน้าบริการของลูกค้าเอง เป็น pure function
+  **ทำงานได้โดยไม่มี API key เลย** ตัดชื่อแบรนด์ ตัดพื้นที่ แล้วต่อพื้นที่กลับเป็น variant
+- `serp/dataforseo.ts` — volume + อันดับ · zod ทุก response · ยิงเป็น batch
+- pipeline **06-keywords · 07-serp · 10-competitors** (รวมเป็น 10 ขั้น)
+- rules **CON-001..005 + CMP-001..003** (รวมเป็น 35 ข้อ)
+- 04-classify ส่งหน้าที่กฎตัดสินไม่ได้ให้ LLM cheap **แบบ batch เดียว** (เพดาน 40 หน้า)
+- `scoring/v2.ts` + `scoring/index.ts` — ดูหัวข้อถัดไป
+
+**Acceptance M3 ผ่าน** (`apps/worker/src/m3.test.ts`): ยิง pipeline ทั้งเส้นกับ
+DataForSEO ปลอมและ LLM ปลอมที่รันบน localhost → ได้ keyword พร้อม volume จริงจาก API,
+rankings, คู่แข่งที่ถูก crawl จริง, finding CMP-001 ที่ระบุชื่อคู่แข่ง, และต้นทุนที่วัดได้ **< 15 บาท**
+· **SERP 30 คำใช้ ≤ 4 requests** (แก้คอขวด 300 วินาทีใน `docs/pipeline.md`)
+· มีเทสต์คุมว่าไม่มี vendor เลยก็ยัง audit ได้ และไม่มี CMP/CON ที่ต้องใช้ข้อมูลโผล่มามั่ว
+
+**สิ่งที่เทสต์นี้ยังพิสูจน์ไม่ได้** — ต้องรอ credential จริง: response จริงของ DataForSEO
+หน้าตาตรงกับ schema ที่เขียนไว้ไหม และอันดับตรงกับที่เช็คมือ 5 คำไหม (ดูหัวข้อ "ก่อนถึง M4")
+
+### สิ่งที่การรันจริงจับได้ (ไม่ใช่เทสต์)
+
+รัน audit จริงกับ fixture แล้วอ่านผลทีละบรรทัด เจอ **false positive ของ CON-005**:
+คำว่า "ทำความสะอาดแบบล้ำลึก ภูเก็ต" ถูกรายงานว่า "ไม่มีหน้ารองรับ" ทั้งที่หน้านั้นมีอยู่ —
+บริการอยู่ใน H1 พื้นที่อยู่ใน title ครบทั้งคู่ แค่ไม่ได้ติดกันเป็นสตริงเดียว
+
+CON-005 เป็น severity `high` ที่บอกเจ้าของว่า "ให้สร้างหน้าใหม่" การบอกให้สร้างหน้าที่เขามีอยู่แล้ว
+คือวิธีที่เร็วที่สุดที่จะทำให้เขาเลิกเชื่อรายงานทั้งฉบับ แก้แล้ว (`covers()`) พร้อมเทสต์ 3 ข้อ
+
+### scoring v2 — ครั้งแรกที่ได้ใช้กฎ "ห้ามแก้ v1"
+
+`v1.visibilityScore` คืน **0** เมื่อไม่มีข้อมูลอันดับ ซึ่งถูกเมื่อ "เช็คแล้วไม่ติด"
+แต่ผิดเมื่อ "ไม่เคยเช็ค" — และ DataForSEO เป็นของเสริม แปลว่าทุก audit ที่ยังไม่มี key
+โดนหักคะแนนรวม 15 จุด จากหมวดที่ไม่เคยวัด **เป็นบั๊กเดียวกับที่ local/content แก้ไปแล้วตอน M2**
+
+แก้ไม่ได้ในที่เดิม (กฎข้อ 2: run เก่าต้องอธิบายตัวเองได้) จึงสร้าง `v2.ts` ที่ import
+ทุกอย่างจาก v1 แล้ว override ฟังก์ชันเดียว — ส่วนต่างระหว่างเวอร์ชันจึงอ่านจบในไฟล์เดียว
+`scoring/index.ts` เลือกสูตรจาก `audit_runs.scoring_version` ของ run นั้น
+
+ตัวที่แยกสองกรณีคือ `KeywordFact.checked` ไม่ใช่ `position !== null` —
+เว็บที่เช็ค 30 คำแล้วไม่ติดสักคำ ทุกคำก็มี `position: null` เหมือนกับเว็บที่ไม่เคยเช็ค
+(เจอตอนเขียน acceptance test ของ M3 พอดี)
+
+### M1 + M2 (รอบก่อน)
 - `crawl/extract.ts` — อ่าน HTML ออกมาเป็นข้อมูลที่ rules ใช้ (pure function ทดสอบด้วย fixture ได้)
   **นับคำภาษาไทยด้วยตัวอักษร** เพราะไทยไม่มีช่องว่างระหว่างคำ ถ้านับด้วยช่องว่างเว็บไทยทุกเว็บจะดู "เนื้อหาน้อย"
 - `crawl/classify.ts` — จัดประเภทหน้าด้วยกฎ (location > service > article) ยังไม่เรียก LLM
@@ -54,7 +101,7 @@
 `.data/`, `.cache/`, `.ctx-tests`, `reports/` จึงไม่ถูก ignore จริง และ `.ctx-tests`
 (ไฟล์ที่ generate ใหม่ทุกครั้งที่เทสต์) ถูก commit ไปแล้ว แก้ทั้งสองอย่าง
 
-### M0 (รอบก่อน)
+### M0 (รอบแรก)
 
 - สร้าง repo `wgi-audit` แยกจาก repo เดิม (repo เดิมมี git history 167 MB ที่ลบไม่ได้)
 - pnpm workspace + TypeScript strict + vitest
@@ -74,26 +121,31 @@
 
 ## งานถัดไปที่ต้องทำ (เรียงตามลำดับ)
 
-### M3 — Keyword + SERP + Competitor  ← ถัดไป
-- [ ] pipeline 06-keywords: seed จากโค้ด → LLM cheap เสนอเพิ่ม (**ห้ามใส่ volume**) → DataForSEO ดึง volume จริง → คัด 30 คำ
-- [ ] pipeline 07-serp: เช็คอันดับ 30 คำ + หาคู่แข่งจาก domain ที่โผล่บ่อย
-- [ ] pipeline 10-competitors: รัน 03-05 แบบย่อกับคู่แข่ง 3 ราย (crawl 50 หน้า)
-- [ ] rules CON-001..005 + CMP-001..003
-- [ ] `llm/router.ts` + `prompts/classify.md`, `prompts/keywords.md`
-- [ ] ส่งหน้าที่ `confidence < 0.6` ไปให้ LLM cheap แบบ batch (โค้ดเก็บ list ไว้แล้วที่ state `classify.unsure`)
-- **Acceptance:** ต้นทุน SERP ต่อ audit ≤ 15 บาท และอันดับตรงกับที่เช็คมือ 5 คำ
-- **ข้อควรระวัง (จาก `docs/pipeline.md`):** SERP 30 คำแบบ Live ยิงทีละคำ = ~300 วิ = ครึ่งงบเวลา ต้องยิงขนานหรือใช้ task-based
+### M4 — GBP + Presence  ← ถัดไป
+- [ ] pipeline 08-gbp: Places — verified, หมวด, รีวิว, % ตอบกลับ, รูป, เวลาทำการ, NAP ตรงกับเว็บไหม
+- [ ] Rank Grid — **เริ่มที่ 3×3 (9 จุด) ไม่ใช่ 5×5** จนกว่าจะรู้ราคาจริง (`docs/pipeline.md`)
+- [ ] pipeline 09-presence: FB / LINE OA / TikTok / IG / Wongnai / Bing Places — เก็บแค่ มี-ไม่มี
+- [ ] rules LOC-001..009 + เปิด CVR-010 (ตอนนี้เงียบเพราะยังไม่มีข้อมูล GBP)
+- [ ] `localScore` จะเริ่มคืนค่าจริงแทน 50 — **ตรวจว่าคะแนนรวมไม่กระโดดจนอธิบายไม่ได้**
+- **Acceptance:** โควตา Places ต่อ audit วัดได้และอยู่ในงบ · NAP mismatch ตรวจถูกกับเคสจริง 1 ราย
+
+### ก่อนถึง M4 — ต้องทำมือก่อน (M3 ค้างไว้ตรงนี้)
+เขียนโค้ดครบแล้ว แต่ยังไม่เคยคุยกับ vendor จริงเลยสักเจ้า
+
+- [ ] **สมัคร DataForSEO เติมเครดิตขั้นต่ำ** แล้วรัน `pnpm audit` กับ `phuketmaidservice.com`
+  - [ ] เทียบ response จริงกับ zod schema ใน `serp/dataforseo.ts` — ถ้าไม่ตรง มันจะ warn แล้ว drop task ทิ้ง ไม่ crash
+  - [ ] **เช็คอันดับด้วยมือ 5 คำ** เทียบกับที่ระบบรายงาน ← acceptance ข้อนี้ของ M3 ยังค้าง
+  - [ ] จดราคาจริงต่อ query ลงตาราง "ต้นทุนจริง" แล้วแก้ `cost/pricing.ts`
+- [ ] **ต่อ LLM endpoint จริง** — ยืนยันว่าตอบไทยได้และ `response_format: json_object` ใช้ได้
+  (ถ้า endpoint ไม่รองรับ router จะ retry แล้วคืน null — audit ไม่พังแต่ keyword จะน้อยลง)
+- [ ] ขอ PageSpeed Insights API key (ฟรี) — TEC-002/003 ยังเงียบอยู่จนกว่าจะมี
+- [ ] สร้าง Supabase `wgi-audit` ใส่ `DATABASE_URL` แล้วรัน
+      `DATABASE_URL=... pnpm vitest run packages/core/src/db` (ต้องผ่าน 25/25)
+- [ ] เปิด Google Places API + ตั้ง quota alert (ก่อน M4)
 
 ### เก็บตกจาก M1/M2
 - [ ] เก็บ HTML ดิบลง Storage (ตอนนี้เก็บเฉพาะ field ที่แยกแล้วใน `pages` + snapshot)
 - [ ] Playwright fallback สำหรับเว็บ SPA (ตอนนี้นับหน้าที่ `wordCount < 20` ไว้ใน `crawl.emptyPages` แล้ว)
-
-### ก่อนถึง M3/M4 — ทำมือ
-- [ ] สมัคร DataForSEO เติมเครดิตขั้นต่ำ → บันทึกราคาจริงต่อ SERP query
-- [ ] เปิด Google Places API + ตั้ง quota alert
-- [ ] ขอ PageSpeed Insights API key (ฟรี)
-- [ ] เตรียม LLM endpoint + ทดสอบว่าตอบภาษาไทยได้
-- [ ] สร้างโปรเจกต์ Supabase ชื่อ `wgi-audit` แล้วใส่ `DATABASE_URL`
 
 ---
 
@@ -110,7 +162,7 @@
 | คำถาม | ต้องตอบก่อน | สถานะ |
 |---|---|---|
 | Rank Grid 5×5 กินโควตา Places เท่าไรจริง คุ้มไหม หรือ 3×3 พอ | M4 | รอราคาจริง — เริ่มที่ 3×3 ไว้ก่อน |
-| DataForSEO Live SERP หรือ Task-based | M3 | ยังไม่ตัดสินใจ · เกี่ยวกับงบเวลา 10 นาที (ดู `docs/pipeline.md`) |
+| ~~DataForSEO Live SERP หรือ Task-based~~ | M3 | **ตอบแล้ว: Live + batch** · ส่ง 10 task ต่อ POST ยิงขนาน → 30 คำ = 3 requests ไม่ต้องใช้ task-based |
 | เก็บ HTML ดิบทุกหน้าหรือเฉพาะหน้าสำคัญ | M1 | เริ่มจากเก็บทุกหน้า แล้ววัดขนาดจริง |
 | ฟอนต์ไทยใน PDF: Sarabun หรือ IBM Plex Thai | M5 | ยังไม่ตัดสินใจ |
 
@@ -133,6 +185,15 @@
 | 2026-08-03 | เทสต์ใช้ PGlite instance เดียวต่อไฟล์ แล้ว truncate | instance ละ ~2 วิ · 12 เทสต์ = 26 วิ → 7 วิ · เทสต์ที่ช้าคือเทสต์ที่ไม่มีใครรัน |
 | 2026-08-03 | ส่ง jsonb ผ่าน `json()` wrapper ไม่ใช่ `JSON.stringify` ตรง | driver สองตัวต้องการคนละแบบและไม่ error ทั้งคู่ · `::jsonb` cast อย่างเดียวแก้ไม่ได้ (วัดมาแล้ว) |
 | 2026-08-03 | มีเทสต์ที่รันกับ Postgres จริง แยกจาก `pnpm test` | `pnpm test` ต้องฟรีและ offline ต่อไป แต่ของที่ต่างกันระหว่าง driver ต้องมีที่จับ — เปิดด้วย `DATABASE_URL` |
+| 2026-08-03 | **บังคับกฎ "LLM ห้ามผลิตตัวเลข" ด้วย zod schema ไม่ใช่ prompt** | prompt ที่เขียนว่า "ห้ามใส่ตัวเลข" คือคำขอ ไม่ใช่การบังคับ · schema ที่ไม่มี field ตัวเลขทำให้โมเดลใส่ไม่ได้แม้จะพยายาม (มีเทสต์ยิงโมเดลที่จงใจใส่ `volume: 99999` เข้ามา) |
+| 2026-08-03 | seed keyword จากเว็บลูกค้าด้วยโค้ด ก่อนเรียก LLM | audit ต้องใช้ได้ตอนยังไม่มี API key เลย · และ pure function เทสต์ได้ ทำให้ทั้ง stage มีของที่พิสูจน์ได้ |
+| 2026-08-03 | DataForSEO ยิงเป็น batch 10 task/request | 30 คำทีละคำ = ~300 วิ = ครึ่งงบเวลาทั้ง audit · คิดเงินต่อ task เท่าเดิม แลกเวลาอย่างเดียว |
+| 2026-08-03 | เทียบกับ **median** ของคู่แข่ง ไม่ใช่ average | เจ้าตลาดรายเดียวที่มี 60 หน้าทำให้ค่าเฉลี่ยไร้ความหมาย · "คู่แข่งทั่วไปมี 12 หน้า" คือตัวเลขที่ทำตามได้ |
+| 2026-08-03 | crawl คู่แข่งเคารพ robots.txt เต็มที่ (ต่างจากเว็บลูกค้า) | ลูกค้าเชิญเรา คู่แข่งไม่ได้เชิญ · คู่แข่งที่ปิด robots.txt = `notMeasured` ไม่ใช่ "ไม่มีเนื้อหา" |
+| 2026-08-03 | **scoring v2** — visibility = 50 เมื่อไม่เคยเช็ค | เหมือน local/content ที่แก้ไปแล้ว · ไม่แก้ v1 เพราะ run เก่าต้องอธิบายตัวเองได้ (กฎข้อ 2) |
+| 2026-08-03 | เพิ่ม `KeywordFact.checked` แทนที่จะดูแค่ `position !== null` | เว็บที่เช็ค 30 คำแล้วไม่ติดเลย กับเว็บที่ไม่เคยเช็ค มี `position: null` เหมือนกันทุกคำ |
+| 2026-08-03 | ONP-009 ยิงเฉพาะเว็บที่ *มี* FAQ อยู่แล้ว | ถ้าไม่มี FAQ เลยคือ CON-004 (งานเขียนเนื้อหา) · ยิงทั้งคู่ = คิดเงินเจ้าของซ้ำและกลบข้อที่แก้ถูกกว่า |
+| 2026-08-03 | ราคา API รวมไว้ที่ `cost/pricing.ts` ที่เดียว | ราคาที่กระจายอยู่ 5 ที่ = เพดานงบที่ไม่มีใครเชื่อ · ราคาที่ผิด 2 เท่ายังคุมงบได้ ราคาที่เป็น 0 คุมไม่ได้ |
 | — | job table + polling แทน Redis/BullMQ | ปริมาณงานต่ำมาก ไม่คุ้มความซับซ้อนและค่า Redis |
 | — | ไม่สร้างตาราง `scores` | สูตรคะแนนจะเปลี่ยนแน่นอน เก็บคะแนนสำเร็จรูปแล้วประวัติย้อนหลังจะพัง |
 | — | หยุดที่ M6 จนกว่าจะมีลูกค้ารายเดือน ≥ 5 ราย | คอขวดจริงคือการขาย ไม่ใช่จำนวนฟีเจอร์ |
@@ -151,15 +212,20 @@
 | LLM narrative 1 รายงาน | 5-10฿ | — | |
 | **รวมต่อ audit** | **≤ 40฿** | — | เกิน 60฿ = pipeline หยุด (บังคับในโค้ดแล้ว) |
 
-> **M1 + M2 ไม่ต้องใช้ API เสียเงินเลย** (PSI ฟรี) — รายงานที่มีแค่ on-page + technical +
-> conversion ก็ขายได้แล้ว ใช้พิสูจน์ว่าลูกค้าโทรกลับไหมก่อนจ่ายค่า DataForSEO/Places
+> **M1–M3 ยังรันได้โดยไม่เสียเงินเลย** — ไม่มี key ก็ยังได้ 23 findings + คะแนน
+> รายงานที่มีแค่ on-page + technical + conversion + content ก็ขายได้แล้ว
+> ใช้พิสูจน์ว่าลูกค้าโทรกลับไหม **ก่อน** จ่ายค่า DataForSEO/Places
+>
+> ราคาใน `cost/pricing.ts` เป็น list price ที่ยังไม่เคยเห็นใบเสร็จจริง —
+> ประมาณการต่อ audit: SERP 30 คำ ~2.2฿ · volume ~1.8฿ · LLM ~1฿ = **~5฿** ซึ่งต่ำกว่าเป้า 40฿ มาก
+> แต่ตัวเลขนี้ยังไม่ยืนยัน อย่าเพิ่งเอาไปคิดราคาขาย
 
 ---
 
 ## ไฟล์ที่แก้ล่าสุด
 
-`packages/core/src/db/{client,queries}.ts` · `db/postgres.integration.test.ts` ·
-`cost/ledger.ts` · `i18n/th.ts` · `.gitignore`
+`packages/core/src/{llm,keywords,serp}/` · `pipeline/{04,06,07,10,11,12}` ·
+`rules/{content,competitor}.ts` · `scoring/{index,v2}.ts` · `apps/worker/src/m3.test.ts`
 
 ## คำสั่งที่ใช้รันต่อจากจุดนี้
 

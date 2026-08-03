@@ -11,16 +11,22 @@ import type { SiteFacts } from "./context.ts";
 import { runOnpage } from "./onpage.ts";
 import { runTechnical } from "./technical.ts";
 import { runConversion } from "./conversion.ts";
+import { runContent } from "./content.ts";
+import { runCompetitor } from "./competitor.ts";
 
 export * from "./context.ts";
 export * from "./catalog.ts";
 export { conversionChecks } from "./conversion.ts";
+export { contentRules } from "./content.ts";
+export { competitorRules } from "./competitor.ts";
 
 export function runRules(facts: SiteFacts): Finding[] {
   const findings = [
     ...runTechnical(facts),
     ...runOnpage(facts),
     ...runConversion(facts),
+    ...runContent(facts),
+    ...runCompetitor(facts),
   ];
   return prioritise(findings);
 }

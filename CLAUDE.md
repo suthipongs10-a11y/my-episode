@@ -15,8 +15,13 @@
 1. **LLM ห้ามผลิตตัวเลข** — ทุกคะแนน ทุกจำนวน ทุกอันดับ มาจากโค้ดที่คำนวณซ้ำได้ผลเดิม
    LLM มีหน้าที่เดียว: แปลงตัวเลขที่คำนวณแล้วเป็นภาษาคน
    ตัวเลขในรายงานที่หาที่มาในโค้ดไม่ได้ = bug ระดับ critical
+   > **บังคับด้วย zod ไม่ใช่ด้วย prompt** — schema ที่ส่งให้ `llm/router.ts`
+   > ต้องไม่มี field ตัวเลขเลย โมเดลที่แถม `"volume": 5400` มาจะถูกตัดทิ้งก่อนถึง caller
+   > (มีเทสต์คุมไว้ที่ `llm/router.test.ts` หมวด "rule #1")
 2. **เก็บ raw data เสมอ คำนวณคะแนนตอนอ่าน** — ห้ามมีตาราง `scores`
    ทุก snapshot มี `scoring_version` คำนวณผ่าน `scoring/v{n}.ts` ตอน query
+   > **ข้อมูลที่ไม่ได้เก็บ ≠ ข้อมูลที่วัดแล้วแย่** — rule ต้องเงียบ คะแนนต้องเป็น 50
+   > ห้ามเป็น 0 (เคยพลาดมาแล้ว 3 ครั้ง: local, content, visibility)
 3. **นี่คือ pipeline ไม่ใช่ agent** — ลำดับขั้น hardcode ใน `pipeline/`
    LLM ไม่เลือกว่าจะเรียกอะไรต่อ เว็บเดียวกันต้องได้ผลเหมือนเดิมทุกครั้ง (ยกเว้น narrative)
 4. **ทุก external call ผ่าน `http/cached-fetch.ts`** — ห้ามเรียก `fetch()` ตรง
@@ -88,11 +93,14 @@
 packages/core/src/
   db/        schema.sql · client.ts (PGlite|postgres) · queries.ts · testing.ts
   http/      cached-fetch.ts  ← ทางเดียวที่โค้ดนี้ออกเน็ต
-  cost/      ledger.ts        ← บันทึกต้นทุน + บังคับเพดาน
+  cost/      ledger.ts (บันทึก + บังคับเพดาน) · pricing.ts (ราคาที่เดียว)
   log/       logger.ts        ← ห้าม console.log
+  crawl/     extract.ts · classify.ts
+  keywords/  seed.ts          ← สร้าง keyword จากเว็บลูกค้า (pure)
+  serp/      dataforseo.ts    ← อันดับ + volume, ยิงเป็น batch
   pipeline/  runner.ts · index.ts (STAGE_REGISTRY) · 01-intake.ts …
   rules/     1 ไฟล์ = 1 หมวด (pure functions) · catalog.ts
-  scoring/   v1.ts (ห้ามแก้ ถ้าจะเปลี่ยนสูตรให้สร้าง v2.ts)
+  scoring/   index.ts (เลือกเวอร์ชัน) · v1.ts · v2.ts ← ห้ามแก้ไฟล์เวอร์ชันเก่า
   llm/       router.ts · prompts/*.md
   i18n/      th.ts            ← ข้อความไทยทั้งหมดอยู่ที่นี่
   types/     index.ts

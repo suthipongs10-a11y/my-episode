@@ -15,6 +15,8 @@ const Env = z.object({
   PSI_API_KEY: z.string().optional(),
   DFS_LOGIN: z.string().optional(),
   DFS_PASSWORD: z.string().optional(),
+  /** Override the API host — a sandbox, a proxy, or a fake in the test suite. */
+  DFS_BASE_URL: z.string().default("https://api.dataforseo.com/v3"),
   GOOGLE_PLACES_KEY: z.string().optional(),
 
   LLM_BASE_URL: z.string().optional(),
