@@ -1,7 +1,8 @@
 """Profiler tests. No network: a fake fetcher serves canned HTML."""
 from blf.fetcher import FetchResult
 from blf.profile import (SiteProfile, _guess_brand, _guess_country,
-                         _looks_local, build_profile)
+                         _looks_local, _same_ground, _seed_keywords,
+                         _singular, build_profile)
 
 HOME_TH = """
 <!doctype html><html lang="th"><head>
@@ -111,6 +112,80 @@ def test_own_site_is_read_despite_robots_txt():
     assert prof.language == "th"
     assert prof.topics, "profile came back empty — robots.txt was still applied"
     assert all(f.ignored_robots), "every own-site fetch must bypass robots.txt"
+
+
+CALCULATOR_SITE = """
+<!doctype html><html lang="en"><head>
+<title>Free Financial Calculators — Mortgage, Loan &amp; Debt Payoff | Payoff Logic</title>
+<meta name="description" content="Free financial calculators for mortgage payments, loan amortization and debt payoff planning.">
+</head><body>
+<h1>Free Financial Calculators</h1>
+<h2>Mortgage Calculator</h2><h2>Debt Payoff Calculator</h2><h2>Loan Calculator</h2>
+<h3>Mortgage payment breakdown</h3><h3>Loan amortization schedule</h3>
+<p>Use our free mortgage calculator to estimate monthly payments. Our debt payoff
+calculator compares methods. Every loan calculator shows the loan amortization
+schedule and total interest costs.</p>
+</body></html>
+"""
+
+
+def _seeds_for(html):
+    f = FakeFetcher({"http://calc.test": html})
+    return build_profile("http://calc.test", f, max_pages=1).seed_keywords
+
+
+def test_seed_keywords_prefer_specific_phrases_over_broad_words():
+    """`"calculator" "write for us"` matches most of the web and none of the
+    niche. The seeds have to name a topic, not a category of noun."""
+    seeds = _seeds_for(CALCULATOR_SITE)
+    multi = [s for s in seeds if len(s.split()) > 1]
+    assert len(multi) >= 3, f"expected specific phrases, got {seeds}"
+    assert any("mortgage" in s and len(s.split()) > 1 for s in seeds), seeds
+
+
+def test_seed_keywords_drop_the_word_covered_by_a_kept_phrase():
+    """Keeping both 'mortgage' and 'mortgage payment' wastes a slot on the
+    broader term, which returns a superset of the same pages."""
+    seeds = _seeds_for(CALCULATOR_SITE)
+    for broad in ("mortgage", "loan", "calculator", "payoff"):
+        if any(broad in s.split() and len(s.split()) > 1 for s in seeds):
+            assert broad not in seeds, f"'{broad}' kept alongside a phrase using it"
+
+
+def test_marketing_filler_is_not_a_keyword():
+    seeds = _seeds_for(CALCULATOR_SITE)
+    for junk in ("free", "every", "best", "top", "total"):
+        assert junk not in seeds, f"'{junk}' is filler, not a topic"
+        assert not any(s.startswith(junk + " ") for s in seeds), seeds
+
+
+def test_navigation_labels_are_not_keywords():
+    seeds = _seeds_for(CALCULATOR_SITE)
+    for nav in ("guides", "tools", "resources", "about", "contact"):
+        assert nav not in seeds, f"'{nav}' is navigation, not a topic"
+
+
+def test_singular_plural_fold():
+    assert _singular("calculators") == "calculator"
+    assert _singular("categories") == "category"
+    assert _singular("class") == "class"          # not a plural
+    assert _singular("is") == "is"                # too short to strip
+
+
+def test_same_ground_detects_overlap():
+    assert _same_ground("mortgage", "mortgage payment", False)
+    assert _same_ground("calculator", "financial calculators", False)
+    assert not _same_ground("mortgage payment", "debt payoff", False)
+    # Thai/CJK falls back to substring, having no word boundaries
+    assert _same_ground("ชำระหนี้", "วางแผนชำระหนี้", True)
+
+
+def test_thai_seeds_still_work_after_the_change():
+    f = FakeFetcher({"http://payofflogic.test": HOME_TH, "/about/": ABOUT_TH})
+    prof = build_profile("http://payofflogic.test", f, max_pages=3)
+    assert prof.seed_keywords
+    for kw in prof.seed_keywords:
+        assert 4 <= len(kw) <= 26, kw
 
 
 def test_seed_keywords_are_searchable_length():

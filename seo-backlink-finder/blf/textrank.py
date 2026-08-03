@@ -36,7 +36,8 @@ _BOILERPLATE = {
     # English
     "about", "about us", "contact", "contact us", "home", "home page",
     "our services", "services", "service", "products", "our products",
-    "blog", "news", "articles", "resources", "faq", "faqs", "support",
+    "blog", "news", "articles", "resources", "guides", "tools", "faq", "faqs",
+    "support",
     "privacy policy", "terms of service", "terms and conditions", "sitemap",
     "log in", "login", "sign up", "sign in", "register", "my account",
     "read more", "learn more", "get started", "free trial", "book now",
@@ -74,6 +75,12 @@ _STOP = {
     "content", "navigation", "toggle", "close", "open", "share", "follow",
     "email", "address", "phone", "submit", "send", "back", "next", "previous",
     "learn", "view", "see", "use", "using", "make", "made", "help", "need",
+    # Marketing filler. These describe how a thing is sold, not what it is, and
+    # as a search seed they match the whole web: "free" finds everything.
+    "free", "best", "top", "every", "new", "good", "great", "easy", "simple",
+    "complete", "ultimate", "full", "total", "quick", "fast", "perfect",
+    "essential", "popular", "amazing", "awesome", "cheap", "affordable",
+    "want", "want to", "today", "now", "online", "official",
     # Thai (space-separated function words that still show up in phrases)
     "และ", "หรือ", "ของ", "ที่", "ใน", "การ", "ความ", "เป็น", "ได้", "ให้",
     "กับ", "จาก", "โดย", "แต่", "ก็", "จะ", "มี", "ไม่", "นี้", "นั้น",

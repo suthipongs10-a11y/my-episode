@@ -358,33 +358,62 @@ def _looks_local(text: str) -> bool:
     return hits >= 2 or (hits >= 1 and has_phone)
 
 
+def _singular(word: str) -> str:
+    """Crude plural fold so 'calculator' and 'calculators' count as one term."""
+    if len(word) > 3 and word.endswith("ies"):
+        return word[:-3] + "y"
+    if len(word) > 3 and word.endswith("es") and not word.endswith("ses"):
+        return word[:-2]
+    if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
+        return word[:-1]
+    return word
+
+
+def _same_ground(a: str, b: str, ngram_lang: bool) -> bool:
+    """Would searching both return largely the same pages?"""
+    if ngram_lang:
+        return a in b or b in a
+    wa = {_singular(w) for w in a.split()}
+    wb = {_singular(w) for w in b.split()}
+    return wa <= wb or wb <= wa
+
+
 def _seed_keywords(prof: SiteProfile, limit: int = 6) -> list[str]:
     """The search terms to expand footprints with.
 
-    Short, generic-enough-to-have-competitors phrases work best: "coffee
-    brewing" finds sites that accept guest posts about coffee brewing;
-    "the ultimate coffee brewing guide for 2026" finds nothing.
+    These go into queries like `"{keyword}" "write for us"`, so they have to be
+    specific enough to name a niche. A single broad noun is the worst case:
+    `"calculator" "write for us"` matches most of the web, and none of it is
+    your topic. `"mortgage calculator"` finds the sites you actually want.
+
+    So multi-word phrases are taken first and single words only fill whatever
+    slots are left — the opposite of ranking by raw frequency, where the vague
+    word always wins because it appears inside every specific phrase.
     """
     # Thai/CJK phrases have no spaces, so cap them by characters instead of
     # words — 26 chars is roughly a three-word Thai noun phrase.
     ngram_lang = textrank.needs_ngrams(prof.language)
-    out: list[str] = []
-    for phrase, _score in prof.keyphrases:
+
+    def usable(p: str) -> bool:
         if ngram_lang:
-            if not (4 <= len(phrase) <= 26):
-                continue
-        else:
-            if len(phrase.split()) > 3 or not (3 <= len(phrase) <= 35):
-                continue
-        if phrase in out:
-            continue
-        # Skip a phrase already covered by one we kept — searching both
-        # "debt payoff" and "debt payoff plan" mostly returns the same pages.
-        if any(phrase in kept or kept in phrase for kept in out):
-            continue
-        out.append(phrase)
+            return 4 <= len(p) <= 26
+        return 3 <= len(p) <= 35 and len(p.split()) <= 3
+
+    candidates = [p for p, _ in prof.keyphrases if usable(p)]
+    if ngram_lang:
+        ordered = candidates            # no word boundaries to exploit
+    else:
+        ordered = ([p for p in candidates if len(p.split()) > 1]
+                   + [p for p in candidates if len(p.split()) == 1])
+
+    out: list[str] = []
+    for phrase in ordered:
         if len(out) >= limit:
             break
+        if any(_same_ground(phrase, kept, ngram_lang) for kept in out):
+            continue
+        out.append(phrase)
+
     if not out and prof.title:
         out = [prof.title.split()[0].lower()]
     return out
