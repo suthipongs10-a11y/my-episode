@@ -3,11 +3,11 @@
 41s vertical (1080×1920) · vox collage · voice: not yet generated (no ElevenLabs key —
 `beats.json` carries estimated windows so `gen_voice.py` can retime them later).
 
-## STATUS: rendered end to end, no API key spent
+## STATUS: retimed to the real Thai VO, rendered — awaiting the audio mux
 
 - script.md + beats.json authored, every fact verified (below)
 - composition built, QA'd at 11 frames across two passes
-- **rendered: all 1,230 frames, 1080×1920 h264** (`remotion/out/Vox2ThaiRice.mp4`, gitignored)
+- **rendered: all 1,320 frames, 1080×1920 h264, 44s** (`remotion/out/Vox2ThaiRice.mp4`, gitignored)
 - frames spot-checked back OUT of the MP4, not just from renderStill
 - 4 generated layers (Gemini) — see "Layers: what is real and what is drawn"
 
@@ -32,6 +32,32 @@ Two consequences, neither of them optional:
    text only; there is no `duration`. It returns `timing.json` with the real seconds per
    segment instead, so the composition retimes to the audio rather than the audio being made
    to fit — the `CUE` table moves, using those measured lengths.
+
+### The measured VO, and what it cost the edit
+
+Generated 2026-08-03. Every number normalised correctly on the server — `gen_text` came back
+with `2000` → *สองพัน*, `1945` → *หนึ่งพันเก้าร้อยสี่สิบห้า*, `199`/`105` → *หนึ่งร้อยเก้าสิบเก้า*/*หนึ่งร้อยห้า*,
+`31` → *สามสิบเอ็ด*. Nothing had to be re-written as words by hand.
+
+| segment | starts | length | old estimate |
+|---|---|---|---|
+| `s01_hook` | 0.50s | 3.44s | 4.50s |
+| `s02_origin` | 4.54s | 6.16s | 6.20s |
+| `s03_accident` | 11.30s | 8.68s | 7.20s |
+| `s04_selection` | 20.58s | 9.36s | 8.00s |
+| `s05_crown` | 30.54s | 6.16s | 5.80s |
+| `s06_twist` | 37.30s | 4.12s | 4.80s |
+
+The Thai VO is **3.42s longer** than the English draft it was written against, and the last
+word lands at 41.42s. So the composition grew **41s → 44s (1,320 frames)** and every cue in
+the `CUE` table moved onto the phrase it illustrates: the 105 stamp now lands on
+*"แถวที่ 105 คือผู้ชนะ"*, the ranking card on *"ไทยอยู่อันดับสาม"*. The camera keyframes moved with
+them. **The visuals follow the voice, not the other way round** — the alternative was
+squeezing the narration to fit a duration that was only ever a guess.
+
+`build-voice.sh` lays the six lines onto one 44s track at these exact offsets. Run it on the
+pod, in the folder the `/job` zip was extracted into, and the edit places one file at 0:00
+instead of aligning six by hand.
 
 ### What the QA pass actually caught
 

@@ -6,90 +6,125 @@
 		"width": 1080,
 		"height": 1920,
 		"fps": 30,
-		"durationSec": 41
+		"durationSec": 44
 	},
-	"voicePlan": "elevenlabs:TX3LPaxmHKxFdv7VOQHJ",
-	"voiceStatus": "not-generated — no ELEVENLABS_API_KEY. Windows below are ESTIMATES at ~2.3 words/sec (documentary pace, slower than the short-N grammar). gen_voice.py overwrites start/end and adds per-word times.",
+	"voicePlan": "channel voice server (OmniVoice-Thai + owner's clone) — see the TTS repo's HANDOFF.md",
+	"voiceStatus": "generated 2026-08-03. Line timings are MEASURED from the returned audio (timing.json), not estimated. No per-word times: this server does not return them, and the vox track burns no captions so it does not need them.",
 	"vo": [
 		{
 			"beat": "hook",
-			"text": "Two things happened in the same Thai district, four thousand years apart.",
+			"segment": "s01_hook",
+			"text": "สองสิ่งนี้ เกิดขึ้นในอำเภอเดียวกัน ห่างกันสี่พันปี",
 			"start": 0.5,
-			"end": 5.0
+			"end": 3.94,
+			"seconds": 3.44
 		},
 		{
 			"beat": "origin",
-			"text": "By two thousand BC, people here were already growing rice. The oldest confirmed in Thailand.",
-			"start": 5.6,
-			"end": 11.8
+			"segment": "s02_origin",
+			"text": "เมื่อ 2000 ปีก่อนคริสตกาล คนที่นี่ปลูกข้าวเป็นแล้ว เก่าที่สุดเท่าที่มีหลักฐานยืนยันในไทย",
+			"start": 4.54,
+			"end": 10.7,
+			"seconds": 6.16
 		},
 		{
 			"beat": "accident",
-			"text": "In 1945, in that same district, a farmer smelled jasmine in his field. He kept the seed.",
-			"start": 12.4,
-			"end": 19.6
+			"segment": "s03_accident",
+			"text": "ค.ศ. 1945 ในอำเภอเดียวกันนั้น ชาวนาคนหนึ่งได้กลิ่นหอมมะลิ จากต้นข้าวในนาของเขา เขาเก็บเมล็ดนั้นไว้",
+			"start": 11.3,
+			"end": 19.98,
+			"seconds": 8.68
 		},
 		{
 			"beat": "selection",
-			"text": "Out of a hundred ninety-nine panicles, row one-oh-five won. In 1959 it got a name. Khao Dawk Mali 105.",
-			"start": 20.2,
-			"end": 28.2
+			"segment": "s04_selection",
+			"text": "จากรวงข้าว 199 รวง แถวที่ 105 คือผู้ชนะ ค.ศ. 1959 มันได้ชื่อว่า ข้าวขาวดอกมะลิ 105",
+			"start": 20.58,
+			"end": 29.94,
+			"seconds": 9.36
 		},
 		{
 			"beat": "crown",
-			"text": "It carried Thailand to the top of the world's rice trade, and held it thirty-one years.",
-			"start": 28.8,
-			"end": 34.6
+			"segment": "s05_crown",
+			"text": "ข้าวเมล็ดนั้น พาไทยขึ้นเป็นผู้ส่งออกข้าวอันดับหนึ่งของโลก และครองไว้ได้ 31 ปี",
+			"start": 30.54,
+			"end": 36.7,
+			"seconds": 6.16
 		},
 		{
 			"beat": "twist",
-			"text": "Today Thailand is third. India ships three times as much.",
-			"start": 35.2,
-			"end": 40.0
+			"segment": "s06_twist",
+			"text": "วันนี้ ไทยอยู่อันดับสาม อินเดียส่งออกมากกว่าเราสามเท่า",
+			"start": 37.3,
+			"end": 41.42,
+			"seconds": 4.12
 		}
 	],
 	"beats": [
 		{
 			"beat": "hook",
 			"from": 0,
-			"to": 150,
+			"to": 140,
 			"camera": "slow push on the composed title page",
-			"layers": ["title statement", "rice grains", "chapter chip"]
+			"layers": [
+				"title statement",
+				"rice grains",
+				"chapter chip"
+			]
 		},
 		{
 			"beat": "origin",
-			"from": 150,
-			"to": 372,
+			"from": 126,
+			"to": 339,
 			"camera": "dive into the Thailand map, settle on Chonburi",
-			"layers": ["thailand map", "site pin", "chip: Khok Phanom Di ~2000 BC"]
+			"layers": [
+				"thailand map",
+				"site pin",
+				"chip: Khok Phanom Di ~2000 BC"
+			]
 		},
 		{
 			"beat": "accident",
-			"from": 372,
-			"to": 606,
+			"from": 339,
+			"to": 617,
 			"camera": "hold on Chonburi",
-			"layers": ["chip: 1945 Phanat Nikhom on the SAME pin", "statement: the same district"]
+			"layers": [
+				"chip: 1945 Phanat Nikhom on the SAME pin",
+				"statement: the same district"
+			]
 		},
 		{
 			"beat": "selection",
-			"from": 606,
-			"to": 858,
+			"from": 617,
+			"to": 900,
 			"camera": "small pull back over the central plain",
-			"layers": ["route to Bang Khla", "chip: 199 panicles", "stamp: 105", "chip: 1959"]
+			"layers": [
+				"route to Bang Khla",
+				"chip: 199 panicles",
+				"stamp: 105",
+				"chip: 1959"
+			]
 		},
 		{
 			"beat": "crown",
-			"from": 858,
-			"to": 1056,
+			"from": 900,
+			"to": 1155,
 			"camera": "pull back to the world",
-			"layers": ["world map", "5 dashed export routes", "statement: Number one. Thirty-one years."]
+			"layers": [
+				"world map",
+				"5 dashed export routes",
+				"statement: Number one. Thirty-one years."
+			]
 		},
 		{
 			"beat": "twist",
-			"from": 1056,
-			"to": 1230,
+			"from": 1155,
+			"to": 1320,
 			"camera": "return to the page-1 wide framing",
-			"layers": ["2025 ranking bars", "title returns — last frame = frame 0"]
+			"layers": [
+				"2025 ranking bars",
+				"title returns — last frame = frame 0"
+			]
 		}
 	]
 }
