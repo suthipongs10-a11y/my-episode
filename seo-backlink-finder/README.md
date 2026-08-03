@@ -11,12 +11,13 @@ Backlink ให้เว็บไซต์ของเราได้ พร้�
 เครื่องมือนี้อยู่ในโฟลเดอร์ `seo-backlink-finder/` ของ repo `my-episode`
 บนบรานช์ `claude/backlink-target-finder-ljivrr` — ต้องดึงลงเครื่องก่อน
 
-**ถ้ายังไม่มี repo ในเครื่อง** (ดึงเฉพาะโฟลเดอร์นี้ ~1MB แทนที่จะโหลดทั้ง repo 167MB):
+> **ทุกคำสั่งด้านล่างเป็นแบบบรรทัดเดียว** — คัดลอกไปทีละบรรทัด ห้ามใส่ `\` ต่อบรรทัด
+> เพราะ PowerShell ไม่รู้จักสัญลักษณ์นั้น (bash ใช้ได้ แต่ PowerShell จะพัง)
 
-```bash
-git clone --filter=blob:none --sparse --depth 1 \
-  -b claude/backlink-target-finder-ljivrr \
-  https://github.com/suthipongs10-a11y/my-episode.git
+**ถ้ายังไม่มี repo ในเครื่อง** — ดึงเฉพาะโฟลเดอร์นี้ (~1 MB แทนที่จะโหลดทั้ง repo 172 MB):
+
+```
+git clone --filter=blob:none --sparse --depth 1 -b claude/backlink-target-finder-ljivrr https://github.com/suthipongs10-a11y/my-episode.git
 cd my-episode
 git sparse-checkout set seo-backlink-finder
 cd seo-backlink-finder
@@ -24,22 +25,45 @@ cd seo-backlink-finder
 
 **ถ้ามี repo อยู่แล้ว:**
 
-```bash
+```
 cd my-episode
 git fetch origin claude/backlink-target-finder-ljivrr
 git checkout claude/backlink-target-finder-ljivrr
 cd seo-backlink-finder
 ```
 
-**แล้วติดตั้งและรัน** (ต้องมี Python 3.9 ขึ้นไป):
+### ติดตั้งและรัน (ต้องมี Python 3.9 ขึ้นไป)
 
-```bash
-python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+**Windows (PowerShell)** — เรียก `.exe` ในโฟลเดอร์ venv ตรง ๆ จะได้ไม่ติดปัญหา
+execution policy ตอน activate:
+
+```
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\blf.exe serve
+```
+
+**macOS / Linux:**
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
-blf serve                        # เปิด http://127.0.0.1:8080 → วาง URL → กด Start
-# หรือทำทั้งหมดในคำสั่งเดียวบนบรรทัดคำสั่ง:
+blf serve
+```
+
+แล้วเปิด <http://127.0.0.1:8080> → วาง URL เว็บคุณ → กด Start
+
+หรือทำทั้งหมดในคำสั่งเดียวบนบรรทัดคำสั่ง (Windows ใช้ `.\.venv\Scripts\blf.exe`):
+
+```
 blf start payofflogic.com
 ```
+
+> **ถ้า `python` ไม่ทำงานบน Windows** และเปิดหน้า Microsoft Store ขึ้นมาแทน แปลว่า
+> ยังไม่ได้ติดตั้ง Python จริง — โหลดจาก <https://www.python.org/downloads/>
+> แล้วตอนติดตั้ง**ติ๊ก "Add python.exe to PATH"** ด้วย จากนั้นปิด PowerShell
+> เปิดใหม่ แล้วเช็กด้วย `python --version`
 
 ระบบจะ **อ่านเว็บคุณเองก่อน** → สรุปว่าเว็บทำเรื่องอะไร ภาษาอะไร ประเทศไหน →
 คิด keyword ที่ควรค้น → ไล่หาเป้าหมาย → ตรวจทีละเว็บ → ให้คะแนนและจัดอันดับ
