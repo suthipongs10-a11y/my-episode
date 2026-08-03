@@ -34,16 +34,29 @@ cd seo-backlink-finder
 
 ### ติดตั้งและรัน (ต้องมี Python 3.9 ขึ้นไป)
 
-**Windows (PowerShell)** — เรียก `.exe` ในโฟลเดอร์ venv ตรง ๆ จะได้ไม่ติดปัญหา
-execution policy ตอน activate:
+**วิธีที่สั้นที่สุด — ไม่ต้องสร้าง venv** เหมาะถ้าอยากลองให้ได้ผลเร็ว ๆ ก่อน
+เรียกผ่าน `python -m blf` ได้เลย ไม่ต้องพึ่งคำสั่ง `blf` ใน PATH:
+
+```
+python -m pip install -e .
+python -m blf serve
+```
+
+(macOS / Linux เปลี่ยน `python` เป็น `python3` ทั้งสองบรรทัด)
+
+**วิธีที่แนะนำสำหรับใช้งานจริง — แยก venv** ไม่ให้ไปชนกับ Python ของระบบ
+**ต้องรันบรรทัดแรกก่อนเสมอ** ไม่งั้นโฟลเดอร์ `.venv` จะยังไม่มีและสองบรรทัดถัดไปจะฟ้อง
+`is not recognized`:
+
+Windows (PowerShell) — เรียก `.exe` ในโฟลเดอร์ venv ตรง ๆ จะได้ไม่ติด execution policy:
 
 ```
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\blf.exe serve
+.\.venv\Scripts\python.exe -m blf serve
 ```
 
-**macOS / Linux:**
+macOS / Linux:
 
 ```
 python3 -m venv .venv
@@ -54,10 +67,10 @@ blf serve
 
 แล้วเปิด <http://127.0.0.1:8080> → วาง URL เว็บคุณ → กด Start
 
-หรือทำทั้งหมดในคำสั่งเดียวบนบรรทัดคำสั่ง (Windows ใช้ `.\.venv\Scripts\blf.exe`):
+หรือทำทั้งหมดในคำสั่งเดียวบนบรรทัดคำสั่ง:
 
 ```
-blf start payofflogic.com
+python -m blf start payofflogic.com
 ```
 
 > **ถ้า `python` ไม่ทำงานบน Windows** และเปิดหน้า Microsoft Store ขึ้นมาแทน แปลว่า
