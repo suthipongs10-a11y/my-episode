@@ -6,9 +6,35 @@ Backlink ให้เว็บไซต์ของเราได้ พร้�
 
 > โค้ด/คอมเมนต์/คำสั่งเป็นภาษาอังกฤษ เอกสารนี้เป็นภาษาไทย
 
-## เริ่มใน 3 คำสั่ง
+## เริ่มใช้งาน
+
+เครื่องมือนี้อยู่ในโฟลเดอร์ `seo-backlink-finder/` ของ repo `my-episode`
+บนบรานช์ `claude/backlink-target-finder-ljivrr` — ต้องดึงลงเครื่องก่อน
+
+**ถ้ายังไม่มี repo ในเครื่อง** (ดึงเฉพาะโฟลเดอร์นี้ ~1MB แทนที่จะโหลดทั้ง repo 167MB):
 
 ```bash
+git clone --filter=blob:none --sparse --depth 1 \
+  -b claude/backlink-target-finder-ljivrr \
+  https://github.com/suthipongs10-a11y/my-episode.git
+cd my-episode
+git sparse-checkout set seo-backlink-finder
+cd seo-backlink-finder
+```
+
+**ถ้ามี repo อยู่แล้ว:**
+
+```bash
+cd my-episode
+git fetch origin claude/backlink-target-finder-ljivrr
+git checkout claude/backlink-target-finder-ljivrr
+cd seo-backlink-finder
+```
+
+**แล้วติดตั้งและรัน** (ต้องมี Python 3.9 ขึ้นไป):
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
 blf serve                        # เปิด http://127.0.0.1:8080 → วาง URL → กด Start
 # หรือทำทั้งหมดในคำสั่งเดียวบนบรรทัดคำสั่ง:
