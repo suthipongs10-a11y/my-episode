@@ -12,9 +12,10 @@
 | หัวข้อ | ค่า |
 |---|---|
 | Milestone ปัจจุบัน | **M2 — Conversion** |
-| สถานะ | M0/M1/M2 ผ่าน acceptance แล้ว |
+| สถานะ | M0/M1/M2 ผ่าน acceptance แล้ว + ตรวจซ้ำกับ Postgres จริงแล้ว |
 | อัปเดตล่าสุด | 2026-08-03 |
 | git tag ล่าสุด | `m2` |
+| เทสต์ | 155 ผ่าน / 5 ข้าม (offline) · 5/5 ผ่านกับ Postgres 16 จริง |
 | ต้นทุน API สะสม | 0 บาท (ยังไม่ได้เรียก API ใดเลย) |
 
 ---
@@ -34,6 +35,24 @@
 **Acceptance M1 ผ่าน:** รัน CLI จริงกับ fixture ที่ serve บน localhost → crawl 4 หน้า →
 จัดประเภทถูก → findings 22 ข้อ (critical 5) → คะแนน → ต้นทุน 0 บาท
 **Acceptance M2 ผ่าน:** คะแนน conversion ถูกล็อกด้วย snapshot test และ CVR ทุกข้อมีเทสต์ทั้งเคสที่ควรยิงและไม่ควรยิง
+
+### รอบตรวจซ้ำ — เจอบั๊กที่ PGlite จับไม่ได้
+
+รันสคีมาและ pipeline ทั้งชุดกับ **Postgres 16 ตัวจริง** ก่อนส่งงาน เจอบั๊กที่เทสต์เดิม
+มองไม่เห็นโดยโครงสร้าง: **`jsonb` ถูกเก็บเป็น string** บน production driver
+(`jsonb_typeof(evidence)` = `"string"`, `evidence->>'key'` คืนค่าว่าง)
+
+สาเหตุ: driver สองตัวรับพารามิเตอร์ jsonb คนละแบบ และไม่มีตัวไหน error —
+`postgres.js` เดาชนิดจากค่า JS (ส่ง string เข้าไป = ได้ JSON scalar) ส่วน PGlite ต้องการ string
+อ่านกลับด้วย JS ได้ผลถูกทั้งคู่ บั๊กจึงเงียบสนิท **ใส่ `::jsonb` cast อย่างเดียวไม่พอ**
+
+แก้ด้วย `json()` wrapper ใน `db/client.ts` (Symbol) แล้วแต่ละ driver จัดการเอง +
+`db/postgres.integration.test.ts` ที่รันเมื่อมี `DATABASE_URL` เท่านั้น
+**บทเรียน:** เทสต์ที่รันบน driver เดียว พิสูจน์เรื่องที่ต่างกันระหว่าง driver ไม่ได้
+
+เจออีกอย่างระหว่างตรวจ: `.gitignore` เขียนคอมเมนต์ต่อท้ายบรรทัด ซึ่ง git ไม่รองรับ —
+`.data/`, `.cache/`, `.ctx-tests`, `reports/` จึงไม่ถูก ignore จริง และ `.ctx-tests`
+(ไฟล์ที่ generate ใหม่ทุกครั้งที่เทสต์) ถูก commit ไปแล้ว แก้ทั้งสองอย่าง
 
 ### M0 (รอบก่อน)
 
@@ -112,6 +131,8 @@
 | 2026-08-03 | CVR-010 คืนค่าว่างจนกว่าจะมีข้อมูล GBP และไม่ถูกนับในคะแนน | ถ้านับเป็น "ไม่ผ่าน" คะแนน conversion ของทุกเว็บจะต่ำกว่าความจริงด้วยเหตุผลที่เจ้าของแก้ไม่ได้ |
 | 2026-08-03 | คะแนน local/content = 50 เมื่อยังไม่มีข้อมูล (ไม่ใช่ 0) | 0 แปลว่า "วัดแล้วแย่" ซึ่งจะโกหกลูกค้า 50 แปลว่า "ยังไม่ได้วัด" |
 | 2026-08-03 | เทสต์ใช้ PGlite instance เดียวต่อไฟล์ แล้ว truncate | instance ละ ~2 วิ · 12 เทสต์ = 26 วิ → 7 วิ · เทสต์ที่ช้าคือเทสต์ที่ไม่มีใครรัน |
+| 2026-08-03 | ส่ง jsonb ผ่าน `json()` wrapper ไม่ใช่ `JSON.stringify` ตรง | driver สองตัวต้องการคนละแบบและไม่ error ทั้งคู่ · `::jsonb` cast อย่างเดียวแก้ไม่ได้ (วัดมาแล้ว) |
+| 2026-08-03 | มีเทสต์ที่รันกับ Postgres จริง แยกจาก `pnpm test` | `pnpm test` ต้องฟรีและ offline ต่อไป แต่ของที่ต่างกันระหว่าง driver ต้องมีที่จับ — เปิดด้วย `DATABASE_URL` |
 | — | job table + polling แทน Redis/BullMQ | ปริมาณงานต่ำมาก ไม่คุ้มความซับซ้อนและค่า Redis |
 | — | ไม่สร้างตาราง `scores` | สูตรคะแนนจะเปลี่ยนแน่นอน เก็บคะแนนสำเร็จรูปแล้วประวัติย้อนหลังจะพัง |
 | — | หยุดที่ M6 จนกว่าจะมีลูกค้ารายเดือน ≥ 5 ราย | คอขวดจริงคือการขาย ไม่ใช่จำนวนฟีเจอร์ |
@@ -137,7 +158,8 @@
 
 ## ไฟล์ที่แก้ล่าสุด
 
-`packages/core/src/{crawl,rules,scoring,pipeline}` · `fixtures/` · `apps/worker/src/cli.test.ts`
+`packages/core/src/db/{client,queries}.ts` · `db/postgres.integration.test.ts` ·
+`cost/ledger.ts` · `i18n/th.ts` · `.gitignore`
 
 ## คำสั่งที่ใช้รันต่อจากจุดนี้
 
@@ -146,6 +168,9 @@ pnpm install
 pnpm ctx                                    # สถานะย่อ
 pnpm test
 pnpm audit --domain=phuketmaidservice.com --area=ภูเก็ต
+
+# ก่อนปล่อยของจริง — ตรวจกับ Postgres จริงด้วย (5 เทสต์นี้ข้ามเมื่อไม่มี DATABASE_URL)
+DATABASE_URL=postgresql://... pnpm vitest run packages/core/src/db
 ```
 
 ## ยังไม่ได้ push — สร้าง repo แล้วรันสองคำสั่งนี้

@@ -18,7 +18,11 @@ export const th = {
   },
   cost: {
     overBudget: "ต้นทุนเกินงบที่ตั้งไว้",
-    hardStop: "ต้นทุนถึงเพดานสูงสุด หยุดการทำงาน",
+    hardStop: (spent: string, limit: string) =>
+      `ต้นทุนของ audit นี้ถึง ${spent} บาท เกินเพดาน ${limit} บาท — หยุด pipeline`,
+    usage: "ใช้: pnpm cost --run=<uuid>",
+    headline: (runId: string) => `ต้นทุนของ run ${runId}`,
+    total: "รวม",
   },
 
   /**

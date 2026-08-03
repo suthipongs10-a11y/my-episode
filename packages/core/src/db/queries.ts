@@ -4,7 +4,7 @@
  * Hand-written SQL rather than an ORM: schema.sql stays the single description
  * of the data, and the SQL that runs is the SQL you read.
  */
-import type { Db } from "./client.ts";
+import { json, type Db } from "./client.ts";
 import type {
   AreaScope, AuditRun, Client, Finding, JobStatus, RunStatus, Stage,
 } from "../types/index.ts";
@@ -177,9 +177,12 @@ export async function completeJob(
 export async function saveSnapshot(
   db: Db, auditRunId: string, kind: string, target: string, data: unknown,
 ): Promise<void> {
+  // `json(...)` rather than JSON.stringify: see the note on JsonParam. Getting
+  // this wrong stores a jsonb *string*, which reads back fine in JavaScript and
+  // is invisible to every SQL query that looks inside it.
   await db.query(
-    `insert into snapshots (audit_run_id, kind, target, data) values ($1,$2,$3,$4)`,
-    [auditRunId, kind, target, JSON.stringify(data)],
+    `insert into snapshots (audit_run_id, kind, target, data) values ($1,$2,$3,$4::jsonb)`,
+    [auditRunId, kind, target, json(data)],
   );
 }
 
@@ -211,9 +214,9 @@ export async function saveFindings(
       `insert into findings
          (audit_run_id, code, category, severity, evidence,
           affected_urls, effort_hours, impact_score, priority_rank)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+       values ($1,$2,$3,$4,$5::jsonb,$6,$7,$8,$9)`,
       [
-        auditRunId, f.code, f.category, f.severity, JSON.stringify(f.evidence),
+        auditRunId, f.code, f.category, f.severity, json(f.evidence),
         f.affectedUrls ?? [], f.effortHours ?? null, f.impactScore ?? null, i + 1,
       ],
     );

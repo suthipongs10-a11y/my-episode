@@ -1,11 +1,20 @@
+# Comments must be on their own line. Git has no inline `#` in .gitignore —
+# a trailing comment becomes part of the pattern, which silently un-ignores it.
+
 node_modules/
 dist/
-.data/          # PGlite local database
-.cache/         # cached-fetch disk cache
-.ctx-tests    # last test result for `pnpm ctx`
+
+# PGlite local database
+.data/
+# cached-fetch disk cache
+.cache/
+# last test result, for `pnpm ctx`
+.ctx-tests
 .vitest.json
 .scratch/
-reports/        # generated PDFs
+# generated PDFs
+reports/
+
 .env
 .env.local
 *.log

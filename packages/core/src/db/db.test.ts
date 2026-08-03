@@ -128,6 +128,22 @@ describe("snapshots", () => {
     expect(rows[0]!.data.nested.schema).toEqual(["LocalBusiness"]);
   });
 
+  it("stores jsonb as an object, not as a string containing JSON", async () => {
+    // Without an explicit ::jsonb cast the driver stores the JSON *string*, so
+    // jsonb_typeof says "string" and `data->>'key'` finds nothing. Reading it
+    // back in JavaScript still worked, because getSnapshots parses a string if
+    // it sees one — which is exactly why this has to be asserted in SQL.
+    const { run } = await seed();
+    await saveSnapshot(db, run.id, "site", "scores", { scores: { conversion: 12 } });
+
+    const row = await db.one<{ kind: string; conversion: string }>(
+      `select jsonb_typeof(data) as kind, data->'scores'->>'conversion' as conversion
+         from snapshots where target = 'scores'`,
+    );
+    expect(row?.kind).toBe("object");
+    expect(row?.conversion).toBe("12");
+  });
+
   it("keeps kinds separate", async () => {
     const { run } = await seed();
     await saveSnapshot(db, run.id, "page", "a", { n: 1 });
@@ -158,6 +174,21 @@ describe("findings", () => {
     expect(got[0]!.affectedUrls).toHaveLength(2);
     expect(got[0]!.effortHours).toBe(3);
     expect(got[1]!.effortHours).toBeUndefined();
+  });
+
+  it("stores evidence as queryable jsonb", async () => {
+    const { run } = await seed();
+    await saveFindings(db, run.id, [{
+      code: "CVR-001", category: "conversion", severity: "critical",
+      evidence: { pages_without_tel_link: 12, pages_total: 14 },
+    }]);
+    const row = await db.one<{ kind: string; n: string }>(
+      `select jsonb_typeof(evidence) as kind,
+              evidence->>'pages_without_tel_link' as n
+         from findings where code = 'CVR-001'`,
+    );
+    expect(row?.kind).toBe("object");
+    expect(row?.n).toBe("12");
   });
 });
 

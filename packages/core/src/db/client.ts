@@ -17,6 +17,32 @@ import { fileURLToPath } from "node:url";
 
 export type Row = Record<string, unknown>;
 
+/**
+ * Marks a parameter destined for a `jsonb` column.
+ *
+ * The two drivers disagree about how to send one, and the disagreement is
+ * silent: postgres.js infers the parameter type from the JavaScript value, so
+ * a JSON *string* arrives as a jsonb string — `jsonb_typeof` reports "string"
+ * and `data->>'key'` returns nothing — while an object encodes correctly.
+ * PGlite wants the opposite. Reading the value back in JavaScript works either
+ * way, which is what makes the bug so easy to ship.
+ *
+ * Callers write `json(value)` and each driver does the right thing below.
+ */
+const JSON_PARAM = Symbol("wgi.json");
+
+export interface JsonParam {
+  readonly [JSON_PARAM]: unknown;
+}
+
+export function json(value: unknown): JsonParam {
+  return { [JSON_PARAM]: value };
+}
+
+function isJsonParam(v: unknown): v is JsonParam {
+  return typeof v === "object" && v !== null && JSON_PARAM in v;
+}
+
 export interface Db {
   /** Parameterised query. `$1`-style placeholders, as Postgres wants. */
   query<T = Row>(sql: string, params?: unknown[]): Promise<T[]>;
@@ -56,7 +82,11 @@ export async function createPgliteDb(dataDir?: string): Promise<Db> {
   const db: Db = {
     driver: "pglite",
     async query<T>(sql: string, params: unknown[] = []) {
-      const res = await pg.query(sql, params as never[]);
+      // PGlite takes JSON as text and lets the `::jsonb` cast in the SQL parse it.
+      const bound = params.map((p) =>
+        isJsonParam(p) ? JSON.stringify(p[JSON_PARAM]) : p,
+      );
+      const res = await pg.query(sql, bound as never[]);
       return res.rows as T[];
     },
     async one<T>(sql: string, params: unknown[] = []) {
@@ -86,7 +116,10 @@ export async function createPostgresDb(url: string): Promise<Db> {
   const db: Db = {
     driver: "postgres",
     async query<T>(text: string, params: unknown[] = []) {
-      return (await sql.unsafe(text, params as never[])) as unknown as T[];
+      // postgres.js encodes a JavaScript object into jsonb correctly; handing
+      // it a pre-stringified value stores the string instead.
+      const bound = params.map((p) => (isJsonParam(p) ? p[JSON_PARAM] : p));
+      return (await sql.unsafe(text, bound as never[])) as unknown as T[];
     },
     async one<T>(text: string, params: unknown[] = []) {
       const rows = await db.query<T>(text, params);

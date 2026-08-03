@@ -129,10 +129,17 @@ pnpm ctx                                   # สถานะโปรเจก�
 - TypeScript strict ห้าม `any` (ใช้ `unknown` + zod)
 - ทุก external response parse ด้วย zod ก่อนใช้
 - ทุกฟังก์ชันใน `rules/` และ `scoring/` ต้อง pure + มี unit test
-- ข้อความไทยอยู่ใน `i18n/th.ts` ห้าม hardcode ในโค้ด logic
+- **ข้อความไทยอยู่ใน `i18n/th.ts`** ห้าม hardcode ในโค้ด logic
+  ยกเว้น **คำไทยที่ใช้ match** (เช่น `"ราคา"`, `"ติดต่อ"` ใน regex) — นั่นคือ *ข้อมูลของกฎ*
+  ไม่ใช่ข้อความที่ลูกค้าอ่าน ให้อยู่กับกฎที่ใช้มัน
+- ส่งค่าลงคอลัมน์ `jsonb` ต้องห่อด้วย `json()` จาก `db/client.ts` เสมอ
+  ห้าม `JSON.stringify` เอง — driver dev กับ prod ต้องการคนละแบบและไม่ error ทั้งคู่
 - ห้าม `console.log` ใช้ `log/logger.ts`
 - commit: `feat(m3): add serp ranking check`
 - จบงานทุกครั้ง อัปเดต `STATUS.md`
+- **ก่อนปิด milestone:** รันเทสต์กับ Postgres จริงหนึ่งรอบ
+  (`DATABASE_URL=... pnpm vitest run packages/core/src/db`) — PGlite จับเรื่องที่ต่างกัน
+  ระหว่าง driver ไม่ได้ และเคยหลุดมาแล้วหนึ่งครั้ง (ดู Decision Log)
 
 ---
 

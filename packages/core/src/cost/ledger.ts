@@ -10,6 +10,7 @@
  * free-audit product is how a lead-generation tool turns into a bill.
  */
 import type { Db } from "../db/client.ts";
+import { th } from "../i18n/th.ts";
 
 export interface CostEntry {
   provider: string;
@@ -24,10 +25,7 @@ export class BudgetExceededError extends Error {
     readonly spentThb: number,
     readonly limitThb: number,
   ) {
-    super(
-      `ต้นทุนของ audit นี้ถึง ${spentThb.toFixed(2)} บาท ` +
-        `เกินเพดาน ${limitThb.toFixed(2)} บาท — หยุด pipeline`,
-    );
+    super(th.cost.hardStop(spentThb.toFixed(2), limitThb.toFixed(2)));
     this.name = "BudgetExceededError";
   }
 }
