@@ -90,9 +90,24 @@ This pass caught 6 real defects in vox-2 and 2 in the Thai conversion. Cheaper t
 
 ## 6. Voice
 
-**One voice per channel, and they must differ.** A shared narrator makes two channels feel
-like one. Agriculture = `Algieba`. Health = pending — auditioned 2026-08-04, see the project's
-`voicePlan`. Audition with the shot's real hook line, never from a spec sheet.
+**One voice per channel, and it lives in `beats.json`, not in a flag.** A shared narrator makes
+two channels feel like one, so the voice is a property of the project. Put `"voice"` and
+`"style"` at the top level of beats.json and the tool uses them — a re-render months later
+cannot come back in the wrong voice because someone omitted `--voice`. Precedence:
+`--voice` > beats.json > env > default, and an override that contradicts the locked voice prints
+a warning.
+
+| channel | voice | locked |
+|---|---|---|
+| เกษตรที่คนไทยควรรู้ | `Algieba` | 2026-08-04 |
+| สุขภาพแบบเข้าใจง่าย | `Leda` | 2026-08-04 |
+
+Audition with the shot's real hook line, never from a spec sheet.
+
+**Voices differ in PACE, not just timbre — budget for it.** Same trimmed script, same style
+prompt: Algieba 45.86s, Leda 50.42s (+10%). Include the pace lever (`พูดเร็วขึ้นเล็กน้อย`) in
+every channel's style string; without it Leda ran 53.30s. When a locked voice overruns, grow the
+composition — up to the 60s ceiling — rather than cutting the script a second time.
 
 ```bash
 python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --retime \

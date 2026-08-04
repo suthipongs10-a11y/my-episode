@@ -33,7 +33,7 @@ import { FONT_TH, FONT_TH_DISPLAY } from '../../fonts';
 // =============================================================================
 export const compositionConfig = {
   id: 'Vox3EightGlasses',
-  durationInSeconds: 50,
+  durationInSeconds: 55,
   fps: 30,
   width: 1080,
   height: 1920,
@@ -51,15 +51,21 @@ const THAILAND = WORLD.find((c) => c.name === 'Thailand')!;
 const [TH_X, TH_Y] = GLOBE.px(101, 15);
 
 // =============================================================================
-// CUES (GLOBAL frames @30) — anchored to the MEASURED Algieba VO (beats.json carries the
+// CUES (GLOBAL frames @30) — anchored to the MEASURED Leda VO (beats.json carries the
 // real per-line lengths). Retimed from the estimates by pushing every cue and camera keyframe
 // through a piecewise-linear map built from the estimated vs measured line boundaries, so a
 // cue that sat on a phrase still does (PIPELINE §7). Largest move -81 frames.
 //
-// The first pass of the VO ran to 49.70s against a 50s composition, leaving no tail for the
-// loop. Three lines were TRIMMED rather than the read being sped up — the words cut are ones
-// the picture already says (the 2002 card's kicker reads AM J PHYSIOL · 2002, so the narration
-// saying "then published it in a journal" was the same fact twice). Ends at 45.86s now.
+// The first pass ran to 49.70s against a 50s composition, leaving no tail for the loop. Three
+// lines were TRIMMED rather than the read being sped up — the words cut are ones the picture
+// already says (the 2002 card's kicker reads AM J PHYSIOL · 2002, so narrating "then published
+// it in a journal" was the same fact twice).
+//
+// Then the channel's voice was locked to Leda (beats.json carries it), and Leda reads ~10%
+// slower than Algieba on that identical trimmed script: 45.86s -> 50.42s. This time the
+// COMPOSITION grew, 50s -> 55s, rather than the script losing more. 55s is still well clear of
+// the 60s Shorts ceiling, and a script that has already given up three clauses should not pay
+// for a voice change too.
 // =============================================================================
 const CUE = {
   // Hook: negative so the page is FULLY composed at frame 0 — frame 0 is the thumbnail.
@@ -71,28 +77,28 @@ const CUE = {
   hookChip: -14,
 
   // s02 1945  f147-339
-  docIn: 169,
-  sent1: 206, //        "ผู้ใหญ่ควรได้น้ำวันละสองลิตรครึ่ง"
-  dateChip: 241,
+  docIn: 159,
+  sent1: 198, //        "ผู้ใหญ่ควรได้น้ำวันละสองลิตรครึ่ง"
+  dateChip: 235,
 
   // s03 the skipped sentence  f357-603
-  sent2: 421, //        "อยู่ในอาหารที่คุณกินอยู่แล้ว" — the payoff of the whole video
-  produce: 466,
-  skipMark: 509, //     the chip that says: nobody read this one
+  sent2: 422, //        "อยู่ในอาหารที่คุณกินอยู่แล้ว" — the payoff of the whole video
+  produce: 469,
+  skipMark: 513, //     the chip that says: nobody read this one
 
   // s04 2002  f621-879
-  card2002: 625,
-  stamp2002: 712, //    "ไม่เจอเลยสักชิ้น"
+  card2002: 633,
+  stamp2002: 729, //    "ไม่เจอเลยสักชิ้น"
 
   // s05 2004  f897-1155
-  card2004: 838,
-  tropicLine: 950, //   "คนในเขตร้อนอาจต้องการมากกว่านั้น"
+  card2004: 867,
+  tropicLine: 1004, //   "คนในเขตร้อนอาจต้องการมากกว่านั้น"
 
   // s06 2022  f1173-1437
-  mapIn: 1097,
-  rangeBar: 1177,
-  thaiPin: 1261,
-  titleBack: 1345,
+  mapIn: 1181,
+  rangeBar: 1276,
+  thaiPin: 1376,
+  titleBack: 1476,
 } as const;
 
 // Camera: push on the title, settle onto the document, push INTO the second sentence (the
@@ -100,18 +106,18 @@ const CUE = {
 // home for the loop.
 const CAM = [
   { f: 0, x: 540, y: 960, z: 1 },
-  { f: 179, x: 540, y: 960, z: 1.06 },
-  { f: 325, x: 540, y: 990, z: 1.16 },
-  { f: 447, x: 540, y: 1030, z: 1.28 },
-  { f: 599, x: 544, y: 1034, z: 1.3 },
-  { f: 680, x: 540, y: 950, z: 1.1 },
-  { f: 816, x: 542, y: 952, z: 1.12 },
-  { f: 911, x: 540, y: 940, z: 1.14 },
-  { f: 1069, x: 540, y: 944, z: 1.16 },
-  { f: 1185, x: 540, y: 1000, z: 1.04 },
-  { f: 1314, x: 540, y: 985, z: 1.02 },
-  { f: 1382, x: 540, y: 960, z: 1 },
-  { f: 1499, x: 540, y: 960, z: 1 },
+  { f: 170, x: 540, y: 960, z: 1.06 },
+  { f: 323, x: 540, y: 990, z: 1.16 },
+  { f: 449, x: 540, y: 1030, z: 1.28 },
+  { f: 606, x: 544, y: 1034, z: 1.3 },
+  { f: 693, x: 540, y: 950, z: 1.1 },
+  { f: 844, x: 542, y: 952, z: 1.12 },
+  { f: 956, x: 540, y: 940, z: 1.14 },
+  { f: 1151, x: 540, y: 944, z: 1.16 },
+  { f: 1286, x: 540, y: 1000, z: 1.04 },
+  { f: 1439, x: 540, y: 985, z: 1.02 },
+  { f: 1519, x: 540, y: 960, z: 1 },
+  { f: 1649, x: 540, y: 960, z: 1 },
 ];
 
 const TITLE_WORDS = [{ t: 'ประโยค' }, { t: 'ที่ไม่มีใครอ่าน', hl: true }];
@@ -304,15 +310,15 @@ const Vox3EightGlasses: React.FC = () => {
         <PaperBG src={PAPER} w={W} h={H} />
 
         {/* ---- HOOK: composed at FRAME 0, eight glasses fill in ---- */}
-        <Sequence from={0} durationInFrames={200} layout="none">
-          <SceneFade out={178}>
+        <Sequence from={0} durationInFrames={192} layout="none">
+          <SceneFade out={170}>
             <Hook titleAt={CUE.hookTitle} glassAt={CUE.hookGlasses} chipAt={CUE.hookChip} />
           </SceneFade>
         </Sequence>
 
         {/* ---- 1945 + THE SKIPPED SENTENCE: one card, two beats ---- */}
-        <Sequence from={CUE.docIn} durationInFrames={452} layout="none">
-          <SceneFade out={448} dur={22}>
+        <Sequence from={CUE.docIn} durationInFrames={469} layout="none">
+          <SceneFade out={465} dur={22}>
             <DocCard
               at={0}
               s1={CUE.sent1 - CUE.docIn}
@@ -332,8 +338,8 @@ const Vox3EightGlasses: React.FC = () => {
         </Sequence>
 
         {/* ---- 2002: someone went looking for the evidence ---- */}
-        <Sequence from={CUE.card2002} durationInFrames={201} layout="none">
-          <SceneFade out={197}>
+        <Sequence from={CUE.card2002} durationInFrames={221} layout="none">
+          <SceneFade out={217}>
             <PaperCard
               at={0}
               y={980}
@@ -349,8 +355,8 @@ const Vox3EightGlasses: React.FC = () => {
         </Sequence>
 
         {/* ---- 2004: the same body answers ---- */}
-        <Sequence from={CUE.card2004} durationInFrames={244} layout="none">
-          <SceneFade out={240}>
+        <Sequence from={CUE.card2004} durationInFrames={298} layout="none">
+          <SceneFade out={294}>
             <PaperCard
               at={0}
               y={950}
@@ -374,8 +380,8 @@ const Vox3EightGlasses: React.FC = () => {
         </Sequence>
 
         {/* ---- 2022: measured, and the spread is the answer ---- */}
-        <Sequence from={CUE.mapIn} durationInFrames={271} layout="none">
-          <SceneFade out={267} dur={24}>
+        <Sequence from={CUE.mapIn} durationInFrames={322} layout="none">
+          <SceneFade out={318} dur={24}>
             <Layer x={540} y={960} w={W} at={0} dur={20} enter="place" rotate={0.5} depth={0} drift={0.3}>
               <PaperMap scale={GLOBE} highlight={THAILAND} highlightName="Thailand" world>
                 <SitePin x={TH_X} y={TH_Y} at={CUE.thaiPin - CUE.mapIn} />

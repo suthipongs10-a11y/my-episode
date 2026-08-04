@@ -68,6 +68,20 @@ CONFIGURATION — environment, nothing hardcoded (CLAUDE.md §2.1)
   GEMINI_TTS_VOICE     prebuilt voice name        [default: Algieba]
   GEMINI_TTS_STYLE     style/pace instruction prepended to every line   [default: unset]
 
+THE VOICE BELONGS TO THE CHANNEL, SO IT LIVES IN beats.json
+
+  A channel has ONE narrator and two channels must not share one, or they sound like the same
+  show. That makes the voice a property of the project, not of whoever last typed the command.
+
+  So beats.json may carry top-level "voice" and "style", and they win over the environment.
+  Precedence, highest first:  --voice/--style  >  beats.json  >  env  >  built-in default.
+
+  Locking it in the file rather than in a runbook means a re-render months later cannot quietly
+  come back in the wrong voice because someone omitted a flag.
+
+    "voice": "Leda",
+    "style": "อ่านแบบผู้บรรยายสารคดีสุขภาพ ..."
+
 Usage:
   python tools/gen_voice_gemini.py --beats vox-shorts/vox-2-thai-rice/beats.json --dry-run
   python tools/gen_voice_gemini.py --beats ... --voice Algieba
@@ -216,11 +230,19 @@ def main():
     args = ap.parse_args()
 
     env = load_env()
+    # beats.json is read before cfg is built so the project's locked voice can take part in the
+    # precedence chain; --audition has no beats file, hence the guard.
+    locked = {}
+    if args.beats and os.path.exists(args.beats):
+        try:
+            locked = json.load(open(args.beats, encoding="utf-8"))
+        except (ValueError, OSError):
+            locked = {}
     cfg = {
         "key": env.get("GOOGLE_TTS_API_KEY") or env.get("GEMINI_API_KEY"),
-        "model": args.model or env.get("GEMINI_TTS_MODEL", DEFAULT_MODEL),
-        "voice": args.voice or env.get("GEMINI_TTS_VOICE", DEFAULT_VOICE),
-        "style": args.style or env.get("GEMINI_TTS_STYLE"),
+        "model": args.model or locked.get("model") or env.get("GEMINI_TTS_MODEL", DEFAULT_MODEL),
+        "voice": args.voice or locked.get("voice") or env.get("GEMINI_TTS_VOICE", DEFAULT_VOICE),
+        "style": args.style or locked.get("style") or env.get("GEMINI_TTS_STYLE"),
     }
     if not cfg["key"] and not args.dry_run:
         sys.exit("GOOGLE_TTS_API_KEY (or GEMINI_API_KEY) is not set in env or .env")
@@ -241,8 +263,13 @@ def main():
     vdir = os.path.join(proj, "voice")
     os.makedirs(vdir, exist_ok=True)
 
+    src = "--voice" if args.voice else ("beats.json" if beats.get("voice") else "env/default")
     print(f"{beats['id']}: {len(vo)} lines -> {os.path.relpath(vdir, ROOT)}")
-    print(f"  model={cfg['model']}  voice={cfg['voice']}  style={cfg['style'] or '-'}\n")
+    print(f"  model={cfg['model']}  voice={cfg['voice']} ({src})")
+    print(f"  style={(cfg['style'] or '-')[:80]}\n")
+    if args.voice and beats.get("voice") and args.voice != beats["voice"]:
+        print(f"  !! --voice {args.voice} OVERRIDES the voice locked in beats.json "
+              f"({beats['voice']}). This channel's videos are meant to share one narrator.\n")
 
     clips = []
     for i, line in enumerate(vo):
