@@ -2,13 +2,14 @@
 	"id": "vox-2-thai-rice",
 	"title": "Same District. Four Thousand Years Apart.",
 	"composition": "Vox2ThaiRice",
+	"channel": "agri",
 	"format": {
 		"width": 1080,
 		"height": 1920,
 		"fps": 30,
 		"durationSec": 44
 	},
-	"voicePlan": "channel voice server (OmniVoice-Thai + owner's clone) — see the TTS repo's HANDOFF.md",
+	"voicePlan": "เสียงและสไตล์มาจาก channels/agri.json — ห้ามก็อปมาไว้ที่นี่ (จะทำให้เพี้ยนกันเองภายหลัง)",
 	"voiceStatus": "gemini:gemini-3.1-flash-tts-preview/Algieba — line timings are REAL (measured from the audio). No per-word times: Gemini returns audio only. Run a forced aligner if a track needs them.",
 	"vo": [
 		{

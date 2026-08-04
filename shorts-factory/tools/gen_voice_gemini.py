@@ -68,19 +68,25 @@ CONFIGURATION — environment, nothing hardcoded (CLAUDE.md §2.1)
   GEMINI_TTS_VOICE     prebuilt voice name        [default: Algieba]
   GEMINI_TTS_STYLE     style/pace instruction prepended to every line   [default: unset]
 
-THE VOICE BELONGS TO THE CHANNEL, SO IT LIVES IN beats.json
+THE VOICE BELONGS TO THE CHANNEL, NOT TO THE VIDEO OR THE COMMAND LINE
 
   A channel has ONE narrator and two channels must not share one, or they sound like the same
-  show. That makes the voice a property of the project, not of whoever last typed the command.
+  show. So the voice is stored once per channel in channels/<slug>.json, and a video only says
+  which channel it belongs to:
 
-  So beats.json may carry top-level "voice" and "style", and they win over the environment.
-  Precedence, highest first:  --voice/--style  >  beats.json  >  env  >  built-in default.
+    beats.json:            "channel": "health"
+    channels/health.json:  "voice": "Leda", "style": "อ่านแบบผู้บรรยายสารคดีสุขภาพ ..."
 
-  Locking it in the file rather than in a runbook means a re-render months later cannot quietly
-  come back in the wrong voice because someone omitted a flag.
+  Storing it per channel rather than per video is the point. Copied into ten beats.json files
+  it is ten places to drift; in the registry, changing a channel's voice is one edit and every
+  future render follows.
 
-    "voice": "Leda",
-    "style": "อ่านแบบผู้บรรยายสารคดีสุขภาพ ..."
+  Precedence, highest first:
+    --voice/--style  >  beats.json "voice"/"style"  >  channels/<channel>.json  >  env  >  default
+
+  The per-video fields still work as an escape hatch, and disagreeing with the channel prints a
+  warning rather than passing silently. An unknown channel slug is a hard error — a typo must
+  not fall through to the default voice and quietly narrate a health video in the farming one.
 
 Usage:
   python tools/gen_voice_gemini.py --beats vox-shorts/vox-2-thai-rice/beats.json --dry-run
@@ -192,6 +198,20 @@ def synth(cfg, text, out_path):
         w.writeframes(pcm)
 
 
+def load_channel(slug):
+    """The channel registry. A typo in the slug is fatal on purpose: silently falling back to
+    the default voice would narrate one channel's video in another channel's voice, which is
+    the exact failure this registry exists to prevent."""
+    if not slug:
+        return {}
+    path = os.path.join(ROOT, "channels", f"{slug}.json")
+    if not os.path.exists(path):
+        have = sorted(f[:-5] for f in os.listdir(os.path.join(ROOT, "channels"))
+                      if f.endswith(".json")) if os.path.isdir(os.path.join(ROOT, "channels")) else []
+        sys.exit(f"unknown channel {slug!r} — channels/ has: {', '.join(have) or '(none)'}")
+    return json.load(open(path, encoding="utf-8"))
+
+
 def audition(cfg, text, voices, outdir):
     """Same line in several voices, side by side. Choosing a voice from a spec sheet does not
     work; choosing it from six mp3s of the actual script does."""
@@ -238,11 +258,13 @@ def main():
             locked = json.load(open(args.beats, encoding="utf-8"))
         except (ValueError, OSError):
             locked = {}
+    chan = load_channel(locked.get("channel"))
     cfg = {
         "key": env.get("GOOGLE_TTS_API_KEY") or env.get("GEMINI_API_KEY"),
         "model": args.model or locked.get("model") or env.get("GEMINI_TTS_MODEL", DEFAULT_MODEL),
-        "voice": args.voice or locked.get("voice") or env.get("GEMINI_TTS_VOICE", DEFAULT_VOICE),
-        "style": args.style or locked.get("style") or env.get("GEMINI_TTS_STYLE"),
+        "voice": (args.voice or locked.get("voice") or chan.get("voice")
+                  or env.get("GEMINI_TTS_VOICE", DEFAULT_VOICE)),
+        "style": args.style or locked.get("style") or chan.get("style") or env.get("GEMINI_TTS_STYLE"),
     }
     if not cfg["key"] and not args.dry_run:
         sys.exit("GOOGLE_TTS_API_KEY (or GEMINI_API_KEY) is not set in env or .env")
@@ -263,13 +285,17 @@ def main():
     vdir = os.path.join(proj, "voice")
     os.makedirs(vdir, exist_ok=True)
 
-    src = "--voice" if args.voice else ("beats.json" if beats.get("voice") else "env/default")
+    src = ("--voice" if args.voice else "beats.json" if beats.get("voice")
+           else f"channels/{chan['slug']}.json" if chan.get("voice") else "env/default")
     print(f"{beats['id']}: {len(vo)} lines -> {os.path.relpath(vdir, ROOT)}")
+    if chan:
+        print(f"  channel: {chan['name']} ({chan['slug']})")
     print(f"  model={cfg['model']}  voice={cfg['voice']} ({src})")
     print(f"  style={(cfg['style'] or '-')[:80]}\n")
-    if args.voice and beats.get("voice") and args.voice != beats["voice"]:
-        print(f"  !! --voice {args.voice} OVERRIDES the voice locked in beats.json "
-              f"({beats['voice']}). This channel's videos are meant to share one narrator.\n")
+    locked_voice = beats.get("voice") or chan.get("voice")
+    if args.voice and locked_voice and args.voice != locked_voice:
+        print(f"  !! --voice {args.voice} OVERRIDES the locked voice ({locked_voice}). "
+              f"A channel's videos are meant to share one narrator.\n")
 
     clips = []
     for i, line in enumerate(vo):

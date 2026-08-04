@@ -1,0 +1,72 @@
+# channels/ — one file per YouTube channel
+
+**This is where each channel's identity lives.** Add as many as you like; the point of the
+registry is that adding the fourth channel is no harder than the second.
+
+```
+channels/<slug>.json          ← identity: name, voice, style, rules, playlists  ← YOU ARE HERE
+vox-shorts/IDEAS-<slug>.md    ← that channel's topic bank
+vox-shorts/vox-N-<topic>/     ← one video; its beats.json says which channel it belongs to
+```
+
+## Adding a channel
+
+1. Copy an existing `channels/*.json`, change `slug` and `name`.
+2. **Audition a voice and lock it.** It must differ from every other channel's — a shared
+   narrator makes two channels sound like one show:
+   ```bash
+   python tools/gen_voice_gemini.py --audition "<the hook line of the first video>" \
+     --voices Kore,Leda,Aoede,Achernar,Puck,Iapetus
+   ```
+   Put the winner in `voice`, and a `style` string that **includes a pace lever**
+   (`พูดเร็วขึ้นเล็กน้อย`). Voices differ in speed by ~10% and the lever is the only handle
+   on it — Gemini has no `duration` parameter.
+3. Write `vox-shorts/IDEAS-<slug>.md` with the channel's selection criteria and topic bank.
+4. Write the channel's `rules` — the things that are true for THIS channel and not the others.
+   The health channel's "every video must land an answer" is a rule; "cite your sources" is
+   not, because that one is global and lives in PIPELINE.md.
+5. New video → `"channel": "<slug>"` in its beats.json. Nothing else.
+
+## Why a registry instead of putting the voice in each video
+
+Voice and style used to be copied into every `beats.json`. With ten videos per channel that is
+ten places to drift, and the drift is silent — you find out when a published video is narrated
+in the wrong channel's voice.
+
+Here it is one edit per channel, and the resolution order is explicit:
+
+```
+--voice/--style  >  beats.json "voice"/"style"  >  channels/<channel>.json  >  env  >  default
+```
+
+The per-video fields still work as an escape hatch and warn when they contradict the channel.
+**An unknown slug is a hard error, not a fallback** — a typo must never quietly resolve to the
+default voice.
+
+## Seeing the whole map
+
+```bash
+python3 -c "
+import json,glob
+for f in sorted(glob.glob('channels/*.json')):
+    c=json.load(open(f,encoding='utf-8'))
+    print(f\"{c['slug']:8s} {c['name'][:30]:32s} voice={c['voice']}  videos={len(c['videos'])}\")"
+```
+
+## What is NOT per channel
+
+Shared by everything, in `PIPELINE.md` / `vox-shorts/DESIGN.md` / `brand.md`: the collage visual
+language, the fact-table discipline, "information is real, texture is generated", the QA pass,
+frame-0-composed loops, no CTA outros, the Thai typography fixes.
+
+**Do not fork the pipeline per channel.** A channel differs in voice, topic bank and editorial
+rules. If it needs a different *visual language*, that is a new track (like `ai-shorts/`), not a
+new channel file.
+
+## The gap this registry does not close
+
+**A folder name still does not say which channel it belongs to.** `vox-2-thai-rice` and
+`vox-3-eight-glasses` look alike in a listing; you have to open `beats.json`. Renaming would
+break paths in `media/projects/` and `remotion/src/shots/`, so it was left alone — the `videos`
+array in each channel file is the index instead. If this starts costing time, rename at the
+next natural break, all at once.

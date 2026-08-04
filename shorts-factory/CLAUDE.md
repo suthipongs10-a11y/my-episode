@@ -25,7 +25,11 @@ media/            Remotion's public root: library/ (reusable: sfx, music, logos)
                   + projects/<proj>/ (media for ONE video — incl. committed AI clips & layers)
 shorts/           TSX shorts: script.md, beats.json, sfx-plan.json each
 ai-shorts/        generative shorts: + character.json (LOCKED reference), shot sidecars, IDEAS.md
+channels/         ONE FILE PER YOUTUBE CHANNEL — voice, style, editorial rules, playlists.
+                  A video's beats.json says "channel": "<slug>"; nothing else carries identity.
+                  Read channels/README.md before adding a channel.
 vox-shorts/       collage shorts: + DESIGN.md (the visual language — read before any vox work)
+                  + IDEAS-<slug>.md, one topic bank per channel
 brand.md          the style contract every skill reads (palette, motion, safe areas, SFX taste)
 IDEAS.md          the TSX-shorts idea bank + niche ranking
 .claude/skills/   make-short, make-ai-short, make-vox, vidtsx-2d-generator, suggest-sfx

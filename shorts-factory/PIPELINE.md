@@ -19,7 +19,14 @@ Keys: `GOOGLE_TTS_API_KEY` (voice + images). ElevenLabs/OpenAI/fal/Replicate are
 
 ---
 
-## 1. Facts → `script.md`
+## 1. Which channel? → `channels/<slug>.json`
+
+Every video belongs to one. The channel decides the voice, the style string, the topic bank and
+the **editorial rules that are not global** — e.g. health requires an answer beat, agriculture
+does not. Read the channel file before the fact-finding, because its rules shape what counts as
+a usable topic. `channels/README.md` covers adding a new one.
+
+## 2. Facts → `script.md`
 
 Research first, write second. Every claim gets a row: **claim | source URL**.
 - Pick a **spine**: one surprising true thing. vox-2's was "same district, 4000 years apart".
@@ -27,7 +34,7 @@ Research first, write second. Every claim gets a row: **claim | source URL**.
 - Write a **"Deliberately not claimed"** section. What you refuse to say is the channel's asset.
 - Health topics: cite reviews/guidelines, not single studies or news write-ups.
 
-### Health channel: the video must land an ANSWER
+### Channel rule example — health must land an ANSWER (`channels/health.json`)
 
 vox-3 shipped without one and the verdict was "เนื้อหาน้อยเกินไป". The spine earns the watch;
 the **answer** is what earns the subscribe. A health viewer who reaches the end still not
@@ -48,7 +55,7 @@ person does not mean refusing to report what the guidelines say.
 
 If the sources genuinely carry no answer, the topic is wrong for this channel — pick another.
 
-## 2. `beats.json`
+## 3. `beats.json`
 
 ```json
 {"id","title","composition","format":{"width":1080,"height":1920,"fps":30,"durationSec":44},
@@ -57,7 +64,7 @@ If the sources genuinely carry no answer, the topic is wrong for this channel �
 `text` = Thai narration. Windows are estimates now; step 6 overwrites them.
 6 lines ≈ 40–45s. Under 60s total or it is not a Short.
 
-## 3. Layers
+## 4. Layers
 
 **Information is real, texture is generated. Never swap.**
 
@@ -71,7 +78,7 @@ If the sources genuinely carry no answer, the topic is wrong for this channel �
 with a factual caption. Say "a farmer", never "the farmer". vox-1 broke this; don't copy it.
 Committed to `media/projects/<proj>/layers/`.
 
-## 4. Composition — `remotion/src/shots/vox-N/`
+## 5. Composition — `remotion/src/shots/vox-N/`
 
 `CollageBoard cam={CAM}` + `Sequence` per beat + a `CUE` table of global frames.
 Thai shot → add `fontBody={FONT_TH} fontDisplay={FONT_TH_DISPLAY} tracking="0.6px"`.
@@ -79,7 +86,7 @@ Hook cues negative so **frame 0 is fully composed** (it is the thumbnail).
 Last frame ≈ frame 0 so the loop closes. No CTA outro.
 `cd remotion && npm run gen` after adding a shot.
 
-## 5. QA — not optional
+## 6. QA — not optional
 
 ```bash
 node scripts/frames.mjs Vox2ThaiRice 0,240,400,560,700,900,1060,1200,1319 --scale=0.42
@@ -88,21 +95,13 @@ node scripts/frames.mjs Vox2ThaiRice 0,240,400,560,700,900,1060,1200,1319 --scal
 claims contradicting on one frame? anything invisible at phone scale? frame 0 composed?
 This pass caught 6 real defects in vox-2 and 2 in the Thai conversion. Cheaper than a render.
 
-## 6. Voice
+## 7. Voice
 
-**One voice per channel, and it lives in `beats.json`, not in a flag.** A shared narrator makes
-two channels feel like one, so the voice is a property of the project. Put `"voice"` and
-`"style"` at the top level of beats.json and the tool uses them — a re-render months later
-cannot come back in the wrong voice because someone omitted `--voice`. Precedence:
-`--voice` > beats.json > env > default, and an override that contradicts the locked voice prints
-a warning.
-
-| channel | voice | locked |
-|---|---|---|
-| เกษตรที่คนไทยควรรู้ | `Algieba` | 2026-08-04 |
-| สุขภาพแบบเข้าใจง่าย | `Leda` | 2026-08-04 |
-
-Audition with the shot's real hook line, never from a spec sheet.
+**The voice belongs to the CHANNEL — see `channels/README.md`.** A video says
+`"channel": "health"` in its beats.json and the voice, style and editorial rules come from
+`channels/health.json`. Nothing about the voice is typed on the command line, and an unknown
+slug is a hard error rather than a fallback. Audition with the shot's real hook line, never
+from a spec sheet.
 
 **Voices differ in PACE, not just timbre — budget for it.** Same trimmed script, same style
 prompt: Algieba 45.86s, Leda 50.42s (+10%). Include the pace lever (`พูดเร็วขึ้นเล็กน้อย`) in
@@ -121,7 +120,7 @@ python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --retime \
 - Bed is auto-normalised to −14 LUFS / −1.5 dBTP (raw output clips at +0.6 dBTP).
 - New voice? `--audition "<hook line>" --voices A,B,C` and listen. Never pick from a spec sheet.
 
-## 7. Retime — mechanically, never by eye
+## 8. Retime — mechanically, never by eye
 
 VO lengths changed → remap **every** cue and camera keyframe through a piecewise-linear map
 built from old→new line boundaries (`vox-2` script: 18 cues, 11 keyframes, largest move 26f).
@@ -129,7 +128,7 @@ A cue that sat on a phrase then still sits on it. Update the `CUE` comments to m
 Note: each Gemini clip has ~0.3s leading silence, so speech lands ~0.3s after its cue —
 picture leads voice, which is correct. Don't chase it.
 
-## 8. Render + mux
+## 9. Render + mux
 
 ```bash
 node scripts/render-all.mjs <CompId> --scale=1
@@ -141,13 +140,13 @@ ffmpeg -i out/<CompId>-voiced.mp4 -c:v libx264 -crf 26 -maxrate 3500k -bufsize 7
 Verify both streams are the full duration. (`-shortest` + an unpadded bed silently trimmed
 the picture to the voice and ate the loop; fixed, but check.)
 
-## 9. Publish kit → `publish.th.md`
+## 10. Publish kit → `publish.th.md`
 
 Title (1 recommended + alternates, ≤40 chars so mobile doesn't truncate) · description
 (long + short, keyword in line 1, sources listed) · ~24 tags **specific→broad** (≤500 chars) ·
 3 on-page hashtags · playlists. Carry forward what the video refuses to claim.
 
-## 10. Cover → `covers.th.md`
+## 11. Cover → `covers.th.md`
 
 `gemini-3-pro-image` **renders Thai correctly** — put the words in the prompt. Required in
 every cover prompt: explicit margins (8% sides / 6% top-bottom), one number 3–4× the other

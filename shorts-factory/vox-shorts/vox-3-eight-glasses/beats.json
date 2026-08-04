@@ -2,15 +2,14 @@
 	"id": "vox-3-eight-glasses",
 	"title": "ประโยคที่ไม่มีใครอ่าน",
 	"composition": "Vox3EightGlasses",
+	"channel": "health",
 	"format": {
 		"width": 1080,
 		"height": 1920,
 		"fps": 30,
 		"durationSec": 55
 	},
-	"voice": "Leda",
-	"style": "อ่านแบบผู้บรรยายสารคดีสุขภาพ น้ำเสียงชัดเจน น่าเชื่อถือ เป็นมิตร จังหวะกระชับ พูดเร็วขึ้นเล็กน้อย ไม่ลากเสียง ไม่เว้นวรรคนาน",
-	"voicePlan": "LOCKED: Leda. เสียงประจำช่อง 'สุขภาพแบบเข้าใจง่าย' — เลือก 2026-08-04 จากการออดิชัน 7 เสียง บนประโยคฮุกจริงของคลิปนี้. ห้ามใช้ Algieba กับช่องนี้: นั่นคือเสียงช่องเกษตร และสองช่องใช้เสียงเดียวกันจะฟังเหมือนช่องเดียวกัน. เครื่องมืออ่านค่านี้จาก beats.json เอง จึงไม่ต้องพิมพ์ --voice และไม่มีทางลืม",
+	"voicePlan": "เสียงและสไตล์มาจาก channels/health.json — ห้ามก็อปมาไว้ที่นี่ (จะทำให้เพี้ยนกันเองภายหลัง)",
 	"voiceStatus": "gemini:gemini-3.1-flash-tts-preview/Leda — line timings are REAL (measured from the audio). No per-word times: Gemini returns audio only. Run a forced aligner if a track needs them.",
 	"sayNote": "Every vo entry has a `say` because this script carries five C.E. years and a four-digit sample size, and per-utterance number normalisation is exactly where vox-2 broke (ค.ศ. 1945 came out digit-by-digit). Pre-spelled here rather than discovered later. STILL transcribe the audio back and check.",
 	"vo": [
