@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+.git
+.data
+.cache
+.ctx-tests
+.vitest.json
+.scratch
+reports
+dist
+.env
+.env.local
+*.log

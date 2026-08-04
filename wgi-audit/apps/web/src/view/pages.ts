@@ -23,9 +23,32 @@ import {
 } from "./components.ts";
 
 // ---------------------------------------------------------------------------
+// 0. login
+// ---------------------------------------------------------------------------
+export function loginPage(error?: string): string {
+  return page(
+    { title: `${thWeb.login.title} — ${thWeb.app}`, narrow: true },
+    `<div style="max-width:340px;margin:14vh auto 0">
+  ${header(thWeb.app, "")}
+  ${card("", `<form class="form" method="post" action="/login" style="flex-direction:column;align-items:stretch">
+    <div class="field">
+      <label for="password">${esc(thWeb.login.password)}</label>
+      <input type="password" id="password" name="password" autofocus required
+             autocomplete="current-password">
+    </div>
+    <button type="submit" style="margin-top:4px">${esc(thWeb.login.submit)}</button>
+  </form>`)}
+  ${error ? `<p class="note" style="color:var(--critical);margin-top:12px">${esc(error)}</p>` : ""}
+</div>`,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // 1. dashboard
 // ---------------------------------------------------------------------------
-export function dashboardPage(audits: AuditSummary[], error?: string): string {
+export function dashboardPage(
+  audits: AuditSummary[], error?: string, showLogout = false,
+): string {
   const rows = audits.map((a) => [
     `<a class="row-link" href="/audits/${esc(a.id)}">${esc(a.domain)}</a>`,
     esc(a.areas.join(", ") || "—"),
@@ -42,7 +65,13 @@ export function dashboardPage(audits: AuditSummary[], error?: string): string {
   ]);
 
   const body = [
-    header(thWeb.app, thWeb.tagline),
+    header(
+      thWeb.app, thWeb.tagline,
+      showLogout
+        ? `<form method="post" action="/logout" style="margin:0">
+  <button type="submit" class="ghost">${esc(thWeb.login.logout)}</button></form>`
+        : "",
+    ),
     error ? `<div class="banner bad" style="margin-bottom:16px">${esc(error)}</div>` : "",
     card("", newAuditForm()),
     card(

@@ -41,8 +41,12 @@ import { normaliseDomain } from "@core/crawl/domain.ts";
 // than a second copy of it, so a job behaves the same whoever picked it up.
 import { tick } from "../../worker/src/index.ts";
 
+import {
+  assertSafeToBind, authConfig, callerKey, checkPassword, clearSessionCookie,
+  isAuthed, issue, LoginThrottle, required, setSessionCookie, type AuthConfig,
+} from "./auth.ts";
 import { getAuditDetail, listAudits } from "./queries.ts";
-import { dashboardPage, reportPage, runPage } from "./view/pages.ts";
+import { dashboardPage, loginPage, reportPage, runPage } from "./view/pages.ts";
 import { esc, page } from "./view/components.ts";
 import { thWeb } from "./view/text.ts";
 
@@ -61,13 +65,19 @@ export interface ServerOptions {
   log: Logger;
   /** Poll the jobs table in this process. */
   worker?: boolean;
+  auth?: AuthConfig;
+  /** Read the client address from `x-forwarded-for`. Only behind a proxy. */
+  trustProxy?: boolean;
 }
 
 export function createApp(opts: ServerOptions) {
   const { db, log } = opts;
+  const auth = opts.auth ?? authConfig();
+  const throttle = new LoginThrottle();
+  const trustProxy = opts.trustProxy ?? process.env.WEB_TRUST_PROXY === "1";
 
   return createServer((req, res) => {
-    handle(req, res, db, log).catch((err: unknown) => {
+    handle(req, res, { db, log, auth, throttle, trustProxy }).catch((err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
       log.error("request failed", { url: req.url, error: message });
       if (!res.headersSent) send(res, 500, errorPage("500", message));
@@ -75,14 +85,62 @@ export function createApp(opts: ServerOptions) {
   });
 }
 
-async function handle(
-  req: IncomingMessage, res: ServerResponse, db: Db, log: Logger,
-): Promise<void> {
+interface Ctx {
+  db: Db;
+  log: Logger;
+  auth: AuthConfig;
+  throttle: LoginThrottle;
+  trustProxy: boolean;
+}
+
+async function handle(req: IncomingMessage, res: ServerResponse, ctx: Ctx): Promise<void> {
+  const { db, log, auth } = ctx;
   const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
   const path = url.pathname.replace(/\/+$/, "") || "/";
   const method = req.method ?? "GET";
 
+  // Deliberately before the auth gate: a health check must answer for a load
+  // balancer, and it reveals nothing but that the process is alive.
   if (path === "/healthz") return sendJson(res, 200, { ok: true });
+
+  // -- login ----------------------------------------------------------------
+  if (path === "/login" && method === "GET") {
+    if (!required(auth) || isAuthed(req, auth)) return redirect(res, "/");
+    return send(res, 200, loginPage(url.searchParams.get("error") ?? undefined));
+  }
+
+  if (path === "/login" && method === "POST") {
+    if (!required(auth)) return redirect(res, "/");
+    const who = callerKey(req, ctx.trustProxy);
+
+    if (ctx.throttle.blocked(who)) {
+      log.warn("login throttled", { who });
+      return redirect(res, `/login?error=${encodeURIComponent(thWeb.login.throttled)}`);
+    }
+
+    const form = new URLSearchParams(await readBody(req));
+    if (!checkPassword(form.get("password") ?? "", auth)) {
+      ctx.throttle.fail(who);
+      log.warn("login failed", { who });
+      return redirect(res, `/login?error=${encodeURIComponent(thWeb.login.wrong)}`);
+    }
+
+    ctx.throttle.succeed(who);
+    setSessionCookie(res, issue(auth), auth);
+    log.info("login ok", { who });
+    return redirect(res, "/");
+  }
+
+  if (path === "/logout") {
+    clearSessionCookie(res);
+    return redirect(res, "/login");
+  }
+
+  // -- everything past here needs a session ---------------------------------
+  if (!isAuthed(req, auth)) {
+    if (path.startsWith("/api/")) return sendJson(res, 401, { error: "unauthorized" });
+    return redirect(res, "/login");
+  }
 
   // -- start an audit -------------------------------------------------------
   if (path === "/audits" && method === "POST") {
@@ -114,7 +172,9 @@ async function handle(
   // -- dashboard ------------------------------------------------------------
   if (path === "/") {
     const audits = await listAudits(db);
-    return send(res, 200, dashboardPage(audits, url.searchParams.get("error") ?? undefined));
+    return send(res, 200, dashboardPage(
+      audits, url.searchParams.get("error") ?? undefined, required(auth),
+    ));
   }
 
   // -- polling --------------------------------------------------------------
@@ -203,15 +263,22 @@ function errorPage(code: string, message: string): string {
 // ---------------------------------------------------------------------------
 export async function start(argv = process.argv.slice(2)): Promise<void> {
   const withWorker = !argv.includes("--no-worker");
+  const auth = authConfig();
+
+  // Before opening a socket or touching the database: an open dashboard on a
+  // public address must never reach the point of serving its first request.
+  assertSafeToBind(HOST, auth);
+
   const log = createLogger({ stage: "web" });
   const db = await createDb();
   await applySchema(db);
 
-  const server = createApp({ db, log, worker: withWorker });
+  const server = createApp({ db, log, worker: withWorker, auth });
 
   await new Promise<void>((resolve) => server.listen(PORT, HOST, resolve));
   log.info("dashboard ready", {
-    url: `http://${HOST}:${PORT}`, driver: db.driver, worker: withWorker,
+    url: `http://${HOST}:${PORT}`, driver: db.driver,
+    worker: withWorker, login: required(auth),
   });
 
   let stopping = false;

@@ -20,6 +20,15 @@ export const thWeb = {
     operatorView: "← กลับไปหน้าของเรา",
   },
 
+  login: {
+    title: "เข้าสู่ระบบ",
+    password: "รหัสผ่าน",
+    submit: "เข้าสู่ระบบ",
+    wrong: "รหัสผ่านไม่ถูกต้อง",
+    throttled: "ใส่ผิดหลายครั้งเกินไป รอสักครู่แล้วลองใหม่",
+    logout: "ออกจากระบบ",
+  },
+
   form: {
     domain: "โดเมนของลูกค้า",
     domainHint: "เช่น phuketmaidservice.com",
