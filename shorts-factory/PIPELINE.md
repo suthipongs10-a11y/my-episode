@@ -27,6 +27,27 @@ Research first, write second. Every claim gets a row: **claim | source URL**.
 - Write a **"Deliberately not claimed"** section. What you refuse to say is the channel's asset.
 - Health topics: cite reviews/guidelines, not single studies or news write-ups.
 
+### Health channel: the video must land an ANSWER
+
+vox-3 shipped without one and the verdict was "เนื้อหาน้อยเกินไป". The spine earns the watch;
+the **answer** is what earns the subscribe. A health viewer who reaches the end still not
+knowing what to do got half a video.
+
+Structure: hook → story → **ANSWER** → caveat. Budget the answer 8–10s. It is a beat with its
+own card, not a sentence tacked onto the last line.
+
+The answer must be:
+- **quotable from a guideline or review**, on screen with its source — never synthesised by us
+- **stated at population level** ("แนวทางสากลระบุว่า…"), not as a prescription to the viewer
+- **specific enough to act on.** "ขึ้นอยู่กับแต่ละคน" is not an answer, it is a refusal to give one
+
+**"No individual medical advice" and "no answer" are different rules.** vox-3 collapsed them
+and lost its payoff: EFSA's 2.0/2.5 L total water, the IOM thirst guidance and the hot-climate
+note were all already in its fact table, sourced, and went unused. Refusing to prescribe to one
+person does not mean refusing to report what the guidelines say.
+
+If the sources genuinely carry no answer, the topic is wrong for this channel — pick another.
+
 ## 2. `beats.json`
 
 ```json
@@ -68,6 +89,10 @@ claims contradicting on one frame? anything invisible at phone scale? frame 0 co
 This pass caught 6 real defects in vox-2 and 2 in the Thai conversion. Cheaper than a render.
 
 ## 6. Voice
+
+**One voice per channel, and they must differ.** A shared narrator makes two channels feel
+like one. Agriculture = `Algieba`. Health = pending — auditioned 2026-08-04, see the project's
+`voicePlan`. Audition with the shot's real hook line, never from a spec sheet.
 
 ```bash
 python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --retime \
