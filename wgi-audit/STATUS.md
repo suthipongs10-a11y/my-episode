@@ -151,9 +151,9 @@ CON-005 เป็น severity `high` ที่บอกเจ้าของว�
 
 ## ติดค้าง / ปัญหาที่ยังไม่แก้
 
-- **ยังไม่ได้สร้าง GitHub repo** — integration ไม่มีสิทธิ์สร้าง ต้องสร้างเองแล้ว push
-  (คำสั่งอยู่ท้ายไฟล์นี้)
 - `apps/web` ยังว่าง ตั้งใจให้ไปทำที่ M6
+- **โค้ดยังไม่เคยคุยกับ vendor จริงสักเจ้า** — ดูหัวข้อ "ก่อนถึง M4" acceptance ของ M3
+  ข้อ "อันดับตรงกับที่เช็คมือ 5 คำ" ยังค้างอยู่จนกว่าจะสมัคร DataForSEO
 
 ---
 
@@ -172,7 +172,9 @@ CON-005 เป็น severity `high` ที่บอกเจ้าของว�
 
 | วันที่ | ตัดสินใจ | เหตุผล |
 |---|---|---|
-| 2026-08-03 | แยก repo ใหม่ ไม่ใช้ `my-episode` | git history 167 MB (วิดีโอที่ commit ไปแล้ว) ลบไฟล์ไม่ช่วย · stack คนละอย่าง · submodule และ CI ของโปรเจกต์เดิมต้องรื้อทั้งหมด |
+| 2026-08-03 | ~~แยก repo ใหม่ ไม่ใช้ `my-episode`~~ | **กลับคำ — ดูบรรทัดถัดไป** เหตุผลเดิมตั้งอยู่บนความเข้าใจผิดว่า `my-episode` เป็น repo ของโปรเจกต์ RO อย่างเดียว |
+| 2026-08-04 | **อยู่เป็นโฟลเดอร์ `wgi-audit/` ใน `my-episode`** | repo นั้นเป็น multi-project อยู่แล้ว (`shorts-factory/`, `seo-backlink-finder/` ต่างมี CLAUDE.md และ CI ของตัวเอง) · pattern ที่ต้องใช้มีครบแล้ว · 167 MB มาจาก `shorts-factory` ไม่ใช่ RO และเป็นต้นทุนตอน clone ครั้งเดียว · **และ push ได้จริงวันนี้** ซึ่ง repo ใหม่ทำไม่ได้ (integration ตอบ 403) |
+| 2026-08-04 | ย้ายด้วย `git subtree` ไม่ใช่ copy ไฟล์ | commit message ของ m0–m3 เก็บเหตุผลไว้ (บั๊ก jsonb, scoring v2, CON-005 false positive) ทิ้งไปแล้วเอากลับไม่ได้ · tag เปลี่ยนเป็น `wgi-m0..m3` กัน tag ชื่อกลาง ๆ ชนกันใน repo ที่ใช้ร่วมกัน |
 | 2026-08-03 | **PGlite สำหรับ dev/test** | รัน `schema.sql` จริงในโปรเซส ไม่ต้องมี Docker/Supabase/เน็ต → `pnpm test` ฟรีและรันได้ทุกที่ ตรงกับกฎ "เทสต์ไม่ยิง API จริง" |
 | 2026-08-03 | เลื่อน Next.js (`apps/web`) ไป M6 | ไม่มี milestone ก่อน M6 ที่ใช้ ถ้าใส่ตอนนี้ต้องอัปเกรดก่อนได้ใช้จริง — **นี่คือส่วนที่ต่างจากสเปกเดิมที่ระบุ Next.js ไว้ใน M0** |
 | 2026-08-03 | robots.txt: บังคับกับคู่แข่ง ไม่บังคับกับเว็บลูกค้า | ลูกค้ากรอกฟอร์มขอ audit เอง = ให้ความยินยอมแล้ว · เว็บ SME จำนวนมากอยู่หลัง WAF หรือตั้ง `Disallow: /` ถ้าบังคับใช้ สินค้าจะพังกับลูกค้ากลุ่มเป้าหมายพอดี |
@@ -239,9 +241,19 @@ pnpm audit --domain=phuketmaidservice.com --area=ภูเก็ต
 DATABASE_URL=postgresql://... pnpm vitest run packages/core/src/db
 ```
 
-## ยังไม่ได้ push — สร้าง repo แล้วรันสองคำสั่งนี้
+## ที่อยู่ของโปรเจกต์นี้
 
+อยู่เป็นโฟลเดอร์ `wgi-audit/` ใน repo `suthipongs10-a11y/my-episode`
+ร่วมกับ `shorts-factory/` และ `seo-backlink-finder/` — แต่ละตัวมี CLAUDE.md
+และ CI ของตัวเอง ไม่เกี่ยวกัน
+
+```bash
+cd wgi-audit          # ทุกคำสั่งใน §5 ของ CLAUDE.md รันจากที่นี่
+pnpm install
 ```
-git remote add origin https://github.com/<user>/wgi-audit.git
-git push -u origin main --tags
-```
+
+CI: `.github/workflows/wgi-audit.yml` กรอง path `wgi-audit/**` เท่านั้น
+มี 2 job — offline suite และอีก job รันกับ Postgres 16 จริง (บั๊ก jsonb ที่เคยหลุด)
+
+**ถ้าจะแยกออกเป็น repo ของตัวเองภายหลัง:** `git subtree split --prefix=wgi-audit -b wgi-only`
+แล้ว push branch นั้นขึ้น repo ใหม่ — history ของ wgi-audit ตามไปครบ

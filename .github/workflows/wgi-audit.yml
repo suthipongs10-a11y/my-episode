@@ -1,0 +1,92 @@
+name: wgi-audit
+
+# Scoped to the audit engine only, so it never queues behind the rAthena build
+# in the main CI. The suite is offline and calls no paid API, so it is safe to
+# run on every push without a secret configured anywhere.
+on:
+  push:
+    branches: ["**"]
+    paths: ["wgi-audit/**", ".github/workflows/wgi-audit.yml"]
+  pull_request:
+    paths: ["wgi-audit/**", ".github/workflows/wgi-audit.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: wgi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test:
+    name: Typecheck and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: wgi-audit
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: wgi-audit/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # PGlite runs the real schema.sql in-process, so this exercises Postgres
+      # without a service container, a network, or a single satang of API spend.
+      - name: Test
+        run: pnpm test
+
+  # The two drivers encode jsonb differently and neither errors — a bug that
+  # shipped once and that PGlite structurally cannot catch. These are the same
+  # assertions against a real server; they skip without DATABASE_URL.
+  postgres:
+    name: Against real Postgres
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: wgi-audit
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: wgi-audit/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test against Postgres 16
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+        run: pnpm vitest run packages/core/src/db

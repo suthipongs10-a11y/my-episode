@@ -116,6 +116,9 @@ scripts/          ctx.ts · db-push.ts
 
 ## 5. คำสั่ง
 
+> โปรเจกต์นี้อยู่เป็นโฟลเดอร์ `wgi-audit/` ใน repo `my-episode` ซึ่งมีโปรเจกต์อื่นอยู่ด้วย
+> **ทุกคำสั่งข้างล่างรันจากในโฟลเดอร์นี้** (`cd wgi-audit` ก่อน) ไม่ใช่จาก root ของ repo
+
 ```bash
 pnpm install
 pnpm audit --domain=x.com --area=ภูเก็ต    # รัน pipeline (ไม่มี DATABASE_URL = ใช้ PGlite)
