@@ -255,5 +255,18 @@ pnpm install
 CI: `.github/workflows/wgi-audit.yml` กรอง path `wgi-audit/**` เท่านั้น
 มี 2 job — offline suite และอีก job รันกับ Postgres 16 จริง (บั๊ก jsonb ที่เคยหลุด)
 
+### tag ของ milestone — ต้องสร้างเองครั้งเดียว
+
+git proxy ของ session ปฏิเสธการ push tag (403) push ได้แต่ branch
+commit อยู่บน remote ครบแล้ว ขาดแค่ ref ของ tag รันครั้งเดียวหลัง clone:
+
+```bash
+git tag -a wgi-m0 -m "wgi-audit m0" efaa0149e377f05b10cfdc3862c7d01ce97f701f
+git tag -a wgi-m1 -m "wgi-audit m1" 50248585121da8733f516f56e07de50e654b1318
+git tag -a wgi-m2 -m "wgi-audit m2" e434b4304c282b024db1c5f940bca2f85ebede00
+git tag -a wgi-m3 -m "wgi-audit m3" 0f4f749eb87c35e45144c67914819da6d4ed2cac
+git push origin wgi-m0 wgi-m1 wgi-m2 wgi-m3
+```
+
 **ถ้าจะแยกออกเป็น repo ของตัวเองภายหลัง:** `git subtree split --prefix=wgi-audit -b wgi-only`
 แล้ว push branch นั้นขึ้น repo ใหม่ — history ของ wgi-audit ตามไปครบ
