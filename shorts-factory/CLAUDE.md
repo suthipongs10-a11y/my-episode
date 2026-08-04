@@ -31,6 +31,12 @@ IDEAS.md          the TSX-shorts idea bank + niche ranking
 .claude/skills/   make-short, make-ai-short, make-vox, vidtsx-2d-generator, suggest-sfx
 ```
 
+## Runbook
+
+**`PIPELINE.md` is the step-by-step for a Thai vox short, topic → published.** Read it before
+starting a video; it carries the gotchas that already cost time once (browser executable, font
+loading, Thai layout, Gemini TTS quirks, cover prompts). `SETUP.md` is the reference behind it.
+
 ## Conventions (hard rules)
 
 - **Run everything from the repo root.** Tools resolve engine paths (media/library, catalogs)
