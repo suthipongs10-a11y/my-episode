@@ -1,0 +1,9 @@
+{
+  "prompt": "A single plain drinking glass filled with clear water, straight-sided, no ice, no lemon, no straw. Studio product photograph on a pure white seamless background, soft even lighting from the left, gentle shadow, slight condensation on the glass. Sharp focus, true colour, the whole glass fully inside the frame with generous empty margin on all sides. No text, no logo, no hand, no table edge.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "1K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-04T07:21:44"
+}

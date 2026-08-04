@@ -1,0 +1,9 @@
+{
+  "prompt": "A loose group of water-rich fresh foods arranged together: a wedge of watermelon, a halved cucumber, two ripe tomatoes, a few lettuce leaves, and a halved orange. Studio product photograph on a pure white seamless background, soft even lighting, gentle contact shadows, vivid natural colour, sharp focus. All items fully inside the frame with generous empty margin. No text, no plate, no bowl, no hands, no table edge, no water droplets flying.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "1K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-04T07:22:14"
+}

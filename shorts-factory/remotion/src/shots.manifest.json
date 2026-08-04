@@ -118,5 +118,13 @@
   "width": 1080,
   "height": 1920,
   "transparent": false
+ },
+ {
+  "id": "Vox3EightGlasses",
+  "durationInSeconds": 50,
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "transparent": false
  }
 ]

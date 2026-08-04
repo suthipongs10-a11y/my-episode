@@ -13,7 +13,7 @@ import {
   SketchArrow,
   VOX,
 } from '../../lib/collage';
-import { CountryShape, WorldLayer, makeMapScale } from '../../lib/map';
+import { PaperMap, SitePin, makeMapScale } from '../../lib/map';
 import { WORLD } from '../../lib/geo/world';
 import { FONT_TH, FONT_TH_DISPLAY } from '../../fonts';
 
@@ -157,44 +157,6 @@ const TITLE_WORDS = [
 // Generic enough to graduate to lib/collage.tsx, but not until a second vox short wants
 // them — the skill's rule. Keep them prop-driven so that move is a cut-and-paste.
 // =============================================================================
-
-// A map drawn on the paper: sepia landmasses, one country picked out, ink coastlines.
-const PaperMap: React.FC<{
-  scale: ReturnType<typeof makeMapScale>;
-  context: typeof NEIGHBOURS;
-  highlight?: typeof THAILAND;
-  world?: boolean;
-  children?: React.ReactNode;
-}> = ({ scale, context, highlight, world = false, children }) => (
-  <svg viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', width: W, height: H, overflow: 'visible' }}>
-    {world ? (
-      <WorldLayer scale={scale} except={['Thailand']} fill="#dcccab" stroke={VOX.inkSoft} opacity={0.95} />
-    ) : (
-      context.map((c) => (
-        <CountryShape key={c.name} scale={scale} country={c} fill={VOX.paperDeep} stroke={VOX.inkSoft} strokeWidth={1.6} opacity={0.72} />
-      ))
-    )}
-    {highlight ? (
-      <CountryShape scale={scale} country={highlight} fill="#cbb489" stroke={VOX.ink} strokeWidth={2.4} opacity={0.95} />
-    ) : null}
-    {children}
-  </svg>
-);
-
-// The one pin both dates land on. Rings pulse out of it so the eye cannot miss it.
-const SitePin: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => {
-  const frame = useCurrentFrame();
-  const p = interpolate(frame, [at, at + 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  if (frame < at) return null;
-  const pulse = ((frame - at) % 46) / 46;
-  return (
-    <g opacity={p}>
-      <circle cx={x} cy={y} r={5 + pulse * 26} fill="none" stroke={VOX.red} strokeWidth={2} opacity={(1 - pulse) * 0.7} />
-      <circle cx={x} cy={y} r={7} fill={VOX.red} />
-      <circle cx={x} cy={y} r={13} fill="none" stroke={VOX.red} strokeWidth={2.5} />
-    </g>
-  );
-};
 
 // 2025 H1 exports, first half. The bars are the numbers — nothing is asserted by width alone.
 const RANK = [
@@ -379,7 +341,7 @@ const Vox2ThaiRice: React.FC = () => {
         <Sequence from={CUE.globeIn} durationInFrames={375} layout="none">
           <SceneFade out={379} dur={26}>
             <Layer x={540} y={960} w={W} at={0} dur={20} enter="place" rotate={0.6} depth={0} drift={0.3}>
-              <PaperMap scale={GLOBE} context={[]} highlight={THAILAND} world />
+              <PaperMap scale={GLOBE} highlight={THAILAND} highlightName="Thailand" world />
             </Layer>
             {MARKETS.map((m, i) => (
               <SketchArrow

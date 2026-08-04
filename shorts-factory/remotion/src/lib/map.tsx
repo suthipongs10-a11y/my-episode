@@ -9,7 +9,9 @@
 // someone hand-tuned. The map lies on camera, using our own code, the way it lies on a wall.
 // (Same ethos as prob.tsx's seeded Monty Carlo sim and gen_chords' real equal temperament.)
 import React from 'react';
+import { interpolate, useCurrentFrame } from 'remotion';
 import { Country, Ring, WORLD } from './geo/world';
+import { VOX } from './collage';
 import { FONT_BODY, FONT_DISPLAY } from '../fonts';
 
 export type { Country, Ring };
@@ -281,3 +283,51 @@ export const MapLabel: React.FC<{
     ) : null}
   </div>
 );
+
+// -----------------------------------------------------------------------------
+// PaperMap / SitePin — a map drawn ON the collage board: sepia landmasses, ink
+// coastlines, one country picked out. Lived in vox-2's shot file with a note to
+// graduate it "once a second vox short wants a real map". vox-3 is that short.
+//
+// Deliberately not configurable past `world`: the point is that every vox map
+// looks like the same atlas. Add a prop only when a shot genuinely needs one.
+// -----------------------------------------------------------------------------
+export const PaperMap: React.FC<{
+  scale: MapScale;
+  context?: Country[];
+  highlight?: Country;
+  highlightName?: string; // which country WorldLayer should skip so `highlight` sits on top
+  world?: boolean;
+  w?: number;
+  h?: number;
+  children?: React.ReactNode;
+}> = ({ scale, context = [], highlight, highlightName, world = false, w = 1080, h = 1920, children }) => (
+  <svg viewBox={`0 0 ${w} ${h}`} style={{ display: 'block', width: w, height: h, overflow: 'visible' }}>
+    {world ? (
+      <WorldLayer scale={scale} except={highlightName ? [highlightName] : []} fill="#dcccab" stroke={VOX.inkSoft} opacity={0.95} />
+    ) : (
+      context.map((c) => (
+        <CountryShape key={c.name} scale={scale} country={c} fill={VOX.paperDeep} stroke={VOX.inkSoft} strokeWidth={1.6} opacity={0.72} />
+      ))
+    )}
+    {highlight ? (
+      <CountryShape scale={scale} country={highlight} fill="#cbb489" stroke={VOX.ink} strokeWidth={2.4} opacity={0.95} />
+    ) : null}
+    {children}
+  </svg>
+);
+
+// A located point. Rings pulse out of it so the eye cannot miss it.
+export const SitePin: React.FC<{ x: number; y: number; at: number; color?: string }> = ({ x, y, at, color = VOX.red }) => {
+  const frame = useCurrentFrame();
+  const p = interpolate(frame, [at, at + 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  if (frame < at) return null;
+  const pulse = ((frame - at) % 46) / 46;
+  return (
+    <g opacity={p}>
+      <circle cx={x} cy={y} r={5 + pulse * 26} fill="none" stroke={color} strokeWidth={2} opacity={(1 - pulse) * 0.7} />
+      <circle cx={x} cy={y} r={7} fill={color} />
+      <circle cx={x} cy={y} r={13} fill="none" stroke={color} strokeWidth={2.5} />
+    </g>
+  );
+};
