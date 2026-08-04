@@ -33,6 +33,8 @@
    ถ้าบังคับใช้ สินค้าจะใช้ไม่ได้กับลูกค้ากลุ่มที่เราตั้งใจขายพอดี)
 7. **ไม่รับประกันอันดับ** — ใช้ "มีโอกาส / มีแนวโน้ม" ห้าม "รับประกัน / การันตี / ติดหน้าแรกแน่นอน"
 8. **ทำทีละ Milestone** — ห้ามข้าม จบแต่ละอันต้อง `git tag m{n}` + อัปเดต `STATUS.md` + เทสต์ผ่านหมด
+   > **สลับลำดับได้ ถ้าเหตุผลคือ "ขายได้เร็วขึ้น"** — dashboard (M6) ถูกทำก่อน M4/M5
+   > เพราะข้อ §1 บอกว่าคอขวดคือการขาย และ audit ที่ดูไม่ได้ก็ขายไม่ได้ · บันทึกไว้ใน STATUS.md ทุกครั้ง
 
 ---
 
@@ -105,7 +107,8 @@ packages/core/src/
   i18n/      th.ts            ← ข้อความไทยทั้งหมดอยู่ที่นี่
   types/     index.ts
 apps/worker/src/  cli.ts · index.ts (poller) · run-audit.ts · cost-cli.ts
-apps/web/         M6
+apps/web/src/     server.ts (ไม่มี build step) · queries.ts · view/
+                  3 หน้า: รายการ · ผลตรวจ(ของเรา) · รายงาน(ของลูกค้า)
 fixtures/         HTML/JSON สำหรับเทสต์ (ห้ามยิงเน็ตตอนเทสต์)
 scripts/          ctx.ts · db-push.ts
 ```
@@ -121,6 +124,7 @@ scripts/          ctx.ts · db-push.ts
 
 ```bash
 pnpm install
+pnpm dash                                  # ← หน้าจอทำงาน: http://127.0.0.1:4321
 pnpm audit --domain=x.com --area=ภูเก็ต    # รัน pipeline (ไม่มี DATABASE_URL = ใช้ PGlite)
 pnpm audit --domain=x.com --only=03-crawl  # เฉพาะบางขั้น (ใช้ cache)
 pnpm audit --domain=x.com --dry-run        # ไม่เรียก API ภายนอกเลย
@@ -175,3 +179,5 @@ pnpm ctx                                   # สถานะโปรเจก�
 - เก็บข้อมูลติดต่อเท่าที่จำเป็น มีปุ่มขอลบข้อมูล
 - ข้อมูลคู่แข่งใช้เฉพาะข้อมูลสาธารณะ ห้าม bypass paywall/login
 - เคารพ robots.txt ของคู่แข่งเสมอ (ดูกฎข้อ 6 สำหรับข้อยกเว้นเว็บลูกค้า)
+- **`pnpm dash` ไม่มีระบบล็อกอิน** และมีข้อมูลลูกค้าทุกรายอยู่ในนั้น
+  `WEB_HOST` เป็น `127.0.0.1` โดยตั้งใจ ห้ามเปลี่ยนเป็น `0.0.0.0` จนกว่าจะมี auth

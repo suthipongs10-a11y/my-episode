@@ -13,6 +13,7 @@ import { createAuditRun, enqueueJob, getAuditRun, upsertClient } from "@core/db/
 import { createLogger } from "@core/log/logger.ts";
 import { th } from "@core/i18n/th.ts";
 import { AreaScope, STAGES, type Stage } from "@core/types/index.ts";
+import { normaliseDomain } from "@core/crawl/domain.ts";
 import { runAudit } from "./run-audit.ts";
 
 interface Args {
@@ -26,6 +27,8 @@ interface Args {
   queue: boolean;
   help: boolean;
 }
+
+export { normaliseDomain };
 
 export function parseArgs(argv: string[]): Args {
   const args: Args = { areas: [], resume: false, dryRun: false, queue: false, help: false };
@@ -53,16 +56,6 @@ function isStage(s: string): s is Stage {
   return (STAGES as readonly string[]).includes(s);
 }
 
-/** Strip scheme, www and any path — the DB stores a bare registrable host. */
-export function normaliseDomain(input: string): string {
-  return input
-    .trim()
-    .replace(/^https?:\/\//i, "")
-    .replace(/^www\./i, "")
-    .split("/")[0]!
-    .split("?")[0]!
-    .toLowerCase();
-}
 
 const USAGE = `
 pnpm audit --domain=<domain> [--area=<พื้นที่>] [options]

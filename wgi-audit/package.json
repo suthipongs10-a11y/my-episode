@@ -8,6 +8,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "audit": "tsx apps/worker/src/cli.ts",
+    "dash": "tsx apps/web/src/server.ts",
     "worker": "tsx apps/worker/src/index.ts",
     "ctx": "tsx scripts/ctx.ts",
     "cost": "tsx apps/worker/src/cost-cli.ts",
