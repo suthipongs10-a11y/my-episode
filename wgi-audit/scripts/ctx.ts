@@ -13,6 +13,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { isEntryPoint } from "../packages/core/src/entry.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -119,7 +120,7 @@ function summariseRules(codes: string[]): string {
     .join(", ");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   const ctx = collect();
   const json = process.argv.includes("--json");
   process.stdout.write((json ? JSON.stringify(ctx, null, 2) : render(ctx)) + "\n");

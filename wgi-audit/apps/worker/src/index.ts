@@ -10,6 +10,7 @@ import { claimJob, completeJob } from "@core/db/queries.ts";
 import { createLogger, type Logger } from "@core/log/logger.ts";
 import type { Client } from "@core/types/index.ts";
 import { runAudit } from "./run-audit.ts";
+import { isEntryPoint } from "@core/entry.ts";
 
 const POLL_MS = Number(process.env.WORKER_POLL_MS ?? 5000);
 const MAX_ATTEMPTS = Number(process.env.WORKER_MAX_ATTEMPTS ?? 3);
@@ -79,7 +80,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   start().catch((err: unknown) => {
     process.stderr.write(String(err instanceof Error ? err.stack : err) + "\n");
     process.exit(1);

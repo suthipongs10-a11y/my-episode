@@ -49,6 +49,7 @@ import { getAuditDetail, listAudits } from "./queries.ts";
 import { dashboardPage, loginPage, reportPage, runPage } from "./view/pages.ts";
 import { esc, page } from "./view/components.ts";
 import { thWeb } from "./view/text.ts";
+import { isEntryPoint } from "@core/entry.ts";
 
 const PORT = Number(process.env.WEB_PORT ?? 4321);
 
@@ -306,7 +307,7 @@ async function pollLoop(db: Db, log: Logger, stopping: () => boolean): Promise<v
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   start().catch((err: unknown) => {
     process.stderr.write(String(err instanceof Error ? err.stack : err) + "\n");
     process.exit(1);

@@ -15,6 +15,7 @@ import { th } from "@core/i18n/th.ts";
 import { AreaScope, STAGES, type Stage } from "@core/types/index.ts";
 import { normaliseDomain } from "@core/crawl/domain.ts";
 import { runAudit } from "./run-audit.ts";
+import { isEntryPoint } from "@core/entry.ts";
 
 interface Args {
   domain?: string;
@@ -175,7 +176,7 @@ function report(
 }
 
 // Run only when invoked directly, so tests can import `main` without executing.
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isEntryPoint(import.meta.url)) {
   main().then(
     (code) => process.exit(code),
     (err: unknown) => {
