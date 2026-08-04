@@ -1,0 +1,138 @@
+{
+	"id": "vox-3-eight-glasses",
+	"title": "ประโยคที่ไม่มีใครอ่าน",
+	"composition": "Vox3EightGlasses",
+	"format": {
+		"width": 1080,
+		"height": 1920,
+		"fps": 30,
+		"durationSec": 50
+	},
+	"voicePlan": "Gemini TTS / Algieba, Thai — tools/gen_voice_gemini.py (see PIPELINE.md §6)",
+	"voiceStatus": "NOT GENERATED. Windows below are ESTIMATES at ~14 Thai chars/sec, measured off vox-2's Algieba take at the documentary-pace style. Run --retime before touching the composition's CUE table. Estimated total is 47.9s to the last word, so the composition is drafted at 50s / 1500 frames — under the 60s Shorts ceiling but 6s longer than vox-2. If --retime comes back longer still, cut line 5 or 6 rather than speeding the read up: the style prompt is already asking for a brisk pace and stacking more onto it rushes the delivery.",
+	"sayNote": "Every vo entry has a `say` because this script carries five C.E. years and a four-digit sample size, and per-utterance number normalisation is exactly where vox-2 broke (ค.ศ. 1945 came out digit-by-digit). Pre-spelled here rather than discovered later. STILL transcribe the audio back and check.",
+	"vo": [
+		{
+			"beat": "hook",
+			"segment": "s01_hook",
+			"text": "วันละ 8 แก้ว คุณได้ยินมาทั้งชีวิต แต่ไม่มีใครเคยวัดมันเลย",
+			"say": "วันละแปดแก้ว คุณได้ยินมาทั้งชีวิต แต่ไม่มีใครเคยวัดมันเลย",
+			"start": 0.5,
+			"end": 4.3,
+			"seconds": 3.8
+		},
+		{
+			"beat": "y1945",
+			"segment": "s02_1945",
+			"text": "ค.ศ. 1945 เอกสารฉบับหนึ่งเขียนว่า ผู้ใหญ่ควรได้น้ำวันละสองลิตรครึ่ง",
+			"say": "ค.ศ. หนึ่งพันเก้าร้อยสี่สิบห้า เอกสารฉบับหนึ่งเขียนว่า ผู้ใหญ่ควรได้น้ำวันละสองลิตรครึ่ง",
+			"start": 4.9,
+			"end": 11.3,
+			"seconds": 6.4
+		},
+		{
+			"beat": "skipped",
+			"segment": "s03_skipped",
+			"text": "แล้วประโยคถัดไปเขียนว่า น้ำส่วนใหญ่นั้น อยู่ในอาหารที่คุณกินอยู่แล้ว ประโยคนั้น ไม่มีใครอ่าน",
+			"say": "แล้วประโยคถัดไปเขียนว่า น้ำส่วนใหญ่นั้น อยู่ในอาหารที่คุณกินอยู่แล้ว ประโยคนั้น ไม่มีใครอ่าน",
+			"start": 11.9,
+			"end": 20.1,
+			"seconds": 8.2
+		},
+		{
+			"beat": "y2002",
+			"segment": "s04_2002",
+			"text": "ค.ศ. 2002 นักสรีรวิทยาคนหนึ่ง ไล่หาหลักฐานของตัวเลข 8 แก้ว แล้วตีพิมพ์ผลลงวารสาร เขาไม่เจอเลยสักชิ้น",
+			"say": "ค.ศ. สองพันสอง นักสรีรวิทยาคนหนึ่ง ไล่หาหลักฐานของตัวเลขแปดแก้ว แล้วตีพิมพ์ผลลงวารสาร เขาไม่เจอเลยสักชิ้น",
+			"start": 20.7,
+			"end": 29.3,
+			"seconds": 8.6
+		},
+		{
+			"beat": "y2004",
+			"segment": "s05_2004",
+			"text": "ค.ศ. 2004 หน่วยงานเดิมออกรายงานใหม่ พาดหัวว่า ให้ความกระหายเป็นตัวบอก และบอกด้วยว่า คนในเขตร้อนอาจต้องการมากกว่านั้น",
+			"say": "ค.ศ. สองพันสี่ หน่วยงานเดิมออกรายงานใหม่ พาดหัวว่า ให้ความกระหายเป็นตัวบอก และบอกด้วยว่า คนในเขตร้อนอาจต้องการมากกว่านั้น",
+			"start": 29.9,
+			"end": 38.5,
+			"seconds": 8.6
+		},
+		{
+			"beat": "y2022",
+			"segment": "s06_2022",
+			"text": "ค.ศ. 2022 วัดจริงจากคน 5,604 คน บางคนไม่ถึง 2 ลิตร บางคนเกิน 6 ตัวแปรคืออากาศร้อนและความชื้น แล้วเมืองไทยอยู่ตรงไหน",
+			"say": "ค.ศ. สองพันยี่สิบสอง วัดจริงจากคนห้าพันหกร้อยสี่คน บางคนไม่ถึงสองลิตร บางคนเกินหก ตัวแปรคืออากาศร้อนและความชื้น แล้วเมืองไทยอยู่ตรงไหน",
+			"start": 39.1,
+			"end": 47.9,
+			"seconds": 8.8
+		}
+	],
+	"beats": [
+		{
+			"beat": "hook",
+			"from": 0,
+			"to": 150,
+			"camera": "slow push on the composed title page",
+			"layers": [
+				"8 glasses in a row",
+				"title: ประโยคที่ไม่มีใครอ่าน",
+				"chip: วันละ 8 แก้ว"
+			]
+		},
+		{
+			"beat": "y1945",
+			"from": 140,
+			"to": 350,
+			"camera": "settle onto the document card",
+			"layers": [
+				"document card, typeset (NOT a generated image)",
+				"chip: ค.ศ. 1945",
+				"sentence 1 highlighted"
+			]
+		},
+		{
+			"beat": "skipped",
+			"from": 350,
+			"to": 615,
+			"camera": "push in on the second sentence",
+			"layers": [
+				"sentence 1 dims",
+				"SENTENCE 2 highlighted — the payoff",
+				"vegetables/fruit cutout beside the card"
+			]
+		},
+		{
+			"beat": "y2002",
+			"from": 615,
+			"to": 890,
+			"camera": "pull back, card swaps",
+			"layers": [
+				"paper title + journal card",
+				"stamp: ไม่พบหลักฐาน",
+				"chip: Am J Physiol 2002"
+			]
+		},
+		{
+			"beat": "y2004",
+			"from": 890,
+			"to": 1160,
+			"camera": "hold",
+			"layers": [
+				"headline card: ให้ความกระหายเป็นตัวบอก",
+				"line: คนในเขตร้อนอาจต้องการมากกว่า"
+			]
+		},
+		{
+			"beat": "y2022",
+			"from": 1160,
+			"to": 1500,
+			"camera": "pull back to the world, then home for the loop",
+			"layers": [
+				"world map, 23 countries",
+				"range bar 2-6 L",
+				"Thailand pin",
+				"title returns — last frame = frame 0"
+			]
+		}
+	]
+}
