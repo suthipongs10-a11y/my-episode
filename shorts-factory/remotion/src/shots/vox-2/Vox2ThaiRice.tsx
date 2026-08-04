@@ -81,58 +81,65 @@ const routeTo = (lon: number, lat: number) => {
 };
 
 // =============================================================================
-// CUES (GLOBAL frames @30) — anchored to the MEASURED Thai VO. Every line's real length
-// came back in the voice server's timing.json (see beats.json), and each cue below sits on
-// the phrase it illustrates. The VO runs 37.92s of speech; with 0.6s between lines the last
-// word lands at 41.42s, which is why the composition is 44s and not the 41s it was drafted
-// at — the visuals follow the voice, not the other way round.
+// CUES (GLOBAL frames @30) — anchored to the MEASURED Thai VO. Every line's real length was
+// measured off the generated audio (see beats.json), and each cue below sits on the phrase it
+// illustrates. The VO runs 37.5s of speech; with 0.6s between lines the last word lands at
+// 41.10s, which is why the composition is 44s and not the 41s it was drafted at — the visuals
+// follow the voice, not the other way round.
+//
+// Retimed twice now, and the second time was cheap because of how it was done. The voice moved
+// from the channel's cloned OmniVoice take to Gemini/Algieba, whose lines run 0.0–0.9s longer
+// each. Rather than re-eyeballing 18 cues, the old and new line boundaries were used as anchors
+// for a piecewise-linear time map and every cue and camera keyframe was pushed through it. A cue
+// that sat on a phrase still sits on that phrase, by construction rather than by inspection.
 // =============================================================================
 const CUE = {
   // Hook: negative so the page is FULLY composed at frame 0 — frame 0 is the thumbnail.
   // (vox-1 starts its title at f4 and its frame 0 is bare paper. Don't copy that.)
+  // These are pre-roll, not anchored to a phrase, so the retime leaves them alone.
   hookPhoto: -60,
   hookTitle: -46,
   hookGrains: -30,
   hookChip: -16,
 
-  // s02 origin  f136-321
-  mapIn: 126, //         the map places as the camera starts its dive
-  pinIn: 166,
-  originChip: 196, //    "คนที่นี่ปลูกข้าวเป็นแล้ว"
+  // s02 origin  f163-346
+  mapIn: 152, //         the map places as the camera starts its dive
+  pinIn: 192,
+  originChip: 222, //    "คนที่นี่ปลูกข้าวเป็นแล้ว"
 
-  // s03 accident  f339-599
-  accidentChip: 345, //  "ค.ศ. 1945" opens the line
-  sameStatement: 500, // after "เขาเก็บเมล็ดนั้นไว้"
+  // s03 accident  f364-613
+  accidentChip: 370, //  "ค.ศ. 1945" opens the line
+  sameStatement: 518, // after "เขาเก็บเมล็ดนั้นไว้"
 
-  // s04 selection  f617-898
-  routeBK: 625,
-  panicleChip: 640, //   "จากรวงข้าว 199 รวง"
-  stamp: 707, //         "แถวที่ 105 คือผู้ชนะ"
-  nameChip: 842, //      "ข้าวขาวดอกมะลิ 105" closes the line
+  // s04 selection  f631-904
+  routeBK: 638,
+  panicleChip: 653, //   "จากรวงข้าว 199 รวง"
+  stamp: 718, //         "แถวที่ 105 คือผู้ชนะ"
+  nameChip: 849, //      "ข้าวขาวดอกมะลิ 105" closes the line
 
-  // s05 crown  f916-1101
-  globeIn: 900,
-  routesOut: 991, //     "ผู้ส่งออกข้าวอันดับหนึ่งของโลก"
-  crownLine: 1041, //    "และครองไว้ได้ 31 ปี"
+  // s05 crown  f922-1101
+  globeIn: 906,
+  routesOut: 995, //     "ผู้ส่งออกข้าวอันดับหนึ่งของโลก"
+  crownLine: 1043, //    "และครองไว้ได้ 31 ปี"
 
-  // s06 twist  f1119-1243
-  ranking: 1155, //      "ไทยอยู่อันดับสาม"
-  titleBack: 1255,
+  // s06 twist  f1119-1233
+  ranking: 1152, //      "ไทยอยู่อันดับสาม"
+  titleBack: 1247,
 } as const;
 
 // Camera: one journey — push on the title page, dive onto Chonburi and STAY there through
 // both dates, ease back over the central plain, pull out to the world, come home for the loop.
 const CAM = [
   { f: 0, x: 540, y: 960, z: 1 },
-  { f: 130, x: 540, y: 960, z: 1.06 },
-  { f: 230, x: PIN_X, y: PIN_Y - 40, z: 2.3 },
-  { f: 600, x: PIN_X + 6, y: PIN_Y - 46, z: 2.36 },
-  { f: 700, x: 552, y: 940, z: 1.72 },
-  { f: 880, x: 556, y: 936, z: 1.76 },
-  { f: 960, x: 540, y: 1040, z: 1.12 },
-  { f: 1140, x: 540, y: 1044, z: 1.14 },
-  { f: 1220, x: 540, y: 985, z: 1.04 },
-  { f: 1275, x: 540, y: 960, z: 1 },
+  { f: 156, x: 540, y: 960, z: 1.06 },
+  { f: 256, x: PIN_X, y: PIN_Y - 40, z: 2.3 },
+  { f: 613, x: PIN_X + 6, y: PIN_Y - 46, z: 2.36 },
+  { f: 711, x: 552, y: 940, z: 1.72 },
+  { f: 886, x: 556, y: 936, z: 1.76 },
+  { f: 965, x: 540, y: 1040, z: 1.12 },
+  { f: 1138, x: 540, y: 1044, z: 1.14 },
+  { f: 1212, x: 540, y: 985, z: 1.04 },
+  { f: 1269, x: 540, y: 960, z: 1 },
   { f: 1319, x: 540, y: 960, z: 1 },
 ];
 
@@ -240,7 +247,7 @@ const Vox2ThaiRice: React.FC = () => {
         <PaperBG src={PAPER} w={W} h={H} />
 
         {/* ---- HOOK (0–5s): composed at FRAME 0, slow push ---- */}
-        <Sequence from={0} durationInFrames={140} layout="none">
+        <Sequence from={0} durationInFrames={166} layout="none">
           <SceneFade out={137}>
             <ArchivalPhoto src={asset('paddy-raw.png')} x={540} y={330} w={820} at={CUE.hookPhoto} enter="place" rotate={-1.6} depth={0.04} treatment="sepia" />
             <SerifStatement x={540} y={720} w={940} at={CUE.hookTitle} size={78} words={TITLE_WORDS} />
@@ -250,7 +257,7 @@ const Vox2ThaiRice: React.FC = () => {
         </Sequence>
 
         {/* ---- THAILAND MAP: scenery under origin + accident + selection ---- */}
-        <Sequence from={CUE.mapIn} durationInFrames={790} layout="none">
+        <Sequence from={CUE.mapIn} durationInFrames={770} layout="none">
           <SceneFade out={784} dur={26}>
             <Layer x={540} y={960} w={W} at={0} dur={20} enter="place" rotate={-0.8} depth={0} drift={0.35}>
               <PaperMap scale={THAI} context={NEIGHBOURS} highlight={THAILAND}>
@@ -261,7 +268,7 @@ const Vox2ThaiRice: React.FC = () => {
         </Sequence>
 
         {/* ---- ORIGIN + ACCIDENT: two dates, ONE pin ---- */}
-        <Sequence from={CUE.originChip} durationInFrames={409} layout="none">
+        <Sequence from={CUE.originChip} durationInFrames={396} layout="none">
           <SceneFade out={403}>
             <LabelChip
               x={PIN_X - 20}
@@ -324,7 +331,7 @@ const Vox2ThaiRice: React.FC = () => {
         </Sequence>
 
         {/* ---- SELECTION (20–28.5s): the seed travels, 105 wins ---- */}
-        <Sequence from={CUE.routeBK} durationInFrames={275} layout="none">
+        <Sequence from={CUE.routeBK} durationInFrames={268} layout="none">
           <SceneFade out={269}>
             <SketchArrow
               id="seed-to-bangkhla"
@@ -364,7 +371,7 @@ const Vox2ThaiRice: React.FC = () => {
         </Sequence>
 
         {/* ---- CROWN (28.5–35s): the world, and the routes out of it ---- */}
-        <Sequence from={CUE.globeIn} durationInFrames={385} layout="none">
+        <Sequence from={CUE.globeIn} durationInFrames={375} layout="none">
           <SceneFade out={379} dur={26}>
             <Layer x={540} y={960} w={W} at={0} dur={20} enter="place" rotate={0.6} depth={0} drift={0.3}>
               <PaperMap scale={GLOBE} context={[]} highlight={THAILAND} world />
@@ -399,7 +406,7 @@ const Vox2ThaiRice: React.FC = () => {
         </Sequence>
 
         {/* ---- TWIST + LOOP (35–41s): the ranking, then back to frame 0 ---- */}
-        <Sequence from={CUE.ranking} durationInFrames={118} layout="none">
+        <Sequence from={CUE.ranking} durationInFrames={115} layout="none">
           <SceneFade out={112}>
             <RankBars x={540} y={1040} at={0} />
           </SceneFade>

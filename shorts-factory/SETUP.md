@@ -71,12 +71,49 @@ these out of the RO server's `.env`; they are unrelated systems.
 
 | key | what breaks without it | needed for |
 |---|---|---|
-| `ELEVENLABS_API_KEY` | no voice, no generated SFX, no music beds | **all three tracks** |
+| `GOOGLE_TTS_API_KEY` | no voice | **all three tracks** — this is the voice path we use |
+| `ELEVENLABS_API_KEY` | no generated SFX, no music beds; the original voice path | SFX + music |
 | `GEMINI_API_KEY` | no AI-generated stills | story-frame shorts, vox layers |
 | `FAL_KEY` | no video-model clips | the generative track only |
 
-**A TSX short needs exactly one key: `ELEVENLABS_API_KEY`.** That is the cheapest way in,
-and it is the track to start on.
+**A short needs exactly one key to get a voice: `GOOGLE_TTS_API_KEY`.** That is the cheapest
+way in and the track to start on.
+
+### The voice we actually use — `tools/gen_voice_gemini.py`
+
+Chosen 2026-08-04, and chosen by elimination rather than by preference. Ten TTS providers
+were probed from this environment; **generativelanguage.googleapis.com was the only one
+reachable**. ElevenLabs, OpenAI, Cartesia, Deepgram, PlayHT, fal, Replicate and MiniMax all
+fail at proxy CONNECT (HTTP 000), so `gen_voice.py` cannot run here at all.
+
+It is also the right shape for this work regardless: usage-billed and always up, where a GPU
+pod bills by the wall-clock hour whether it is speaking or idle.
+
+```bash
+export GOOGLE_TTS_API_KEY=...
+# audition first — pick a voice from the real script, never from a spec sheet
+python tools/gen_voice_gemini.py --audition "สองสิ่งนี้ เกิดขึ้นในอำเภอเดียวกัน" \
+  --voices Algieba,Charon,Orus,Iapetus,Gacrux,Rasalgethi
+python tools/gen_voice_gemini.py --beats vox-shorts/vox-2-thai-rice/beats.json \
+  --voice Algieba --retime --mux remotion/out/Vox2ThaiRice.mp4
+```
+
+Four things about it that cost time to learn, all of them in the tool's docstring:
+
+- **There is no `duration` parameter.** `--fit-window` has no equivalent here. Generate,
+  measure, then move the picture — that is what `--retime` is for.
+- **A style/pace instruction IS interpreted, not spoken.** Measured on a Thai line: −2.92s
+  for "faster", +6.00s for "slower". So `--style` steers length coarsely. It does not hit a
+  target to the frame, and re-rolling with stronger adjectives is not a plan.
+- **Number normalisation is per-utterance and not reliable.** `ค.ศ. 1945` came out digit by
+  digit in one line while `ค.ศ. 1959` was correct two lines later. A `vo` entry can carry a
+  `say` override for what is spoken, leaving `text` readable. **Verify by transcribing the
+  audio back** — Gemini takes audio input, so this is one extra call, not a research project.
+- **The output clips.** -15.1 LUFS integrated but +0.6 dBTP as returned. The tool normalises
+  the bed to -14 LUFS / -1.5 dBTP; `--no-normalize` opts out.
+
+No per-word timestamps, so this covers the vox track (no burned captions) but not the
+short-N caption track without a forced aligner behind it.
 
 ### Or run the voice yourself — `tools/gen_voice_local.py`
 

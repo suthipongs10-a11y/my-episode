@@ -238,7 +238,11 @@ def main():
         inputs += ["-i", c["path"]]
         filters.append(f"[{i}:a]aresample=48000,adelay={int(c['at'] * 1000)}|{int(c['at'] * 1000)}[a{i}]")
         labels.append(f"[a{i}]")
-    filters.append(f"{''.join(labels)}amix=inputs={len(clips)}:normalize=0:dropout_transition=0[out]")
+    # apad, then -t: amix ends with its longest input and -t can only truncate, so without
+    # the pad the bed is as long as the VO rather than as long as the composition, and
+    # -shortest at mux time then trims the PICTURE to the voice. Same bug, same fix, as
+    # gen_voice_gemini.py — found there, present here too.
+    filters.append(f"{''.join(labels)}amix=inputs={len(clips)}:normalize=0:dropout_transition=0,apad[out]")
     run(["ffmpeg", "-v", "error", *inputs, "-filter_complex", ";".join(filters),
          "-map", "[out]", "-t", str(max(total, dur_target)), "-ar", "48000", "-ac", "1",
          "-y", voice_wav])
@@ -260,7 +264,7 @@ def main():
         out_mp4 = args.mux.replace(".mp4", "-voiced.mp4")
         run(["ffmpeg", "-v", "error", "-i", args.mux, "-i", voice_wav,
              "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-             "-shortest", "-y", out_mp4])
+             "-y", out_mp4])   # no -shortest: the picture is the master
         print(f"  -> {os.path.relpath(out_mp4, ROOT)}")
 
 

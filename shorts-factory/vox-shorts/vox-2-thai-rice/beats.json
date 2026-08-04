@@ -9,55 +9,57 @@
 		"durationSec": 44
 	},
 	"voicePlan": "channel voice server (OmniVoice-Thai + owner's clone) — see the TTS repo's HANDOFF.md",
-	"voiceStatus": "generated 2026-08-03. Line timings are MEASURED from the returned audio (timing.json), not estimated. No per-word times: this server does not return them, and the vox track burns no captions so it does not need them.",
+	"voiceStatus": "gemini:gemini-3.1-flash-tts-preview/Algieba — line timings are REAL (measured from the audio). No per-word times: Gemini returns audio only. Run a forced aligner if a track needs them.",
 	"vo": [
 		{
 			"beat": "hook",
 			"segment": "s01_hook",
 			"text": "สองสิ่งนี้ เกิดขึ้นในอำเภอเดียวกัน ห่างกันสี่พันปี",
 			"start": 0.5,
-			"end": 3.94,
-			"seconds": 3.44
+			"end": 4.82,
+			"seconds": 4.32
 		},
 		{
 			"beat": "origin",
 			"segment": "s02_origin",
 			"text": "เมื่อ 2000 ปีก่อนคริสตกาล คนที่นี่ปลูกข้าวเป็นแล้ว เก่าที่สุดเท่าที่มีหลักฐานยืนยันในไทย",
-			"start": 4.54,
-			"end": 10.7,
-			"seconds": 6.16
+			"start": 5.42,
+			"end": 11.54,
+			"seconds": 6.12
 		},
 		{
 			"beat": "accident",
 			"segment": "s03_accident",
 			"text": "ค.ศ. 1945 ในอำเภอเดียวกันนั้น ชาวนาคนหนึ่งได้กลิ่นหอมมะลิ จากต้นข้าวในนาของเขา เขาเก็บเมล็ดนั้นไว้",
-			"start": 11.3,
-			"end": 19.98,
-			"seconds": 8.68
+			"say": "ค.ศ. หนึ่งพันเก้าร้อยสี่สิบห้า ในอำเภอเดียวกันนั้น ชาวนาคนหนึ่งได้กลิ่นหอมมะลิ จากต้นข้าวในนาของเขา เขาเก็บเมล็ดนั้นไว้",
+			"sayWhy": "Gemini read the numeral 1945 digit-by-digit as \"คอ สอ หนึ่ง เก้า สี่ ห้า\", heard by transcribing the audio back. Every other numeral in this script normalised correctly, including ค.ศ. 1959 two lines later.",
+			"start": 12.14,
+			"end": 20.42,
+			"seconds": 8.28
 		},
 		{
 			"beat": "selection",
 			"segment": "s04_selection",
 			"text": "จากรวงข้าว 199 รวง แถวที่ 105 คือผู้ชนะ ค.ศ. 1959 มันได้ชื่อว่า ข้าวขาวดอกมะลิ 105",
-			"start": 20.58,
-			"end": 29.94,
-			"seconds": 9.36
+			"start": 21.02,
+			"end": 30.14,
+			"seconds": 9.12
 		},
 		{
 			"beat": "crown",
 			"segment": "s05_crown",
 			"text": "ข้าวเมล็ดนั้น พาไทยขึ้นเป็นผู้ส่งออกข้าวอันดับหนึ่งของโลก และครองไว้ได้ 31 ปี",
-			"start": 30.54,
+			"start": 30.74,
 			"end": 36.7,
-			"seconds": 6.16
+			"seconds": 5.96
 		},
 		{
 			"beat": "twist",
 			"segment": "s06_twist",
 			"text": "วันนี้ ไทยอยู่อันดับสาม อินเดียส่งออกมากกว่าเราสามเท่า",
 			"start": 37.3,
-			"end": 41.42,
-			"seconds": 4.12
+			"end": 41.1,
+			"seconds": 3.8
 		}
 	],
 	"beats": [

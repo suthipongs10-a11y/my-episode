@@ -1,63 +1,87 @@
 # vox-2-thai-rice — "Same District. Four Thousand Years Apart."
 
-41s vertical (1080×1920) · vox collage · voice: not yet generated (no ElevenLabs key —
-`beats.json` carries estimated windows so `gen_voice.py` can retime them later).
+44s vertical (1080×1920) · vox collage · voice: **Gemini TTS, `Algieba`**, Thai.
 
-## STATUS: retimed to the real Thai VO, rendered — awaiting the audio mux
+## STATUS: done. Voiced, rendered, muxed.
 
 - script.md + beats.json authored, every fact verified (below)
-- composition built, QA'd at 11 frames across two passes
+- composition built, QA'd at 11 frames across two passes, re-QA'd at 14 after the retime
 - **rendered: all 1,320 frames, 1080×1920 h264, 44s** (`remotion/out/Vox2ThaiRice.mp4`, gitignored)
 - frames spot-checked back OUT of the MP4, not just from renderStill
+- **voiced and muxed** → `remotion/out/Vox2ThaiRice-voiced.mp4`, 44.0s, -14.8 LUFS / -1.5 dBTP
 - 4 generated layers (Gemini) — see "Layers: what is real and what is drawn"
 
-Missing before this is publishable: the voice track and the SFX pass. Everything visual is
-done.
+Still open: the SFX pass, and converting the on-screen text to Thai (below).
 
-### The voice is the channel's own clone, and that changes the language
+### The voice, and the two takes it took
 
-Decided 2026-08-03: narration comes from the channel's self-hosted voice server (the owner's
-cloned voice, OmniVoice-Thai), not ElevenLabs. That server speaks **Thai**, so the VO does
-too — `voice-job.th.json` here is the Thai script in that system's job format, mirrored to
-`tts-ai/voice-jobs/vox-2-thai-rice.json` in the TTS repo where its HANDOFF.md says jobs live.
+**Take 1 (2026-08-03) — the channel's own cloned voice**, from the self-hosted OmniVoice-Thai
+server in the TTS repo. It generated cleanly and every number normalised correctly, but the
+channel owner rejected the result on listening. That is the only test that matters for a
+voice, and it failed. `voice-job.th.json` and `build-voice.sh` are kept as the record.
 
-Two consequences, neither of them optional:
+**Take 2 (2026-08-04) — Gemini TTS, voice `Algieba`**, via `tools/gen_voice_gemini.py`.
+Chosen by auditioning six male voices on the actual hook line rather than from a spec sheet.
+It is usage-billed and always up, which is the other half of why it won: the GPU pod bills by
+the wall-clock hour whether it is speaking or idle, so every regeneration meant bringing a
+machine up and down. Ten TTS providers were probed from this environment and Google was the
+only one reachable at all.
 
-1. **The on-screen text should follow the narration into Thai.** Thai narration over English
-   chips is incoherent for the audience it is now aimed at. The fonts are ready (Noto Serif
-   Thai + Noto Sans Thai are in the bundle behind the latin faces, so one string covers both
-   scripts), and Thai has been render-verified — but the conversion itself is a deliberate
-   pass over every string in the shot, not a half-measure. Not done yet.
-2. **`--fit-window` does not apply to this server.** Its `/tts` and `/job` endpoints take
-   text only; there is no `duration`. It returns `timing.json` with the real seconds per
-   segment instead, so the composition retimes to the audio rather than the audio being made
-   to fit — the `CUE` table moves, using those measured lengths.
+What changed in the script because of it: nothing. The Thai lines are identical. Only the
+`say` field on line 3 is new, and only because of the finding below.
 
-### The measured VO, and what it cost the edit
+### Two things the instruments caught, that listening-by-vibes would not have
 
-Generated 2026-08-03. Every number normalised correctly on the server — `gen_text` came back
-with `2000` → *สองพัน*, `1945` → *หนึ่งพันเก้าร้อยสี่สิบห้า*, `199`/`105` → *หนึ่งร้อยเก้าสิบเก้า*/*หนึ่งร้อยห้า*,
-`31` → *สามสิบเอ็ด*. Nothing had to be re-written as words by hand.
+**1. `ค.ศ. 1945` was read digit by digit.** The audio was transcribed back with Gemini and
+came out *"คอ สอ หนึ่ง เก้า สี่ ห้า"*. Every other numeral in the script normalised properly —
+`2000`, `199`, `105`, `31`, and `ค.ศ. 1959` two lines later, which is the identical
+construct. So it is per-utterance, not configurable. `beats.json` now carries a `say`
+override for that one line with the number pre-spelled; re-transcribed, it reads
+*"คอ สอ หนึ่งพันเก้าร้อยสี่สิบห้า"*. **Do not assume the numbers were fine — transcribe and read.**
 
-| segment | starts | length | old estimate |
+**2. The mux was silently cutting three seconds off the end.** `amix` ends with its longest
+input and `-t` can only truncate, so the voice bed came out as long as the VO (41.1s) rather
+than as long as the composition (44s) — and then `-shortest` trimmed the *picture* to the
+voice. The loop back to frame 0, which is the entire ending, was being cut. Fixed with `apad`
+before the clamp and no `-shortest`; the same bug was present in `gen_voice_local.py` and was
+fixed there too.
+
+Also: Gemini's output is hot — -15.1 LUFS integrated but **+0.6 dBTP**, i.e. clipping before
+anything is mixed on top. The tool now normalises the bed to -14 LUFS / -1.5 dBTP.
+
+### The measured VO
+
+| segment | starts | length | take 1 (rejected) |
 |---|---|---|---|
-| `s01_hook` | 0.50s | 3.44s | 4.50s |
-| `s02_origin` | 4.54s | 6.16s | 6.20s |
-| `s03_accident` | 11.30s | 8.68s | 7.20s |
-| `s04_selection` | 20.58s | 9.36s | 8.00s |
-| `s05_crown` | 30.54s | 6.16s | 5.80s |
-| `s06_twist` | 37.30s | 4.12s | 4.80s |
+| `s01_hook` | 0.50s | 4.32s | 3.44s |
+| `s02_origin` | 5.42s | 6.12s | 6.16s |
+| `s03_accident` | 12.14s | 8.28s | 8.68s |
+| `s04_selection` | 21.02s | 9.12s | 9.36s |
+| `s05_crown` | 30.74s | 5.96s | 6.16s |
+| `s06_twist` | 37.30s | 3.80s | 4.12s |
 
-The Thai VO is **3.42s longer** than the English draft it was written against, and the last
-word lands at 41.42s. So the composition grew **41s → 44s (1,320 frames)** and every cue in
-the `CUE` table moved onto the phrase it illustrates: the 105 stamp now lands on
-*"แถวที่ 105 คือผู้ชนะ"*, the ranking card on *"ไทยอยู่อันดับสาม"*. The camera keyframes moved with
-them. **The visuals follow the voice, not the other way round** — the alternative was
-squeezing the narration to fit a duration that was only ever a guess.
+Bare, Algieba runs **51.78s** — far too long for a 44s cut, and Gemini has **no `duration`
+parameter** to rein that in. What it does have is instruction-following: a Thai pace/tone
+prefix is interpreted, not spoken (measured: −2.92s on a 10.88s line for "faster", +6.00s for
+"slower"). A documentary-narrator instruction with a tight pace brings the take to **41.10s**,
+within 0.3s of the rejected one — so the existing cut barely had to move.
 
-`build-voice.sh` lays the six lines onto one 44s track at these exact offsets. Run it on the
-pod, in the folder the `/job` zip was extracted into, and the edit places one file at 0:00
-instead of aligning six by hand.
+**Retiming was mechanical, not eyeballed.** The old and new line boundaries were used as
+anchors for a piecewise-linear time map, and all 18 cues plus all 11 camera keyframes were
+pushed through it. A cue that sat on a phrase still sits on that phrase by construction. The
+largest move was +26 frames; three cues moved backwards.
+
+One measured quirk worth knowing: each Gemini clip carries ~0.3s of leading silence, so every
+speech onset lands ~0.3s after its cue frame. That is the conventional direction — the picture
+leads the narration — so it was left alone rather than trimmed and re-rendered.
+
+### The on-screen text is still English, deliberately
+
+Thai narration over English chips is incoherent for the audience this is aimed at, and the
+fonts are ready for the switch (Noto Serif Thai + Noto Sans Thai sit behind the latin faces in
+the bundle, so one font string covers both scripts, and Thai has been render-verified). But
+the conversion is a deliberate pass over every string in the shot — half-Thai reads worse than
+either language alone. Not done yet, and not to be done by halves.
 
 ### What the QA pass actually caught
 
