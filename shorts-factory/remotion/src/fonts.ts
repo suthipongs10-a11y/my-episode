@@ -25,8 +25,9 @@ if (typeof document !== 'undefined' && !document.getElementById('brand-fonts')) 
 	const style = document.createElement('style');
 	style.id = 'brand-fonts';
 	style.textContent = FACES.map(
-		({ family, weight, src }) =>
-			`@font-face{font-family:"${family}";font-style:normal;font-weight:${weight};font-display:block;src:url(${src}) format("woff2");}`,
+		({ family, weight, src, range }) =>
+			`@font-face{font-family:"${family}";font-style:normal;font-weight:${weight};font-display:block;` +
+			`src:url(${src}) format("woff2");${range ? `unicode-range:${range};` : ''}}`,
 	).join('\n');
 	document.head.appendChild(style);
 }
@@ -47,3 +48,24 @@ export const FONT_SERIF = "'Spectral', 'Noto Serif Thai', serif";
 // heavy editorial serif for the vox collage engine's headlines (Publico-ish; Spectral maxes
 // at 600 and reads too light/bookish over collage layers)
 export const FONT_EDITORIAL = "'Source Serif Four', 'Noto Serif Thai', serif";
+
+// --- Thai-first -------------------------------------------------------------------------
+// For a shot whose ON-SCREEN text is Thai, not just its narration. The stacks above put a
+// latin face first and let Thai fall through to Noto, which is right for a latin video with
+// the odd Thai word and wrong for a Thai video: Noto Sans/Serif Thai are reference faces,
+// deliberately neutral, and they carry no editorial voice at display size.
+//
+// Kanit does. It is a Thai geometric sans with a matching latin, drawn as one family, so a
+// line like "ข้าวขาวดอกมะลิ 105" is one typeface end to end rather than two glued together —
+// which is the usual tell of a translated video.
+//
+// ONE face, not a display/body pair, and that is a choice rather than an omission. Thai has
+// no serif tradition to pair against a sans the way latin editorial design does; the Noto
+// "Serif Thai" here is a latin-serif-flavoured Thai, not a Thai serif. Contrast comes from
+// weight and size instead. Do not reach for a second Thai family to fake a display/body
+// split — it reads as inconsistency, not hierarchy.
+//
+// Shots opt in by passing these to <CollageBoard fontBody= fontDisplay=>. Nothing global
+// changes, so the latin shots keep their own type.
+export const FONT_TH = "'Kanit', 'Noto Sans Thai', sans-serif";
+export const FONT_TH_DISPLAY = "'Kanit', 'Noto Sans Thai', sans-serif";

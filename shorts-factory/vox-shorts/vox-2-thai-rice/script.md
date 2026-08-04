@@ -1,17 +1,19 @@
 # vox-2-thai-rice — "Same District. Four Thousand Years Apart."
 
-44s vertical (1080×1920) · vox collage · voice: **Gemini TTS, `Algieba`**, Thai.
+44s vertical (1080×1920) · vox collage · **Thai throughout** — narration (Gemini TTS, `Algieba`)
+and on-screen text (Kanit).
 
 ## STATUS: done. Voiced, rendered, muxed.
 
 - script.md + beats.json authored, every fact verified (below)
-- composition built, QA'd at 11 frames across two passes, re-QA'd at 14 after the retime
+- composition built, QA'd at 11 frames over two passes, 14 after the retime, 14 more after
+  the Thai conversion
 - **rendered: all 1,320 frames, 1080×1920 h264, 44s** (`remotion/out/Vox2ThaiRice.mp4`, gitignored)
 - frames spot-checked back OUT of the MP4, not just from renderStill
 - **voiced and muxed** → `remotion/out/Vox2ThaiRice-voiced.mp4`, 44.0s, -14.8 LUFS / -1.5 dBTP
 - 4 generated layers (Gemini) — see "Layers: what is real and what is drawn"
 
-Still open: the SFX pass, and converting the on-screen text to Thai (below).
+Still open: the SFX pass.
 
 ### The voice, and the two takes it took
 
@@ -75,13 +77,41 @@ One measured quirk worth knowing: each Gemini clip carries ~0.3s of leading sile
 speech onset lands ~0.3s after its cue frame. That is the conventional direction — the picture
 leads the narration — so it was left alone rather than trimmed and re-rendered.
 
-### The on-screen text is still English, deliberately
+### The on-screen text is Thai, set in Kanit
 
-Thai narration over English chips is incoherent for the audience this is aimed at, and the
-fonts are ready for the switch (Noto Serif Thai + Noto Sans Thai sit behind the latin faces in
-the bundle, so one font string covers both scripts, and Thai has been render-verified). But
-the conversion is a deliberate pass over every string in the shot — half-Thai reads worse than
-either language alone. Not done yet, and not to be done by halves.
+Done 2026-08-04. Thai narration over English chips was incoherent for the audience this is
+aimed at; every string in the shot is now Thai. Same voice, same cues, same length — only the
+words on screen changed.
+
+**The typeface is Kanit, not the Noto pair that was already in the bundle.** Noto Sans/Serif
+Thai are reference faces, deliberately neutral, and they carry no editorial voice at display
+size. Kanit is a Thai geometric sans drawn with a matching latin, so `ข้าวขาวดอกมะลิ 105` is
+one typeface end to end instead of two glued together — which is the usual tell of a
+translated video. It is loaded in **both** the thai and latin subsets for exactly that reason.
+
+One face, no display/body pair, and that is a choice. Thai has no serif tradition to set
+against a sans the way latin editorial design does, so hierarchy comes from weight and size.
+Reaching for a second Thai family would read as inconsistency, not hierarchy.
+
+Four things the conversion needed that a find-and-replace would not have given:
+
+1. **`LabelChip` sized its layer from `text.length`.** Thai writes vowels and tone marks as
+   separate code points that render with zero advance, so `ข้าวขาวดอกมะลิ` counts 14 and shows
+   11. Since the chip's box starts at `x - w/2`, every Thai chip was computing a fifth too
+   wide and walking left by half of that. The estimate now drops the combining ranges.
+2. **`SerifStatement` draws each chunk in its own box with a gap between.** In English those
+   gaps *are* the word spaces. In Thai they landed inside words — `อำเภอ | เดียวกัน` — and read
+   as broken text. Statements are now chunked on real Thai word boundaries, which usually
+   means one chunk taking the whole highlight.
+3. **Latin small-caps tracking (2.2px) is wrong for Thai** at kicker size. Now 0.6px.
+4. **`11.68 Mt` does not fit the value column in Thai.** The unit moved into the card header
+   (`· ล้านตัน`) and each row shows a bare number, rather than widening the column and
+   squeezing the bars that carry the comparison.
+
+None of this is hardcoded into the kit. `CollageBoard` takes `fontBody` / `fontDisplay` /
+`tracking` and publishes them as CSS custom properties, so the whole subtree re-typefaces —
+including anything nested that prop-drilling would have missed — and the latin shots are
+untouched.
 
 ### What the QA pass actually caught
 

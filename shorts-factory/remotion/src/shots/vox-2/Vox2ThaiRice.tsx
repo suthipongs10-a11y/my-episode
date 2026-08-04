@@ -15,7 +15,7 @@ import {
 } from '../../lib/collage';
 import { CountryShape, WorldLayer, makeMapScale } from '../../lib/map';
 import { WORLD } from '../../lib/geo/world';
-import { FONT_BODY, FONT_EDITORIAL } from '../../fonts';
+import { FONT_TH, FONT_TH_DISPLAY } from '../../fonts';
 
 // =============================================================================
 // COMPOSITION CONFIG — "Same District. Four Thousand Years Apart."
@@ -143,13 +143,13 @@ const CAM = [
   { f: 1319, x: 540, y: 960, z: 1 },
 ];
 
+// Chunked by PHRASE, not by word — Thai does not put spaces between words, so a "word" here
+// is whatever should rise in as one unit. The highlight lands on the same beat as the English
+// cut did: the span of time, which is the hook.
 const TITLE_WORDS = [
-  { t: 'Same' },
-  { t: 'district.' },
-  { t: 'Four' },
-  { t: 'thousand' },
-  { t: 'years' },
-  { t: 'apart.', hl: true },
+  { t: 'อำเภอเดียวกัน' },
+  { t: 'ห่างกัน' },
+  { t: 'สี่พันปี', hl: true },
 ];
 
 // =============================================================================
@@ -198,9 +198,9 @@ const SitePin: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) =
 
 // 2025 H1 exports, first half. The bars are the numbers — nothing is asserted by width alone.
 const RANK = [
-  { name: 'India', mt: 11.68, color: VOX.inkSoft },
-  { name: 'Vietnam', mt: 4.72, color: VOX.inkSoft },
-  { name: 'Thailand', mt: 3.73, color: VOX.red },
+  { name: 'อินเดีย', mt: 11.68, color: VOX.inkSoft },
+  { name: 'เวียดนาม', mt: 4.72, color: VOX.inkSoft },
+  { name: 'ไทย', mt: 3.73, color: VOX.red },
 ];
 const MAX_MT = 11.68;
 const RankBars: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) => {
@@ -208,8 +208,11 @@ const RankBars: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) 
   return (
     <Layer x={x} y={y} w={980} at={at} dur={12} enter="rise" depth={0.05} drift={0.5}>
       <div style={{ background: VOX.cream, padding: '44px 52px 52px', boxShadow: '0 10px 26px rgba(40,28,12,0.28)' }}>
-        <div style={{ fontFamily: FONT_BODY, fontSize: 30, fontWeight: 600, letterSpacing: 2.4, textTransform: 'uppercase', color: VOX.red, marginBottom: 30 }}>
-          Rice exports · first half 2025
+        {/* The unit moves into the header so each row is a bare number: "11.68 ล้านตัน" at 40px
+            does not fit the value column, and widening it would squeeze the bars that carry
+            the comparison. */}
+        <div style={{ fontFamily: `var(--vox-body, ${FONT_TH})`, fontSize: 30, fontWeight: 600, letterSpacing: 0.8, color: VOX.red, marginBottom: 30 }}>
+          ส่งออกข้าว · ครึ่งปีแรก 2025 · ล้านตัน
         </div>
         {RANK.map((r, i) => {
           const p = interpolate(frame, [at + 10 + i * 9, at + 34 + i * 9], [0, 1], {
@@ -218,12 +221,12 @@ const RankBars: React.FC<{ x: number; y: number; at: number }> = ({ x, y, at }) 
           });
           return (
             <div key={r.name} style={{ display: 'flex', alignItems: 'center', gap: 22, marginTop: i ? 26 : 0 }}>
-              <div style={{ fontFamily: FONT_BODY, fontSize: 40, fontWeight: 600, color: VOX.ink, width: 230, textAlign: 'right' }}>{r.name}</div>
+              <div style={{ fontFamily: `var(--vox-body, ${FONT_TH})`, fontSize: 40, fontWeight: 600, color: VOX.ink, width: 230, textAlign: 'right' }}>{r.name}</div>
               <div style={{ flex: 1, height: 54, background: 'rgba(40,34,23,0.09)' }}>
                 <div style={{ width: `${(r.mt / MAX_MT) * 100 * p}%`, height: '100%', background: r.color }} />
               </div>
-              <div style={{ fontFamily: FONT_EDITORIAL, fontSize: 40, fontWeight: 700, color: r.color, width: 180, opacity: p }}>
-                {r.mt.toFixed(2)} Mt
+              <div style={{ fontFamily: `var(--vox-display, ${FONT_TH_DISPLAY})`, fontSize: 40, fontWeight: 700, color: r.color, width: 180, opacity: p }}>
+                {r.mt.toFixed(2)}
               </div>
             </div>
           );
@@ -243,7 +246,7 @@ const SceneFade: React.FC<{ out: number; dur?: number; children: React.ReactNode
 const Vox2ThaiRice: React.FC = () => {
   return (
     <AbsoluteFill style={{ backgroundColor: VOX.paper }}>
-      <CollageBoard cam={CAM}>
+      <CollageBoard cam={CAM} fontBody={FONT_TH} fontDisplay={FONT_TH_DISPLAY} tracking="0.6px">
         <PaperBG src={PAPER} w={W} h={H} />
 
         {/* ---- HOOK (0–5s): composed at FRAME 0, slow push ---- */}
@@ -252,7 +255,7 @@ const Vox2ThaiRice: React.FC = () => {
             <ArchivalPhoto src={asset('paddy-raw.png')} x={540} y={330} w={820} at={CUE.hookPhoto} enter="place" rotate={-1.6} depth={0.04} treatment="sepia" />
             <SerifStatement x={540} y={720} w={940} at={CUE.hookTitle} size={78} words={TITLE_WORDS} />
             <Cutout src={asset('rice-stalk.png')} x={540} y={1135} w={420} at={CUE.hookGrains} enter="place" rotate={3} depth={0.1} sticker={0} shadow={2} />
-            <LabelChip x={632} y={1420} at={CUE.hookChip} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} z={6} />
+            <LabelChip x={632} y={1420} at={CUE.hookChip} text="อ.พนัสนิคม จ.ชลบุรี" kicker="หนึ่งอำเภอ" accent={VOX.red} size={34} rotate={-1.3} z={6} />
           </SceneFade>
         </Sequence>
 
@@ -274,8 +277,8 @@ const Vox2ThaiRice: React.FC = () => {
               x={PIN_X - 20}
               y={PIN_Y - 150}
               at={0}
-              text="Khok Phanom Di"
-              kicker="~ 2000 BC"
+              text="โคกพนมดี"
+              kicker="~2000 ปีก่อน ค.ศ."
               accent={VOX.teal}
               size={22}
               rotate={-2}
@@ -297,8 +300,8 @@ const Vox2ThaiRice: React.FC = () => {
                 x={PIN_X - 10}
                 y={PIN_Y + 118}
                 at={0}
-                text="One fragrant plant"
-                kicker="1945"
+                text="ข้าวหอมต้นหนึ่ง"
+                kicker="ค.ศ. 1945"
                 accent={VOX.red}
                 size={22}
                 rotate={1.8}
@@ -324,7 +327,9 @@ const Vox2ThaiRice: React.FC = () => {
                 at={0}
                 size={40}
                 backing
-                words={[{ t: 'The' }, { t: 'same' }, { t: 'district.', hl: true }]}
+                // one chunk: อำเภอเดียวกัน is a single word, and chunking splits it with a
+                // gap that Thai does not have. The whole phrase takes the highlight instead.
+                words={[{ t: 'อำเภอเดียวกัน', hl: true }]}
               />
             </Sequence>
           </SceneFade>
@@ -347,8 +352,8 @@ const Vox2ThaiRice: React.FC = () => {
               x={PIN_X + 120}
               y={PIN_Y - 212}
               at={CUE.panicleChip - CUE.routeBK}
-              text="199 panicles"
-              kicker="Bang Khla, 1951"
+              text="199 รวง"
+              kicker="บางคล้า · ค.ศ. 1951"
               accent={VOX.teal}
               size={24}
               rotate={-1.6}
@@ -359,8 +364,8 @@ const Vox2ThaiRice: React.FC = () => {
               x={PIN_X + 62}
               y={PIN_Y + 300}
               at={CUE.nameChip - CUE.routeBK}
-              text="Khao Dawk Mali 105"
-              kicker="Named 1959"
+              text="ข้าวขาวดอกมะลิ 105"
+              kicker="ตั้งชื่อ ค.ศ. 1959"
               accent={VOX.yellow}
               kickerColor={VOX.inkSoft}
               size={26}
@@ -398,7 +403,7 @@ const Vox2ThaiRice: React.FC = () => {
                 at={0}
                 size={60}
                 backing
-                words={[{ t: 'Number' }, { t: 'one.' }, { t: 'Thirty-one' }, { t: 'years.', hl: true }]}
+                words={[{ t: 'อันดับหนึ่งของโลก' }, { t: 'นาน 31 ปี', hl: true }]}
               />
               </SceneFade>
             </Sequence>
@@ -416,7 +421,7 @@ const Vox2ThaiRice: React.FC = () => {
           <ArchivalPhoto src={asset('paddy-raw.png')} x={540} y={330} w={820} at={0} enter="place" rotate={-1.6} depth={0.04} treatment="sepia" />
           <SerifStatement x={540} y={720} w={940} at={4} size={78} words={TITLE_WORDS} />
           <Cutout src={asset('rice-stalk.png')} x={540} y={1135} w={420} at={10} enter="place" rotate={3} depth={0.1} sticker={0} shadow={2} />
-          <LabelChip x={632} y={1420} at={26} text="Phanat Nikhom, Chonburi" kicker="One district" accent={VOX.red} size={34} rotate={-1.3} z={6} />
+          <LabelChip x={632} y={1420} at={26} text="อ.พนัสนิคม จ.ชลบุรี" kicker="หนึ่งอำเภอ" accent={VOX.red} size={34} rotate={-1.3} z={6} />
         </Sequence>
       </CollageBoard>
       <Grain opacity={0.055} />

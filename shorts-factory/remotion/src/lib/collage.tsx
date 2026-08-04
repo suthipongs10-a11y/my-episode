@@ -35,10 +35,19 @@ export type CamKey = { f: number; x: number; y: number; z: number };
 
 const CamCtx = createContext({ offX: 0, offY: 0, zoom: 1 });
 
+// Typography is board-scoped, not module-scoped, and it travels as CSS custom properties
+// rather than props. Every piece below reads var(--vox-body) / var(--vox-display) with the
+// module default baked into the var() fallback, so a shot re-typefaces its ENTIRE subtree by
+// setting two variables on the board — including anything nested that a prop-drilled version
+// would have missed. Pass nothing and the latin brand stack applies exactly as before.
+// vox-2 uses this to render a Thai edition in Kanit without touching the latin shots.
 export const CollageBoard: React.FC<{
   cam: CamKey[]; // strictly increasing f; camera CENTER in canvas px + zoom
+  fontBody?: string;
+  fontDisplay?: string;
+  tracking?: string; // kicker letter-spacing; Thai wants far less of it than latin small-caps
   children: React.ReactNode;
-}> = ({ cam, children }) => {
+}> = ({ cam, fontBody, fontDisplay, tracking, children }) => {
   const frame = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const fs = cam.map((k) => k.f);
@@ -52,6 +61,9 @@ export const CollageBoard: React.FC<{
           position: 'absolute',
           transformOrigin: '0 0',
           transform: `scale(${zoom}) translate(${W / 2 / zoom - camX}px, ${H / 2 / zoom - camY}px)`,
+          ...(fontBody ? { ['--vox-body' as string]: fontBody } : {}),
+          ...(fontDisplay ? { ['--vox-display' as string]: fontDisplay } : {}),
+          ...(tracking ? { ['--vox-tracking' as string]: tracking } : {}),
         }}
       >
         <CamCtx.Provider value={{ offX: camX - W / 2, offY: camY - H / 2, zoom }}>{children}</CamCtx.Provider>
@@ -213,7 +225,7 @@ export const ArchivalPhoto: React.FC<{
       <div style={{ background: VOX.cream, padding: w * 0.035, paddingBottom: caption ? w * 0.035 : w * 0.05, boxShadow: '0 16px 34px rgba(40,28,12,0.3)' }}>
         <Img src={src} style={{ width: '100%', display: 'block', filter: filt }} />
         {caption ? (
-          <div style={{ fontFamily: FONT_BODY, fontSize: w * 0.042, fontWeight: 500, color: VOX.inkSoft, paddingTop: w * 0.028, letterSpacing: 0.4 }}>
+          <div style={{ fontFamily: `var(--vox-body, ${FONT_BODY})`, fontSize: w * 0.042, fontWeight: 500, color: VOX.inkSoft, paddingTop: w * 0.028, letterSpacing: 0.4 }}>
             {caption}
           </div>
         ) : null}
@@ -285,7 +297,14 @@ export const LabelChip: React.FC<{
   depth?: number;
   z?: number;
 }> = ({ text, x, y, at = 0, size = 30, rotate = -1.5, accent, kicker, kickerColor, depth = 0.02, z }) => (
-  <Layer x={x} y={y} w={size * text.length * 0.75 + 60} at={at} dur={10} enter="pop" rotate={rotate} depth={depth} drift={0.7} z={z}>
+  // Width is an ESTIMATE, and it is load-bearing: the inner box starts at x - w/2, so `x` is a
+  // left-ish anchor and an over-wide estimate walks the chip leftwards.
+  //
+  // text.length is code UNITS, and Thai writes its vowels and tone marks as separate code
+  // points that render with zero advance — "ข้าวขาวดอกมะลิ" is 14 units and 11 visible clusters.
+  // Counting them inflated every Thai chip by a fifth and shifted it left by half of that.
+  // Dropping the combining ranges makes the estimate honest for Thai and leaves latin untouched.
+  <Layer x={x} y={y} w={size * text.replace(/[ัิ-ฺ็-๎]/g, '').length * 0.75 + 60} at={at} dur={10} enter="pop" rotate={rotate} depth={depth} drift={0.7} z={z}>
     <div
       style={{
         display: 'inline-block',
@@ -297,11 +316,11 @@ export const LabelChip: React.FC<{
       }}
     >
       {kicker ? (
-        <div style={{ fontFamily: FONT_BODY, fontSize: size * 0.52, fontWeight: 600, letterSpacing: 2.2, color: kickerColor ?? accent ?? VOX.red, textTransform: 'uppercase', margin: 0 }}>
+        <div style={{ fontFamily: `var(--vox-body, ${FONT_BODY})`, fontSize: size * 0.52, fontWeight: 600, letterSpacing: 'var(--vox-tracking, 2.2px)', color: kickerColor ?? accent ?? VOX.red, textTransform: 'uppercase', margin: 0 }}>
           {kicker}
         </div>
       ) : null}
-      <div style={{ fontFamily: FONT_BODY, fontSize: size, fontWeight: 600, color: VOX.ink, margin: 0, lineHeight: 1.15 }}>{text}</div>
+      <div style={{ fontFamily: `var(--vox-body, ${FONT_BODY})`, fontSize: size, fontWeight: 600, color: VOX.ink, margin: 0, lineHeight: 1.15 }}>{text}</div>
     </div>
   </Layer>
 );
@@ -329,7 +348,7 @@ export const SerifStatement: React.FC<{
   const allIn = at + words.length * 3 + 10;
   return (
     <Layer x={x} y={y} w={w} at={at} dur={1} enter="none" depth={depth} drift={0.5} z={z}>
-      <div style={{ fontFamily: FONT_EDITORIAL, fontSize: size, fontWeight: 700, color, textAlign: align, lineHeight: backing ? 1.42 : 1.22, margin: 0 }}>
+      <div style={{ fontFamily: `var(--vox-display, ${FONT_EDITORIAL})`, fontSize: size, fontWeight: 700, color, textAlign: align, lineHeight: backing ? 1.42 : 1.22, margin: 0 }}>
         {words.map((wd, i) => {
           const p = interpolate(frame, [at + i * 3, at + i * 3 + 9], [0, 1], { easing: EASE_OUT, ...clamp });
           const sweep = wd.hl ? interpolate(frame, [allIn, allIn + 12], [0, 100], { easing: EASE_INOUT, ...clamp }) : 0;
@@ -388,7 +407,7 @@ export const RubberStamp: React.FC<{
       >
         <div
           style={{
-            fontFamily: FONT_EDITORIAL,
+            fontFamily: `var(--vox-display, ${FONT_EDITORIAL})`,
             fontWeight: 900,
             fontSize: size,
             letterSpacing: size * 0.08,

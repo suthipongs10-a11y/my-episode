@@ -227,24 +227,53 @@ TTS server does not. Recover them with forced alignment (whisperx / ctc-forced-a
 over the audio this writes. **The vox track needs none of this** — its on-screen text carries
 the words, so a self-hosted voice is a straight drop-in there.
 
-### If the narration goes Thai, the on-screen text has a blocker
+### Setting a shot in Thai
 
-Measured in this container on 2026-08-02, and it is not obvious until a render comes back
-full of empty boxes:
+Started because none of it works by default. Measured in this container on 2026-08-02:
+**none of the five bundled brand fonts covers Thai** — Space Grotesk, Inter, JetBrains Mono,
+Spectral and Source Serif 4 have no Thai glyphs even in their full versions — and the headless
+Chromium's 59 fonts offer only `Loma`, `FreeSerif` and `Unifont`. So Thai does not fail
+loudly; it silently drops to a system face and the brand look dies.
 
-- **None of the five bundled brand fonts covers Thai.** Space Grotesk, Inter, JetBrains Mono,
-  Spectral and Source Serif 4 are all latin-subset here, and even their full versions have no
-  Thai glyphs.
-- The headless Chromium has **59 fonts total**, and the only ones with Thai coverage are
-  `Loma`, `FreeSerif` and `Unifont` — a fallback stack, not a brand.
+Two levels of answer, and they are for different situations.
 
-The fix is small but it is real work: add a Thai family (Noto Serif Thai / Sarabun / IBM Plex
-Sans Thai — all OFL) to `WANTED` in `remotion/scripts/fetch-fonts.mjs`, re-run it, and give
-`FONT_EDITORIAL`/`FONT_BODY` a Thai fallback. Do it when the language is decided, not before.
+**A latin shot with the odd Thai word** — nothing to do. `FONT_BODY` and friends already carry
+Noto Sans/Serif Thai as the second family, and CSS resolves font-family per glyph, so latin
+comes from the brand face and Thai from Noto with no per-language branching.
 
-Thai also has **no spaces between words**, so per-word captions need a segmenter
-(`pythainlp` newmm) before an aligner can label anything. Another reason the vox track is the
-easier one to take Thai.
+**A shot that is Thai** — use `FONT_TH` / `FONT_TH_DISPLAY` (Kanit), passed to the board:
+
+```tsx
+<CollageBoard cam={CAM} fontBody={FONT_TH} fontDisplay={FONT_TH_DISPLAY} tracking="0.6px">
+```
+
+`CollageBoard` publishes those as CSS custom properties, and every piece in `lib/collage.tsx`
+reads `var(--vox-body, …)` with the latin stack as the fallback. So one board re-typefaces its
+whole subtree, nested components included, and no other shot changes.
+
+Noto is the fallback, not the choice, for a Thai shot: it is a reference face with no editorial
+voice at display size. Kanit is a Thai geometric sans with a matching latin drawn as one
+family, which is what keeps `ข้าวขาวดอกมะลิ 105` from looking like two fonts spliced together.
+It is the only entry in `WANTED` loaded in **two subsets** (latin + thai) — a Thai script still
+contains numerals — and that needs `unicode-range`, because CSS picks exactly one `@font-face`
+per family+weight and two rules without ranges means the second silently shadows the first.
+The fetcher throws if a multi-subset family has no range rather than emitting that quietly.
+
+**Four things break in the layout, not the font** (all fixed in the kit, all found by
+rendering vox-2's Thai edition — see its script.md):
+
+1. Width estimates from `text.length` are wrong. Thai vowels and tone marks are separate code
+   points with zero advance, so a string counts ~20% longer than it draws. `LabelChip` anchors
+   its box at `x - w/2`, so the over-estimate walked every chip left.
+2. `SerifStatement` chunks are separate boxes with gaps. In English the gaps are word spaces;
+   in Thai they land inside words. Chunk on real Thai word boundaries.
+3. Latin small-caps tracking (2.2px) is too loose for Thai at kicker size. `tracking="0.6px"`.
+4. Thai labels are longer than their English equivalents. Move units into headers rather than
+   widening value columns.
+
+Thai also has **no spaces between words**, so per-word captions need a segmenter (`pythainlp`
+newmm) before an aligner can label anything. The vox track carries no burned captions, which
+is why it is the easier one to take Thai.
 
 ### What the money looks like
 
