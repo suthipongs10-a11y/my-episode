@@ -182,6 +182,78 @@ export function scoreTone(score: number): string {
   return "var(--critical)";
 }
 
+/**
+ * How much of the picture was actually measured.
+ *
+ * The overall score is an average over measured categories only (scoring v3),
+ * so a high score on thin coverage is a real and important state — "82, but we
+ * only looked at 40% of it" is a different sentence from "82". This is the bar
+ * that stops the first one being read as the second.
+ */
+export function coverageBar(fraction: number, note: string): string {
+  const pct = Math.round(Math.max(0, Math.min(1, fraction)) * 100);
+  const tone = pct >= 80 ? "var(--good)" : pct >= 50 ? "var(--warning)" : "var(--serious)";
+  return `<div class="coverage">
+  <div class="coverage-head">
+    <span class="coverage-pct" style="color:${tone}">${pct}%</span>
+    <span class="coverage-note">${esc(note)}</span>
+  </div>
+  <div class="coverage-track" style="--tone:${tone}">
+    <div class="coverage-fill" style="width:${pct}%"></div>
+  </div>
+</div>`;
+}
+
+export interface StackRow {
+  label: string;
+  /** Segments in a fixed order; zero-value segments are dropped. */
+  segments: { key: string; value: number; tone: string }[];
+}
+
+/**
+ * A stacked bar per row — findings by category, split by severity.
+ *
+ * Answers "where are the problems", which no list sorted by priority can:
+ * a reader scanning twenty rows cannot tell that six of them are conversion.
+ *
+ * Segments are separated by a 2px gap in the surface colour rather than a
+ * stroke, values ride the end of each bar, and the legend carries identity so
+ * nothing depends on telling amber from orange.
+ */
+export function stackedBars(
+  rows: StackRow[], legend: { key: string; label: string; tone: string }[],
+): string {
+  const max = Math.max(1, ...rows.map((r) => r.segments.reduce((a, s) => a + s.value, 0)));
+
+  const body = rows.map((r) => {
+    const total = r.segments.reduce((a, s) => a + s.value, 0);
+    const bar = r.segments
+      .filter((s) => s.value > 0)
+      .map((s) =>
+        `<span class="seg" style="flex:${s.value};background:${s.tone}" title="${
+          esc(legendLabel(legend, s.key))}: ${s.value}"></span>`)
+      .join("");
+
+    return `<div class="stack-row">
+  <div class="stack-label">${esc(r.label)}</div>
+  <div class="stack-lane">
+    <div class="stack-bar" style="width:${(total / max) * 100}%">${bar}</div>
+  </div>
+  <div class="stack-total">${total}</div>
+</div>`;
+  }).join("");
+
+  const keys = legend.map((l) =>
+    `<span class="key"><span class="key-dot" style="background:${l.tone}"></span>${
+      esc(l.label)}</span>`).join("");
+
+  return `<div class="stack">${body}</div><div class="legend">${keys}</div>`;
+}
+
+function legendLabel(legend: { key: string; label: string }[], key: string): string {
+  return legend.find((l) => l.key === key)?.label ?? key;
+}
+
 export function counts(items: { n: number | string; label: string; tone?: string }[]): string {
   const body = items.map((i) =>
     `<div class="count-item">

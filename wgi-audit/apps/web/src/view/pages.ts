@@ -18,8 +18,8 @@ import type { Finding } from "@core/types/index.ts";
 import type { AuditDetail, AuditSummary } from "../queries.ts";
 import { thWeb } from "./text.ts";
 import {
-  card, counts, empty, esc, header, hero, meters, page, scoreTone,
-  severityBadge, table, type MeterRow,
+  card, counts, coverageBar, empty, esc, header, hero, meters, page, scoreTone,
+  severityBadge, stackedBars, table, type MeterRow, type StackRow,
 } from "./components.ts";
 
 // ---------------------------------------------------------------------------
@@ -155,6 +155,20 @@ export function runPage(a: AuditDetail): string {
     blocks.push(card(thWeb.run.scoreTitle, scoreBlock(a)));
   }
 
+  const chart = findingsByCategory(a);
+  if (chart.any) {
+    blocks.push(card(
+      thWeb.run.byCategoryTitle,
+      `<p class="note" style="margin:-8px 0 16px">${esc(thWeb.run.byCategoryNote)}</p>`
+      + stackedBars(chart.rows, [
+        { key: "critical", label: thWeb.severity.critical, tone: "var(--critical)" },
+        { key: "high", label: thWeb.severity.high, tone: "var(--serious)" },
+        { key: "medium", label: thWeb.severity.medium, tone: "var(--warning)" },
+        { key: "low", label: thWeb.severity.low, tone: "var(--axis)" },
+      ]),
+    ));
+  }
+
   if (a.findings.length > 0) {
     blocks.push(card(
       thWeb.run.findingsTitle,
@@ -207,6 +221,75 @@ function unmeasuredCategories(inputs: Record<string, unknown>): Set<string> {
   return out;
 }
 
+/** Category weights, mirroring scoring/v1's WEIGHTS. */
+const WEIGHT: Record<string, number> = {
+  conversion: 0.25, local: 0.25, content: 0.20,
+  visibility: 0.15, onpage: 0.10, technical: 0.05,
+};
+
+/**
+ * How much of the scoring weight this run actually measured.
+ *
+ * Read from the snapshot when v3 recorded it, and derived from the same
+ * `has_*` flags otherwise — so a run scored under v1 or v2 still shows an
+ * honest coverage bar instead of an empty one.
+ */
+function coverageOf(inputs: Record<string, unknown>, scores: Record<string, number>): number {
+  const stored = inputs.coverage;
+  if (typeof stored === "number") return stored;
+
+  const unmeasured = unmeasuredCategories(inputs);
+  let sum = 0;
+  for (const key of Object.keys(scores)) {
+    if (key === "overall" || unmeasured.has(key)) continue;
+    sum += WEIGHT[key] ?? 0;
+  }
+  return sum;
+}
+
+/** Total hours the whole list would take, so the operator can quote a job. */
+function effortHours(a: AuditDetail): string {
+  const total = a.findings.reduce((sum, f) => sum + (f.effortHours ?? 0), 0);
+  return total > 0 ? `${Math.round(total)}` : "—";
+}
+
+function pagesCrawled(a: AuditDetail): string {
+  const n = a.pages.reduce((sum, p) => sum + p.count, 0);
+  return n > 0 ? String(n) : "—";
+}
+
+/** Findings per category, split by severity. The "where are the problems" view. */
+export function findingsByCategory(a: AuditDetail): { rows: StackRow[]; any: boolean } {
+  const order = ["conversion", "onpage", "technical", "content", "competitor", "local"];
+  const severities = [
+    { key: "critical", tone: "var(--critical)" },
+    { key: "high", tone: "var(--serious)" },
+    { key: "medium", tone: "var(--warning)" },
+    { key: "low", tone: "var(--axis)" },
+  ];
+
+  const rows: StackRow[] = [];
+  for (const category of order) {
+    const inCategory = a.findings.filter((f) => f.category === category);
+    if (inCategory.length === 0) continue;
+    rows.push({
+      label: thWeb.categories[category] ?? category,
+      segments: severities.map((s) => ({
+        key: s.key,
+        value: inCategory.filter((f) => f.severity === s.key).length,
+        tone: s.tone,
+      })),
+    });
+  }
+  // Most problems first: the chart's job is to point at where to look.
+  rows.sort((x, y) => sum(y.segments) - sum(x.segments));
+  return { rows, any: rows.length > 0 };
+}
+
+function sum(segments: { value: number }[]): number {
+  return segments.reduce((a, s) => a + s.value, 0);
+}
+
 function scoreBlock(a: AuditDetail): string {
   const snap = a.snapshot!;
   const inputs = snap.inputs ?? {};
@@ -222,9 +305,14 @@ function scoreBlock(a: AuditDetail): string {
     }));
 
   const bySeverity = tally(a.findings.map((f) => f.severity));
+  const cover = coverageOf(inputs, snap.scores);
 
   return [
     hero(overall, verdictFor(overall), thWeb.verdictNote(a.criticalTotal, a.findingsTotal)),
+    // Immediately under the headline number, because it is the caveat on it:
+    // v3 averages measured categories only, so 82 across 40% of the weight and
+    // 82 across all of it are different claims and must not look alike.
+    coverageBar(cover, thWeb.coverageNote(Math.round(cover * 100))),
     `<div style="height:22px"></div>`,
     meters(rows),
     `<div style="height:22px"></div>`,
@@ -233,6 +321,8 @@ function scoreBlock(a: AuditDetail): string {
       { n: bySeverity.high ?? 0, label: thWeb.severity.high },
       { n: bySeverity.medium ?? 0, label: thWeb.severity.medium },
       { n: bySeverity.low ?? 0, label: thWeb.severity.low },
+      { n: effortHours(a), label: thWeb.run.totalEffort },
+      { n: pagesCrawled(a), label: thWeb.run.pagesCrawled },
     ]),
     unmeasured.size > 0
       ? `<ul class="why">${[...unmeasured].map((k) =>

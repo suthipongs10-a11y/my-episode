@@ -174,6 +174,41 @@ a:hover { text-decoration: underline; }
 }
 .sev.low .glyph { background: transparent; color: var(--muted); border: 1.5px solid var(--axis); }
 
+/* -- coverage ----------------------------------------------------------- */
+.coverage { margin-top: 18px; }
+.coverage-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.coverage-pct { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.coverage-note { font-size: 13px; color: var(--muted); }
+.coverage-track {
+  height: 7px; border-radius: 4px;
+  background: color-mix(in srgb, var(--tone) 20%, var(--surface));
+}
+.coverage-fill { height: 100%; border-radius: 4px; background: var(--tone); }
+
+/* -- stacked bars ------------------------------------------------------- */
+.stack { display: grid; gap: 9px; }
+.stack-row {
+  display: grid; grid-template-columns: minmax(140px, auto) 1fr 34px;
+  gap: 14px; align-items: center;
+}
+.stack-label { font-size: 14px; color: var(--ink-2); white-space: nowrap; }
+.stack-lane { min-width: 0; }
+.stack-bar { display: flex; height: 16px; min-width: 3px; }
+/* White does the separating, never a stroke — a border would add ink that is
+   not data. Rounded only at the two outer ends, so the bar reads as one bar. */
+.stack-bar .seg { min-width: 3px; }
+.stack-bar .seg + .seg { margin-left: 2px; }
+.stack-bar .seg:first-child { border-radius: 4px 0 0 4px; }
+.stack-bar .seg:last-child { border-radius: 0 4px 4px 0; }
+.stack-bar .seg:only-child { border-radius: 4px; }
+.stack-total {
+  font-size: 14px; text-align: right; font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
+.key { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+.key-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
 /* -- counts row --------------------------------------------------------- */
 .counts { display: flex; gap: 22px; flex-wrap: wrap; }
 .count-item .n { font-size: 25px; font-weight: 650; line-height: 1.15; }

@@ -205,6 +205,35 @@ describe("the run page", () => {
   it("says plainly that a run with no paid API cost nothing", async () => {
     expect(await text(`/audits/${runId}`)).toContain("ไม่มีค่าใช้จ่าย");
   });
+
+  /**
+   * The overall score is an average over measured categories only, so the
+   * page has to say how much of the picture that was. Without it, 79 across
+   * 40% coverage reads exactly like 79 across all of it.
+   */
+  it("states what fraction of the scoring weight was measured", async () => {
+    const html = await text(`/audits/${runId}`);
+    expect(html).toContain("coverage-fill");
+    expect(html).toContain("40%");
+    expect(html).toContain("ของน้ำหนัก");
+  });
+
+  it("charts the findings by category, with a legend and no colour-only meaning", async () => {
+    const html = await text(`/audits/${runId}`);
+    expect(html).toContain("ปัญหาอยู่ตรงไหนบ้าง");
+    expect(html).toContain("stack-bar");
+    // Every severity in the chart is named in the legend, not just coloured.
+    for (const label of ["วิกฤต", "สูง", "กลาง", "ต่ำ"]) {
+      expect(html, label).toContain(`class="key-dot"`);
+      expect(html, label).toContain(label);
+    }
+  });
+
+  it("shows total effort and page count, so a job can be quoted", async () => {
+    const html = await text(`/audits/${runId}`);
+    expect(html).toContain("ชั่วโมงงานรวม");
+    expect(html).toContain("จำนวนหน้า");
+  });
 });
 
 // ---------------------------------------------------------------------------

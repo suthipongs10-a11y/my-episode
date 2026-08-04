@@ -10,6 +10,7 @@
  */
 import * as v1 from "./v1.ts";
 import * as v2 from "./v2.ts";
+import * as v3 from "./v3.ts";
 import type { Scores, ScoringInput } from "./v1.ts";
 
 export type { Scores, ScoringInput };
@@ -23,9 +24,10 @@ export interface Scorer {
 const SCORERS: Record<number, Scorer> = {
   1: { version: 1, score: v1.score, scoreInputs: v1.scoreInputs },
   2: { version: 2, score: v2.score, scoreInputs: v2.scoreInputs },
+  3: { version: 3, score: v3.score, scoreInputs: v3.scoreInputs },
 };
 
-export const CURRENT_SCORING_VERSION = 2;
+export const CURRENT_SCORING_VERSION = 3;
 
 /**
  * The scorer for a version. An unknown version falls back to the current one

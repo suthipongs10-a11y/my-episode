@@ -81,6 +81,10 @@ export const thWeb = {
   } as Record<string, string>,
 
   notMeasured: "ยังไม่ได้วัด",
+  coverageNote: (pct: number) =>
+    pct >= 100
+      ? "วัดครบทุกหมวดแล้ว"
+      : `คะแนนรวมคิดจากหมวดที่วัดได้จริงเท่านั้น (${pct}% ของน้ำหนัก) — ที่เหลือต้องต่อ API ก่อน`,
   notMeasuredWhy: {
     local: "ต้องต่อ Google Places ก่อน",
     visibility: "ต้องต่อ DataForSEO ก่อน",
@@ -101,6 +105,10 @@ export const thWeb = {
     competitorsTitle: "คู่แข่ง",
     spendTitle: "ต้นทุนของงานนี้",
     noFindings: "ไม่พบปัญหา — ตรวจสอบว่า crawl ได้จริงหรือเปล่า",
+    byCategoryTitle: "ปัญหาอยู่ตรงไหนบ้าง",
+    byCategoryNote: "แท่งยาวที่สุดคือหมวดที่ควรเสนอขายก่อน",
+    totalEffort: "ชั่วโมงงานรวม",
+    pagesCrawled: "จำนวนหน้า",
     noKeywords: "ยังไม่มีคำค้นหา",
     noCompetitors: "ยังไม่พบคู่แข่ง — ต้องต่อ DataForSEO ก่อน",
     effort: "แรงที่ต้องใช้",
