@@ -53,14 +53,38 @@ Research first, write second. Every claim gets a row: **claim | source URL**.
 - Write a **"Deliberately not claimed"** section. What you refuse to say is the channel's asset.
 - Health topics: cite reviews/guidelines, not single studies or news write-ups.
 
-### Channel rule example — health must land an ANSWER (`channels/health.json`)
+### Channel rule example — health must land an ANSWER **and a SUMMARY** (`channels/health.json`)
 
-vox-3 shipped without one and the verdict was "เนื้อหาน้อยเกินไป". The spine earns the watch;
-the **answer** is what earns the subscribe. A health viewer who reaches the end still not
-knowing what to do got half a video.
+vox-3 shipped without an answer and the verdict was "เนื้อหาน้อยเกินไป". vox-7 had the answer
+and still drew the same note — because an answer buried in the middle is not a summary. The
+spine earns the watch; the **answer** earns the subscribe; the **summary** is what the viewer
+screenshots and sends to their mother.
 
-Structure: hook → story → **ANSWER** → caveat. Budget the answer 8–10s. It is a beat with its
-own card, not a sentence tacked onto the last line.
+Structure: hook → story → mechanism → **ANSWER** → caveat → **SUMMARY**. Budget the answer
+8–10s and the summary 20–25s. Both are beats with their own cards, never a sentence tacked onto
+the last line.
+
+**The summary must answer three things separately, visible on screen at once:**
+
+| | |
+|---|---|
+| **ปัญหา** | what is actually wrong, in one sentence |
+| **ทางแก้** | the one thing that changes it |
+| **คำแนะนำ** | the guideline's own list, as a list |
+
+Write it so a screenshot of that card is useful on its own, with no video around it. That is
+how health content travels.
+
+**Length is NOT a constraint on this channel** (operator, 2026-08-07): *"เรื่องสุขภาพมันสำคัญ
+ที่จะต้องพูดให้กระจ่าง ให้คนเข้าใจ"*. Going over 60s costs Shorts distribution and that trade
+is accepted here — a viewer who understands beats a viewer who scrolled past. Do not cut the
+summary to stay under the ceiling; cut the ceiling.
+
+**Hunt for the guideline's NEGATIVE recommendations too.** What it says *not* to do is as
+actionable as what it says to do, it saves the viewer money, and it is the least-covered part
+of any guideline. WHO's 2026 dementia edition says vitamin B, vitamin E, omega-3 and
+multivitamins should not be used for dementia prevention without a diagnosed deficiency —
+worth a beat of its own in a market full of supplement advertising.
 
 The answer must be:
 - **quotable from a guideline or review**, on screen with its source — never synthesised by us
