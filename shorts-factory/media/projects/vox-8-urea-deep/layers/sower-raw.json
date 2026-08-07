@@ -1,0 +1,9 @@
+{
+  "prompt": "A distant silhouette of a single person standing in a flooded rice field with one arm swung out to the side in the act of broadcasting fertiliser by hand, seen against a bright hazy sky at low sun. Fully backlit so the figure is a dark shape with no visible face or clothing detail. Wide documentary photograph, no other people, no buildings, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T09:27:45"
+}

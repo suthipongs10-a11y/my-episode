@@ -1,0 +1,9 @@
+{
+  "prompt": "A simple hand-operated agricultural tool standing upright in shallow muddy water: a long straight metal tube about a metre tall with a small hopper at the top and a T-shaped handle, plain unpainted metal, used for pushing fertiliser into soil. Plain blurred field background. Documentary photograph, no branding, no logo, no lettering, no people, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T09:28:07"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "A close overhead photograph of still shallow water with a bright green film of algae floating on the surface, sunlight glinting off the water, a few strands of green algae visible just under the surface. Plain muddy bottom faintly visible through the water. Natural documentary photograph, vivid green, no people, no plants, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T09:25:04"
+}

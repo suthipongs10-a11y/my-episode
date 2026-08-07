@@ -167,6 +167,13 @@ def synth(cfg, text, out_path):
     # INVALID_ARGUMENT mid-run, and the identical request then succeeded three times out of
     # three when replayed by hand. This endpoint emits spurious 400s. A genuinely bad request
     # still fails, just five times more slowly, and the error text is printed either way.
+    #
+    # BUT THERE ARE TWO KINDS OF 400 AND THE RETRY ONLY FIXES ONE. vox-8 line 42 failed on
+    # 400 through fifteen attempts across three runs, on a line that is ordinary Thai prose
+    # with no unusual characters and no unusual length. Rewording it — same meaning, different
+    # bytes — went through first try. So: a 400 that survives a full re-run is STICKY TO THAT
+    # TEXT, not to the moment. Do not keep re-running; rewrite the line. Both failures cost
+    # about the same to diagnose, which is why both are written down here.
     for attempt in range(5):
         req = urllib.request.Request(url, data=body,
                                      headers={"Content-Type": "application/json"},
@@ -182,9 +189,12 @@ def synth(cfg, text, out_path):
                 print(f"      HTTP {e.code}, retrying in {wait}s")
                 time.sleep(wait)
                 continue
-            hint = ("\n(400 here usually means a transient endpoint fault rather than a bad "
-                    "request — replaying the same line by hand often works. Re-run; the cache "
-                    "keeps every line already generated.)" if e.code == 400 else "")
+            hint = ("\n(400 comes in two flavours. TRANSIENT: re-run once — the cache keeps "
+                    "every line already generated, and the same request often goes through. "
+                    "STICKY: if it fails again on the SAME line, the endpoint is rejecting "
+                    "that exact text. Stop re-running and reword the line; same meaning, "
+                    "different bytes, and it goes through. Measured on vox-6 and vox-8.)"
+                    if e.code == 400 else "")
             sys.exit(f"Gemini returned {e.code} for {text[:40]!r}\n{detail}{hint}")
         except Exception as e:
             sys.exit(f"Gemini unreachable: {type(e).__name__}: {e}")

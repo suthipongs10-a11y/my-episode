@@ -1,0 +1,9 @@
+{
+  "prompt": "A low sun burning through thin haze in a pale washed-out sky, seen from ground level with nothing else in frame, warm white light with a soft halo. Minimal atmospheric photograph, no landscape, no clouds with detail, no birds, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T09:25:30"
+}
