@@ -264,9 +264,60 @@ the picture to the voice and ate the loop; fixed, but check.)
 
 ## 10. Publish kit → `publish.th.md`
 
-Title (1 recommended + alternates, ≤40 chars so mobile doesn't truncate) · description
-(long + short, keyword in line 1, sources listed) · ~24 tags **specific→broad** (≤500 chars) ·
-3 on-page hashtags · playlists. Carry forward what the video refuses to claim.
+Title (see below) · description (long + short, keyword in line 1, sources listed) · ~24 tags
+**specific→broad** (≤500 chars) · 3 on-page hashtags · playlists. Carry forward what the video
+refuses to claim.
+
+### ⬛ The title is not one line — it is three patterns, and they trade against each other
+
+Hook and SEO pull in opposite directions. Don't average them into one mediocre title; write
+**three**, each winning a different surface, and say which to default to and when to switch:
+
+| | pattern | wins | loses |
+|---|---|---|---|
+| 🅰️ | **keyword-first** — search token in the first 2 words, hook after | search | looks like an article; weak in-feed |
+| 🅱️ | **improbable number** — one concrete figure too small to matter | browse / suggested / thumbnail pairing | nobody types that number |
+| 🅲 | **the query as typed** — mirror a real question, answer it in the same line | long-tail + voice | can promise a side-topic the video only touches |
+
+**Long video → default 🅱️.** A 9-minute video does not grow on search; it grows on being
+suggested. **Short → default 🅰️ or 🅲**, where search actually feeds the Short. Then check the
+traffic mix at 48h and switch — **the title is editable forever, the thumbnail is not.**
+
+### ⬛ The title must not repeat the thumbnail
+
+vox-8 shipped `ปุ๋ยที่หว่านลงนา หายไปไหน — ต้นข้าวได้กินแค่ 38%` against a thumbnail already
+reading **ปุ๋ยหายไปไหน** and **38% → 85%**. Both slots said the same thing — two pieces of
+real estate carrying one piece of information.
+
+They are one unit: **thumbnail asks, title escalates.** vox-8's fix pairs the thumbnail's `38%`
+with a title saying `หายไป 62%` (same number, other side) or pairs the thumbnail's `7 ซม.`
+label with a title built on `ลึก 7 เซนติเมตร`. Write the title *after* the cover exists, and
+read them side by side before choosing.
+
+### ⬛ Find the keyword by search, not by intuition — you will guess the wrong word
+
+Search works even though fetching doesn't (§0), and one round of queries is enough to be
+worth more than any amount of guessing. vox-8's round, in four searches:
+
+- **Thai farmers do not search "ยูเรีย" — they search `46-0-0`.** Shops, extension services
+  and every ag site name fertiliser by its formula. The original kit had the wrong word.
+- **`ปุ๋ยสั่งตัด` had a national news cycle running** — and the video's own last recommendation
+  is that principle under a different name.
+- **`ใส่ปุ๋ยข้าวตอนไหน` is an article headline on a major ag site** — headlines are proof a
+  query repeats often enough to be worth answering.
+- A Thai government extension page **already taught the video's core mechanism** (alkaline soil
+  → avoid 46-0-0 → nitrogen volatilises), which both corroborates the content and positions the
+  video as "the half of this you were never told".
+
+Record the queries and what each word bought in the kit, with the §0 caveat that titles came
+from result listings, not from pages actually read. **A keyword is fine to take from a search
+summary; a fact is not.**
+
+**A keyword you can't deliver on stays out of the title.** `ปุ๋ยสั่งตัด` had the volume and was
+still refused — the video doesn't teach it. Tags and description, never the title.
+
+**Measure the length, don't eyeball it** — Thai combining marks `[ัิ-ฺ็-๎]` are zero-width, so
+`len()` overcounts by ~20% and rejects titles that fit. Strip them, then apply the ≤40 rule.
 
 ## 11. Cover → `covers.th.md`
 
