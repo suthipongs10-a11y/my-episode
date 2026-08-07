@@ -202,12 +202,29 @@ def load_channel(slug):
     """The channel registry. A typo in the slug is fatal on purpose: silently falling back to
     the default voice would narrate one channel's video in another channel's voice, which is
     the exact failure this registry exists to prevent."""
+    cdir = os.path.join(ROOT, "channels")
+    # Two channels sharing a narrator is the failure this registry exists to stop, so it is
+    # CHECKED rather than remembered — and checked on every run, not only when adding a channel.
+    if os.path.isdir(cdir):
+        seen = {}
+        for f in sorted(os.listdir(cdir)):
+            if not f.endswith(".json"):
+                continue
+            try:
+                c = json.load(open(os.path.join(cdir, f), encoding="utf-8"))
+            except ValueError:
+                sys.exit(f"channels/{f} is not valid JSON")
+            v = c.get("voice")
+            if v and v in seen:
+                sys.exit(f"channels/{f} and channels/{seen[v]}.json both use the voice {v!r} — "
+                         f"one voice per channel, or the channels sound like one show")
+            if v:
+                seen[v] = c.get("slug", f[:-5])
     if not slug:
         return {}
-    path = os.path.join(ROOT, "channels", f"{slug}.json")
+    path = os.path.join(cdir, f"{slug}.json")
     if not os.path.exists(path):
-        have = sorted(f[:-5] for f in os.listdir(os.path.join(ROOT, "channels"))
-                      if f.endswith(".json")) if os.path.isdir(os.path.join(ROOT, "channels")) else []
+        have = sorted(f[:-5] for f in os.listdir(cdir) if f.endswith(".json")) if os.path.isdir(cdir) else []
         sys.exit(f"unknown channel {slug!r} — channels/ has: {', '.join(have) or '(none)'}")
     return json.load(open(path, encoding="utf-8"))
 

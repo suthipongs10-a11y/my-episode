@@ -13,7 +13,9 @@ vox-shorts/vox-N-<topic>/     ← one video; its beats.json says which channel i
 
 1. Copy an existing `channels/*.json`, change `slug` and `name`.
 2. **Audition a voice and lock it.** It must differ from every other channel's — a shared
-   narrator makes two channels sound like one show:
+   narrator makes two channels sound like one show. **This is enforced, not trusted:**
+   `gen_voice_gemini.py` scans the whole registry on every run and refuses to start if two
+   channels declare the same voice.
    ```bash
    python tools/gen_voice_gemini.py --audition "<the hook line of the first video>" \
      --voices Kore,Leda,Aoede,Achernar,Puck,Iapetus
@@ -38,6 +40,14 @@ Here it is one edit per channel, and the resolution order is explicit:
 ```
 --voice/--style  >  beats.json "voice"/"style"  >  channels/<channel>.json  >  env  >  default
 ```
+
+Current locks — audition on the real hook line, never from a spec sheet:
+
+| channel | voice | since |
+|---|---|---|
+| เกษตรที่คนไทยควรรู้ (`agri`) | `Algieba` | 2026-08-04 |
+| สุขภาพแบบเข้าใจง่าย (`health`) | `Leda` | 2026-08-04 |
+| The EV Insight (`ev`) | `Umbriel` | 2026-08-04 |
 
 The per-video fields still work as an escape hatch and warn when they contradict the channel.
 **An unknown slug is a hard error, not a fallback** — a typo must never quietly resolve to the

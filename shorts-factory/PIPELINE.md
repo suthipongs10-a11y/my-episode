@@ -100,8 +100,12 @@ This pass caught 6 real defects in vox-2 and 2 in the Thai conversion. Cheaper t
 **The voice belongs to the CHANNEL — see `channels/README.md`.** A video says
 `"channel": "health"` in its beats.json and the voice, style and editorial rules come from
 `channels/health.json`. Nothing about the voice is typed on the command line, and an unknown
-slug is a hard error rather than a fallback. Audition with the shot's real hook line, never
-from a spec sheet.
+slug is a hard error rather than a fallback, and two channels declaring the same voice is
+refused outright — the rule is checked on every run, not remembered. Audition with the shot's
+real hook line, never from a spec sheet.
+
+`agri`=Algieba · `health`=Leda · `ev`=Umbriel. Voices differ in PACE by ~10%, so every channel
+`style` needs a pace lever (`พูดเร็วขึ้นเล็กน้อย`) and the composition length follows the voice.
 
 **Voices differ in PACE, not just timbre — budget for it.** Same trimmed script, same style
 prompt: Algieba 45.86s, Leda 50.42s (+10%). Include the pace lever (`พูดเร็วขึ้นเล็กน้อย`) in
