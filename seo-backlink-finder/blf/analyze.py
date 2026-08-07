@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-from . import language, textrank
+from . import indexability, language, textrank, toxicity
 from .models import Analysis, LinkAttribute, OpportunityType
 
 try:
@@ -188,6 +188,8 @@ def analyze_html(
     type_hint: Optional[OpportunityType] = None,
     status: Optional[int] = None,
     final_url: Optional[str] = None,
+    headers: Optional[dict] = None,
+    robots_allows: Optional[bool] = None,
 ) -> Analysis:
     """Interpret a page. `type_hint` is the opportunity type the footprint that
     found this URL suggested; it sharpens ambiguous link-attribute calls."""
@@ -254,6 +256,7 @@ def analyze_html(
 
     # Link analysis
     ext_total = ext_nofollow = ext_ugc = ext_dofollow = 0
+    ext_domains: list[str] = []
     for href, rel in _sample_links(soup, html, self_domain):
         if href.startswith(("#", "mailto:", "javascript:", "tel:")):
             if href.startswith("mailto:") and not a.contact_email:
@@ -263,6 +266,7 @@ def analyze_html(
             dom = registrable_domain(href)
             if dom and dom != self_domain:
                 ext_total += 1
+                ext_domains.append(dom)
                 if "sponsored" in rel:
                     pass  # sponsored links don't pass value; ignore for dofollow
                 elif "nofollow" in rel:
@@ -279,6 +283,7 @@ def analyze_html(
 
     a.external_links = ext_total
     a.external_dofollow = ext_dofollow
+    a.external_domains = list(dict.fromkeys(ext_domains))[:200]
     a.link_attribute = _infer_link_attribute(
         ext_total, ext_nofollow, ext_ugc, a.comment_system, a.platform, type_hint
     )
@@ -292,4 +297,25 @@ def analyze_html(
     if a.platform:
         a.signals.append(f"platform: {a.platform}")
     a.signals.append(f"external links: {ext_total} ({ext_dofollow} dofollow)")
+
+    # -- can the link be seen, and is being here a liability? ----------------
+    # Both run last, on everything gathered above. Either can veto a prospect
+    # the rest of this function was happy with, which is the point of them.
+    index = indexability.assess(
+        final_url or url, html, headers=headers, soup=soup,
+        robots_allows=robots_allows,
+    )
+    a.indexability = index.to_dict()
+    for reason in index.reasons:
+        a.signals.append(reason)
+
+    tox = toxicity.assess(
+        a.external_domains, text,
+        opportunity_type=(type_hint.value if type_hint else None),
+        external_links=ext_total,
+    )
+    a.toxicity = tox.to_dict()
+    for reason in tox.reasons:
+        a.signals.append(reason)
+
     return a

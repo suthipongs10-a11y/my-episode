@@ -205,6 +205,13 @@ def compute(prospect: Prospect, cfg, profile=None) -> Scores:
                  OpportunityType.EDITORIAL_MENTION) and a.contact_email:
         ease = min(100.0, ease + 10)   # we have a way to reach them
 
+    # -- two vetoes, applied after the blend ---------------------------------
+    # These are not weighted components: they are not "a bit less good", they
+    # are reasons the link cannot work or should not be wanted. A weighted
+    # component would let a strong authority score outvote them, which is
+    # exactly the failure they exist to prevent.
+    quality, veto_notes = _apply_vetoes(a, quality)
+
     quality = round(max(0.0, min(100.0, quality)), 1)
     ease = round(max(0.0, min(100.0, ease)), 1)
 
@@ -219,9 +226,51 @@ def compute(prospect: Prospect, cfg, profile=None) -> Scores:
 
     breakdown = {k: round((comps[k] or 0.0) * 100, 1) for k in comps}
     breakdown["_weights_used"] = {k: round(weights[k] / total_w, 3) for k in usable}
+    if veto_notes:
+        breakdown["_vetoes"] = veto_notes
 
     return Scores(quality=quality, ease=ease, priority=priority, match=match,
                   tier=tier_for(quality, cfg), breakdown=breakdown)
+
+
+# Quality ceilings, not subtractions. A page Google will not index is worth
+# nothing regardless of how good everything else about it is.
+NOINDEX_CEILING = 5.0
+CANONICAL_CEILING = 20.0
+TOXIC_CEILING = 15.0
+
+
+def _apply_vetoes(analysis, quality: float) -> tuple[float, list[str]]:
+    """Cap quality for links that cannot count, or that would cost you.
+
+    Returns the capped score and the human-readable reasons, which the report
+    shows — a prospect that dropped from 84 to 5 must say why, or the operator
+    will assume the tool is broken and stop trusting the ranking.
+    """
+    from .indexability import Indexability
+    from .toxicity import Toxicity
+
+    notes: list[str] = []
+    index = Indexability.from_dict(analysis.indexability)
+    tox = Toxicity.from_dict(analysis.toxicity)
+
+    if index.indexable is False:
+        quality = min(quality, NOINDEX_CEILING)
+        notes.append("Google เข้าไม่ถึงหน้านี้ — ลิงก์ที่วางจะไม่ถูกนับเลย")
+    elif index.canonical_elsewhere:
+        # Not zero: the canonical may be ignored, and the page can still send
+        # human traffic. But the link value is being consolidated elsewhere.
+        quality = min(quality, CANONICAL_CEILING)
+        notes.append("canonical ชี้ไปหน้าอื่น — ค่าของลิงก์จะถูกโอนไปหน้านั้น")
+
+    if tox.avoid:
+        quality = min(quality, TOXIC_CEILING)
+        notes.append("หน้านี้มีสัญญาณเว็บขายลิงก์/สแปม — ได้ลิงก์มาอาจเสียมากกว่าได้")
+    elif tox.risk >= 0.3:
+        quality *= 0.75
+        notes.append("มีสัญญาณเสี่ยงบางอย่าง ตรวจด้วยตาก่อนวางลิงก์")
+
+    return quality, notes
 
 
 def tier_for(quality: float, cfg) -> str:

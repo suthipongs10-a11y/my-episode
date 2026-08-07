@@ -152,9 +152,16 @@ class Analysis:
     external_dofollow: int = 0
     contact_email: Optional[str] = None
     contact_url: Optional[str] = None
+    external_domains: list[str] = field(default_factory=list)  # sample, for toxicity
     terms: dict = field(default_factory=dict)          # term vector for matching
     signals: list[str] = field(default_factory=list)   # human-readable evidence
     error: Optional[str] = None
+
+    # Can Google see a link here at all, and is being here a liability?
+    # Both default to "unknown"; a page we could not judge is never scored as
+    # if it failed. See indexability.py and toxicity.py.
+    indexability: dict = field(default_factory=dict)
+    toxicity: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)

@@ -436,6 +436,10 @@ def cmd_show(args) -> int:
         out_plain(f"  title       : {a.title}")
     if s.breakdown:
         out(f"  score parts : { {k: v for k, v in s.breakdown.items() if not k.startswith('_')} }")
+    # Vetoes come before the raw signals: a prospect whose quality was capped
+    # must say so where the number is, not twenty lines further down.
+    for note in (s.breakdown or {}).get("_vetoes", []):
+        out_plain(f"  [!] {note}")
     if a.signals:
         out("  signals     :")
         for sig in a.signals:

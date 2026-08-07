@@ -41,6 +41,10 @@ def analyze_prospect(
     prospect.analysis = analyze_html(
         prospect.url, res.text, type_hint=prospect.opportunity_type,
         status=res.status, final_url=res.final_url,
+        headers=res.headers,
+        # The fetcher already resolved robots.txt to get here; reuse its verdict
+        # rather than asking the site a second time.
+        robots_allows=fetcher.allowed(res.final_url or prospect.url),
     )
     # metrics
     if metrics_provider is not None:

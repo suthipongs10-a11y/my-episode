@@ -100,10 +100,19 @@ def export_html(prospects: Iterable[Prospect], path: str, title: str = "Backlink
             warn = ' title="link likely does not pass ranking value"'
         match = v["match"]
         mcolor = "#1a7f37" if match >= 60 else ("#d97706" if match >= 30 else "#9ca3af")
+        # A quality score that was capped must carry its reason on the row.
+        # A prospect that dropped from 84 to 5 with no explanation reads as a
+        # broken tool, and the operator stops trusting the whole ranking.
+        vetoes = (p.scores.breakdown or {}).get("_vetoes") or []
+        flag = ""
+        if vetoes:
+            flag = (' <span class="veto" title="'
+                    + html.escape(" · ".join(vetoes)) + '">!</span>')
+
         cells = [
             f'<td><span class="tier" style="background:{color}">{tier}</span></td>',
             f'<td class="num">{v["priority"]}</td>',
-            f'<td class="num">{v["quality"]}</td>',
+            f'<td class="num">{v["quality"]}{flag}</td>',
             f'<td class="num" style="color:{mcolor};font-weight:600" '
             f'title="how well this site matches yours">{match}</td>',
             f'<td class="num">{v["ease"]}</td>',
@@ -153,6 +162,9 @@ _HTML_TEMPLATE = """<!doctype html>
        user-select: none; }}
   th:hover {{ color: #3b82f6; }}
   td.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+  .veto {{ display: inline-grid; place-items: center; width: 15px; height: 15px;
+         margin-left: 5px; border-radius: 4px; background: #d03b3b; color: #fff;
+         font-size: 10px; font-weight: 700; cursor: help; vertical-align: 1px; }}
   td.url {{ max-width: 380px; overflow: hidden; text-overflow: ellipsis; }}
   .tier {{ display: inline-block; min-width: 1.4em; text-align: center;
           padding: .1em .4em; border-radius: 4px; color: #fff; font-weight: 600; }}

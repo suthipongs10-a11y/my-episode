@@ -10,7 +10,7 @@ import re
 import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
@@ -72,8 +72,24 @@ class FetchResult:
     final_url: Optional[str] = None
     text: str = ""
     content_type: Optional[str] = None
+    # Response headers, lowercased. Needed because X-Robots-Tag lives only here
+    # — a page can be noindex with nothing in its HTML to show for it.
+    headers: dict = field(default_factory=dict)
     elapsed: float = 0.0
     error: Optional[str] = None
+
+
+def _headers_dict(headers) -> dict:
+    """Response headers, lowercased.
+
+    Defensive on purpose: header objects differ between urllib, requests and
+    test doubles, and a page fetch must never fail because we could not read
+    them. Losing the headers costs one signal; raising here loses the page.
+    """
+    try:
+        return {str(k).lower(): str(v) for k, v in headers.items()}
+    except Exception:
+        return {}
 
 
 class Fetcher:
@@ -198,6 +214,7 @@ class Fetcher:
             return FetchResult(
                 url=url, ok=resp.ok, status=resp.status_code,
                 final_url=str(resp.url), text=text, content_type=ctype,
+                headers=_headers_dict(resp.headers),
                 elapsed=time.monotonic() - start,
             )
         except requests.exceptions.RequestException as exc:  # type: ignore
@@ -214,6 +231,7 @@ class Fetcher:
                 return FetchResult(
                     url=url, ok=True, status=resp.status,
                     final_url=resp.geturl(), text=text, content_type=ctype,
+                    headers=_headers_dict(resp.headers),
                     elapsed=time.monotonic() - start,
                 )
         except urllib.error.HTTPError as exc:
