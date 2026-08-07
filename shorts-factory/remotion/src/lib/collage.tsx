@@ -346,17 +346,28 @@ export const LabelChip: React.FC<{
   //                       for text on cream (e.g. VOX.yellow)
   depth?: number;
   z?: number;
-}> = ({ text, x, y, at = 0, size = 30, rotate = -1.5, accent, kicker, kickerColor, depth = 0.02, z }) => {
+  anchor?: 'center' | 'left'; // see below — 'left' is the safe one near a frame edge
+}> = ({ text, x, y, at = 0, size = 30, rotate = -1.5, accent, kicker, kickerColor, depth = 0.02, z, anchor = 'center' }) => {
   const VOX = useTheme();
   return (
   // Width is an ESTIMATE, and it is load-bearing: the inner box starts at x - w/2, so `x` is a
   // left-ish anchor and an over-wide estimate walks the chip leftwards.
   //
+  // `anchor="left"` puts the box's LEFT EDGE at x instead, by shifting the layer right by half
+  // its estimated width. Use it for any chip near the frame edge. THREE shots in a row placed a
+  // chip flush against the edge because the safe minimum x depends on the text length — with
+  // this you write the margin you want and the estimate stops mattering.
+  //
   // text.length is code UNITS, and Thai writes its vowels and tone marks as separate code
   // points that render with zero advance — "ข้าวขาวดอกมะลิ" is 14 units and 11 visible clusters.
   // Counting them inflated every Thai chip by a fifth and shifted it left by half of that.
   // Dropping the combining ranges makes the estimate honest for Thai and leaves latin untouched.
-  <Layer x={x} y={y} w={size * text.replace(/[ัิ-ฺ็-๎]/g, '').length * 0.75 + 60} at={at} dur={10} enter="pop" rotate={rotate} depth={depth} drift={0.7} z={z}>
+  <Layer
+    x={x + (anchor === 'left' ? (size * text.replace(/[ัิ-ฺ็-๎]/g, '').length * 0.75 + 60) / 2 : 0)}
+    y={y}
+    w={size * text.replace(/[ัิ-ฺ็-๎]/g, '').length * 0.75 + 60}
+    at={at} dur={10} enter="pop" rotate={rotate} depth={depth} drift={0.7} z={z}
+  >
     <div
       style={{
         display: 'inline-block',
