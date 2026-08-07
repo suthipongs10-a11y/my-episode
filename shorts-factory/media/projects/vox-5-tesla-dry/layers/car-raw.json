@@ -1,0 +1,9 @@
+{
+  "prompt": "A small generic electric city hatchback, strict side profile view, boxy upright body, short bonnet, high roofline, round headlights, chunky black plastic wheel arches, bright orange paint, small steel wheels. Deliberately ordinary and utilitarian — like a European or Japanese budget city car, NOT a sleek premium crossover. Completely unbranded: no badges, no emblems, no logos, no number plate, no model name. Studio product photograph on a pure white seamless background, flat even lighting, sharp focus, whole car inside the frame with generous empty margin.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "1K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T02:07:23"
+}

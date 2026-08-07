@@ -1,0 +1,9 @@
+{
+  "prompt": "A small conical heap of fine matte-black electrode powder on a plain surface, a few loose grains beside it. Studio macro photograph on a pure white seamless background, soft even lighting, sharp focus, the whole heap inside the frame with generous empty margin. No text, no containers, no hands, no spoon.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "1K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T02:04:22"
+}

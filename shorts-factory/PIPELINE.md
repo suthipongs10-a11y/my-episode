@@ -78,6 +78,16 @@ If the sources genuinely carry no answer, the topic is wrong for this channel �
 with a factual caption. Say "a farmer", never "the farmer". vox-1 broke this; don't copy it.
 Committed to `media/projects/<proj>/layers/`.
 
+**No generated image may be presented as a real company's product either.** A video about a
+named manufacturer gets generic hardware for atmosphere; every claim about that company lives
+on a typeset card with its source.
+
+**"Do not resemble any real brand" does not work as a prompt.** vox-5 asked for a generic EV
+with no badges and got a Model Y in all but name, because "modern EV crossover" IS a Model Y in
+the training data. Specify a genuinely different FORM — vox-5's second attempt asked for a
+small orange city hatchback on steel wheels and escaped. The failed one is kept beside it as
+`car-modelY-lookalike.png`. **Look at what came back; the prompt's intent is not evidence.**
+
 ## 5. Composition — `remotion/src/shots/vox-N/`
 
 `CollageBoard cam={CAM}` + `Sequence` per beat + a `CUE` table of global frames.
