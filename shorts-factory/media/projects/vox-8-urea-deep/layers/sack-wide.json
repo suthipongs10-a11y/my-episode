@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide landscape studio photograph of a plain unmarked white woven polypropylene sack lying on its side on a plain seamless mid-grey studio floor, with white spherical fertiliser prills spilling from its open mouth into a small heap. Completely blank sack — no printing, no logo, no lettering, no numbers, no stitched pattern anywhere. Plain seamless grey background with no horizon, no landscape, no location of any kind. Soft even studio lighting, sharp focus. No people, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:12:28"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide cinematic landscape photograph of a mature rice field at golden ripeness, heavy drooping seed heads filling the frame, warm low sunlight, a distant blurred tree line on the horizon. Documentary photograph, natural colour, no people, no machinery, no buildings, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:10:23"
+}

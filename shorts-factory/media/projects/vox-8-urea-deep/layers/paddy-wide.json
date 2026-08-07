@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide cinematic landscape photograph of transplanted rice seedlings in neat rows standing in shallow still water, shot low and close so the rows recede across the whole frame, water surface mirror-smooth reflecting a pale hazy sky. Warm late-afternoon light. Documentary photograph, natural colour, no people, no buildings, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:07:26"
+}

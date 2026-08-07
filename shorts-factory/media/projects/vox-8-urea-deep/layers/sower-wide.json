@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide cinematic landscape photograph of a flooded rice field stretching to a distant tree line, with a single small dark silhouette of a person standing in the water on the right third, one arm swung out broadcasting fertiliser by hand, the scattered grains a faint arc in the air. Fully backlit against a bright hazy low sun so the figure has no visible face or clothing detail. Mirror-still water with reflected sky filling most of the frame. Documentary photograph, no other people, no buildings, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:07:03"
+}

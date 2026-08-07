@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide landscape photograph of a plain unmarked white woven polypropylene sack sitting open on bare dry ground with white fertiliser prills spilling from its mouth. Completely blank sack — no printing, no logo, no lettering, no stitching pattern, no numbers anywhere. Soft natural daylight. Documentary photograph, no people, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:10:46"
+}

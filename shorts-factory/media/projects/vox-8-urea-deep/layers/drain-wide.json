@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide landscape photograph of muddy brown water pouring through a gap in an earthen field bund into a channel below, the bund running across the frame, green blurred field behind. Documentary photograph, natural colour, no people, no pipes, no concrete, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:08:19"
+}

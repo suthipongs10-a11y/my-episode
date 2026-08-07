@@ -13,7 +13,7 @@
 
 | ใช้ทำอะไร | ไฟล์ |
 |---|---|
-| **วิดีโอ** | `remotion/out/Vox8UreaDeep-voiced.mp4` (1080×1920, 9:30) |
+| **วิดีโอ** | `remotion/out/Vox8UreaDeepWide-voiced.mp4` (**1920×1080 แนวนอน**, 9:30) |
 | **หน้าปก** | ยังไม่ได้สร้าง — prompt 3 แบบอยู่ใน `covers.th.md` แนะนำแบบ A |
 
 ---

@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide landscape documentary photograph looking down a row of transplanted rice seedlings in shallow muddy water, with a pair of bare hands and forearms entering from the right pressing something down into the mud between four clumps of rice. Brown skin, mud on the wrists, water rippling. No face, no clothing detail beyond a rolled sleeve. Natural colour, no text, no branding.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:09:09"
+}

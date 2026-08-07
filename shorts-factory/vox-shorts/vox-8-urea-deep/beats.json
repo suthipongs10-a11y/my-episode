@@ -1,11 +1,11 @@
 {
 	"id": "vox-8-urea-deep",
 	"title": "ปุ๋ยที่หว่านลงนา หายไปไหน",
-	"composition": "Vox8UreaDeep",
+	"composition": "Vox8UreaDeepWide",
 	"channel": "agri",
 	"format": {
-		"width": 1080,
-		"height": 1920,
+		"width": 1920,
+		"height": 1080,
 		"fps": 30,
 		"durationSec": 570
 	},
@@ -565,5 +565,6 @@
 			"seconds": 5.4
 		}
 	],
-	"beats": []
+	"beats": [],
+	"formatNote": "แนวนอน 1920x1080 — คลิปยาว 9.5 นาทีต้องเป็นแนวนอนสำหรับ YouTube เวอร์ชันแรกทำเป็น 1080x1920 แนวตั้งโดยยกฟอร์แมตจากไปป์ไลน์ Shorts มาใช้ต่อ โดยไม่ได้ตั้งคำถามตอนที่ความยาวเปลี่ยน · กฎอยู่ใน PIPELINE §3: durationSec เกิน 60 = สลับ width/height · เสียง คิวเฟรม และบทเหมือนเดิมทุกอย่าง เปลี่ยนเฉพาะเลย์เอาต์"
 }

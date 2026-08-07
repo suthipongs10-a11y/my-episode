@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide landscape documentary photograph of a simple wooden and metal hand rake dragging through wet muddy soil in a field, turning the surface over, fresh wet furrows behind it. Plain unbranded tool, no people visible beyond a hand on the handle at the edge of frame. Natural colour, no text, no logos.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:09:34"
+}

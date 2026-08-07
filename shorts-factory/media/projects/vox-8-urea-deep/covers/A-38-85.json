@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold horizontal YouTube thumbnail, 1280x720 landscape, warm cream paper background (#efe6d3) with a very subtle paper grain, editorial magazine style.\n\nLEFT HALF: large Thai headline in dark ink brown-black, heavy geometric sans-serif, on ONE single line, perfectly spelled:\nปุ๋ยหายไปไหน\n\nDirectly under it on the left half: two numbers side by side, separated by a thick dark ink arrow pointing RIGHT (from the small number toward the big one).\nThe LEFT number is dark grey and plain, reading exactly: 38%\nThe RIGHT number is brick red and MUCH larger, at least twice the height of the left one, reading exactly: 85%\nUnder the left number, small dark ink Thai text on one line, perfectly spelled: หว่าน\nUnder the right number, small dark ink Thai text on one line, perfectly spelled: ฝัง\n\nRIGHT HALF: a simple flat cross-section drawing of flooded paddy soil, drawn like a printed textbook figure — a band of muted blue water at the top, a THIN light brown band under it, and thick dark blue-grey mud filling the rest. A small white cylinder sits clearly INSIDE the dark mud band, well below the brown band, never floating in the water. A thin dark ink measuring line beside it with the label, perfectly spelled: 7 ซม.\n\nFlat solid colours only: warm cream, dark ink brown-black, brick red, muted blue, light brown, dark blue-grey. No gradient, no glow, no drop shadow, no 3D, no photographic texture. Keep 8% clear margin left and right and 6% top and bottom — nothing touches an edge.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:26:06"
+}

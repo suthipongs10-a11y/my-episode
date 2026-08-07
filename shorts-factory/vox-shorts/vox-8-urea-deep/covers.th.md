@@ -2,9 +2,18 @@
 
 ```
 export GEMINI_API_KEY="$GOOGLE_TTS_API_KEY"
-python tools/gen_image.py --model pro --aspect 9:16 --prompt "<วาง prompt>" \
+python tools/gen_image.py --model pro --aspect 16:9 --prompt "<วาง prompt>" \
   --out media/projects/vox-8-urea-deep/covers/<ชื่อ>.png
 ```
+
+> ### ⬛ หน้าปกของคลิปนี้เป็น **16:9 แนวนอน** ไม่ใช่ 9:16
+>
+> ไฟล์นี้เขียนไว้เป็น 9:16 ตอนที่คลิปยังเป็นแนวตั้ง เมื่อคลิปเปลี่ยนเป็นแนวนอน
+> **หน้าปกต้องเปลี่ยนตาม** — หน้าปก YouTube มาตรฐานคือ 1280×720 (16:9)
+> prompt ทั้งสามข้างล่างแก้ให้เป็นแนวนอนแล้ว และวางองค์ประกอบเป็นสองคอลัมน์
+> ซึ่งเป็นสิ่งที่แนวตั้งทำไม่ได้
+>
+> **กฎเดียวกับตัวคลิป:** คลิปยาว = แนวนอนทั้งวิดีโอและหน้าปก · Shorts = แนวตั้ง
 
 กฎบังคับทุก prompt (PIPELINE §11): ระบุขอบเขตขอบภาพ · ตัวเลขหนึ่งตัวใหญ่กว่าตัวอื่น 3–4 เท่า ·
 `perfectly spelled` · `no gradient, no glow` · เรียกชื่อสีตรง ๆ · **หัวเรื่องไทยบรรทัดเดียว**
@@ -21,20 +30,21 @@ python tools/gen_image.py --model pro --aspect 9:16 --prompt "<วาง prompt>
 ปกจึงควรเป็นตัวเลขสองตัวนั้น กับความลึกที่ทำให้มันต่างกัน
 
 ```
-A bold vertical YouTube thumbnail, 1080x1920, warm cream paper background (#efe6d3) with a
-very subtle paper grain, editorial magazine style.
+A bold horizontal YouTube thumbnail, 1280x720 landscape, warm cream paper background (#efe6d3)
+with a very subtle paper grain, editorial magazine style.
 
-Upper third: large Thai headline in dark ink brown-black, heavy geometric sans-serif, on ONE
+LEFT HALF: large Thai headline in dark ink brown-black, heavy geometric sans-serif, on ONE
 single line, perfectly spelled:
 ปุ๋ยหายไปไหน
 
-Middle: two numbers side by side, separated by a thick dark ink arrow pointing right.
+Directly under it on the left half: two numbers side by side, separated by a thick dark ink
+arrow pointing right.
 The LEFT number is dark grey and plain: 38%
 The RIGHT number is brick red and MUCH larger, at least twice the height of the left one: 85%
 Under the left number, small dark ink Thai text on one line, perfectly spelled: หว่าน
 Under the right number, small dark ink Thai text on one line, perfectly spelled: ฝัง
 
-Lower third: a simple flat cross-section drawing of flooded paddy soil — a thin blue band of
+RIGHT HALF: a simple flat cross-section drawing of flooded paddy soil — a thin blue band of
 water at the top, a thin light brown band under it, and dark blue-grey mud below that. A small
 white cylinder sits inside the dark mud layer with a thin dark ink line and the label 7 ซม.
 drawn beside it, perfectly spelled.
@@ -47,16 +57,16 @@ Keep 8% clear margin left and right, 6% top and bottom — nothing touches an ed
 ## แบบ B — เงาคนหว่าน (ใช้เมื่ออยากให้อารมณ์นำ)
 
 ```
-A bold vertical YouTube thumbnail, 1080x1920, warm cream paper background (#efe6d3) with subtle
-paper grain, editorial magazine style.
+A bold horizontal YouTube thumbnail, 1280x720 landscape, warm cream paper background (#efe6d3)
+with subtle paper grain, editorial magazine style.
 
-Lower two thirds: a dark silhouette of a single person standing in a flooded rice field with
+RIGHT HALF: a dark silhouette of a single person standing in a flooded rice field with
 one arm swung out, broadcasting fertiliser by hand, the scattered grains visible as a small arc
 of dark dots in the air. Pure black silhouette, no face, no clothing detail, placed on the
 cream background like a cut-out magazine collage.
 
-Upper third: large Thai headline in dark ink, heavy geometric sans-serif, on ONE single line,
-perfectly spelled:
+LEFT HALF, upper area: large Thai headline in dark ink, heavy geometric sans-serif, on ONE
+single line, perfectly spelled:
 หว่านไปแล้ว หายไปไหน
 
 Over the arc of scattered grains, one enormous number in brick red, 4x the size of any other
@@ -74,10 +84,10 @@ Keep 8% clear margin left and right, 6% top and bottom.
 ## แบบ C — ชั้นดินสองโลก (สายอธิบาย)
 
 ```
-A bold vertical YouTube thumbnail, 1080x1920, warm cream paper background (#efe6d3) with subtle
-paper grain, editorial magazine style.
+A bold horizontal YouTube thumbnail, 1280x720 landscape, warm cream paper background (#efe6d3)
+with subtle paper grain, editorial magazine style.
 
-Centre of the frame: a large flat cross-section diagram of a flooded rice paddy, drawn like a
+RIGHT TWO THIRDS: a large flat cross-section diagram of a flooded rice paddy, drawn like a
 printed textbook figure. From top to bottom: a band of muted blue water, then a THIN light
 brown band, then a thick dark blue-grey band filling the lower half.
 
@@ -89,9 +99,10 @@ To the right of the thick dark band, a dark ink label on one line, perfectly spe
 A brick red arrow starts at the water surface and curves downward, ending at a small white
 cylinder drawn inside the dark lower band.
 
-Upper third: large Thai headline in dark ink, heavy geometric sans-serif, ONE single line,
+LEFT THIRD: large Thai headline in dark ink, heavy geometric sans-serif, stacked on two lines,
 perfectly spelled:
-ดินนามีสองโลก
+ดินนา
+มีสองโลก
 
 Flat solid colours only: warm cream, dark ink, brick red, muted blue, light brown, dark
 blue-grey. No gradient, no glow, no 3D, no photographic texture.

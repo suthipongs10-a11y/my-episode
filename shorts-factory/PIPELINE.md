@@ -105,7 +105,28 @@ If the sources genuinely carry no answer, the topic is wrong for this channel �
  "vo":[{"beat","segment","text","start","end","seconds"}], "beats":[{"beat","from","to","camera","layers"}]}
 ```
 `text` = Thai narration. Windows are estimates now; step 6 overwrites them.
-6 lines ≈ 40–45s. Under 60s total or it is not a Short.
+6 lines ≈ 40–45s.
+
+### ⬛ ORIENTATION IS DECIDED BY LENGTH, AND IT IS DECIDED HERE
+
+| Length | Format | Why |
+|---|---|---|
+| **under 60s** | **1080×1920 vertical** | it is a Short; the feed is vertical |
+| **over 60s** | **1920×1080 landscape** | it is an ordinary YouTube video, watched on a wide player |
+
+vox-8 was built at 1080×1920 and ran nine and a half minutes. The vertical format was
+inherited from the Shorts pipeline and never re-examined when the length changed, so a
+long-form documentary shipped in the shape of a Short. **When `durationSec` goes past 60,
+`width` and `height` swap. Check it in this step, not after the render.**
+
+Landscape is not a worse canvas, it is a different one, and mostly a better one for a long
+video: text on the left and picture on the right sit side by side instead of stacking, which
+also makes the band-collision bug in step 6 nearly impossible. Wide diagrams — cross-sections,
+timelines, bar charts — get room they never had vertically.
+
+**Generate the layer images to match.** A 1:1 or 9:16 photo dropped into a 16:9 slot is mostly
+crop. For a landscape video ask `gen_image.py` for `--aspect 16:9` on anything that fills a
+scene, and keep 1:1 only for cutouts that sit on the board as objects.
 
 ## 4. Layers
 

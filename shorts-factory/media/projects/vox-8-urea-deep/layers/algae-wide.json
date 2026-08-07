@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide landscape overhead photograph of still shallow paddy water with a bright green film of algae floating on the surface filling the whole frame, sunlight glinting off the water, muddy bottom faintly visible through gaps. Natural documentary photograph, vivid green, no people, no rice plants, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T11:07:52"
+}
