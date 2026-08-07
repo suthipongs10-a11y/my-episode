@@ -275,6 +275,33 @@ every cover prompt: explicit margins (8% sides / 6% top-bottom), one number 3–
 type, `perfectly spelled`, `no gradient / no glow`, named colours not "vivid", Thai headline
 on **one line** (a model wrapping Thai breaks it mid-word). `--model pro` only.
 
+**Aspect follows §3.** Long video → `--aspect 16:9`. Short → `--aspect 9:16`. The cover and
+the video are the same shape or the thumbnail gets letterboxed in the feed.
+
+### ⬛ The model's PNG is too big to upload, every time
+
+**YouTube's thumbnail limit is 2 MB. `--model pro` returns 2K, and a 2K PNG is over it** —
+vox-8's was 2752×1536 / **2.27 MB**, rejected before it ever reached the form. The output is
+also not exactly 16:9 (2752/1536 = 1.792), so resizing alone squashes it.
+
+So always produce an upload copy beside the original — crop to exact aspect, then resize, then
+JPEG:
+
+```python
+im = Image.open(src); w, h = im.size
+tw = int(round(h * 16 / 9)); x = (w - tw) // 2
+im.crop((x, 0, x + tw, h)).resize((1920, 1080), Image.LANCZOS) \
+  .save(dst, 'JPEG', quality=92, optimize=True, progressive=True)   # ~0.2 MB
+```
+
+Name it `<cover>-upload.jpg` and point the publish kit at **that** file, not the PNG.
+Keep the PNG — it is the evidence, and it is what you measure on.
+
+**Measure the cover with code, not eyes** (§6's rule, applied to the still). vox-7 measured two
+bars at 614px == 614px; vox-8 measured `85%` at 307px against `38%` at 191px = 1.61×. Then
+downscale to **320px wide** and *look at it* — that is the real size in a phone feed, and it is
+the only check that catches Thai that is technically correct and practically unreadable.
+
 ---
 
 ## Thai gotchas (all fixed in the kit — do not re-fix, do not regress)
