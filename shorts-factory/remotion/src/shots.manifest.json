@@ -150,5 +150,13 @@
   "width": 1080,
   "height": 1920,
   "transparent": false
+ },
+ {
+  "id": "Vox6SodiumIon",
+  "durationInSeconds": 113,
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "transparent": false
  }
 ]

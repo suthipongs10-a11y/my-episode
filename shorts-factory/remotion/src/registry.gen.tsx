@@ -19,6 +19,7 @@ import Shot15, { compositionConfig as cfg15 } from './shots/vox-2/Vox2ThaiRice';
 import Shot16, { compositionConfig as cfg16 } from './shots/vox-3/Vox3EightGlasses';
 import Shot17, { compositionConfig as cfg17 } from './shots/vox-4/Vox4Ev800V';
 import Shot18, { compositionConfig as cfg18 } from './shots/vox-5/Vox5TeslaDry';
+import Shot19, { compositionConfig as cfg19 } from './shots/vox-6/Vox6SodiumIon';
 
 export const shots: { Comp: React.FC; config: any }[] = [
   { Comp: Shot0 as React.FC, config: cfg0 },
@@ -40,4 +41,5 @@ export const shots: { Comp: React.FC; config: any }[] = [
   { Comp: Shot16 as React.FC, config: cfg16 },
   { Comp: Shot17 as React.FC, config: cfg17 },
   { Comp: Shot18 as React.FC, config: cfg18 },
+  { Comp: Shot19 as React.FC, config: cfg19 },
 ];

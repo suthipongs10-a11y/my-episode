@@ -6,6 +6,11 @@ Proven end to end on `vox-shorts/vox-2-thai-rice/` — copy that folder's shape.
 **Order matters.** Facts before script, script before layers, QA before render, voice before
 retime. Each step's output is the next step's input; skipping one costs a re-render.
 
+**For a video built from scratch, generate the VOICE BEFORE the composition** — steps 7 then 5.
+Then every cue is written from a measured window and **step 8 does not run at all**. vox-6 did
+this and needed no retime. Keep the documented order only when the composition already exists
+and the script is being rewritten under it.
+
 ---
 
 ## 0. Setup (once per machine)
@@ -103,7 +108,21 @@ node scripts/frames.mjs Vox2ThaiRice 0,240,400,560,700,900,1060,1200,1319 --scal
 ```
 **Read every PNG.** Check: text cropped at max zoom? chips attached to what they label? two
 claims contradicting on one frame? anything invisible at phone scale? frame 0 composed?
-This pass caught 6 real defects in vox-2 and 2 in the Thai conversion. Cheaper than a render.
+This pass caught 6 real defects in vox-2, 2 in the Thai conversion and 5 in vox-6.
+
+Two of vox-6's are general enough to check for every time:
+
+- **Left margin and peak camera zoom are ONE decision.** A chip at x=110 is safe at z=1 and
+  30px from the frame edge at z=1.18, because zooming moves the board's visible left edge in to
+  x≈85. Put the margin in a named constant next to the CAM table, not in six call sites.
+- **A long line with a short picture reads as a stall.** Sort the beats by VO seconds and look
+  at the longest one first: vox-6's 10.16s line was a single card on an empty grid. Over ~8s a
+  card needs a diagram under it, and the diagram is usually the argument already in the script.
+
+For a video over 60s, also check the tail: composition length must be **last word + ~4s**, not
+a round number. vox-6 was first cut at 117s against a 108.4s script and the 8.6s of silence
+read as the video ending twice. `durationSec` in beats.json must match — that is what pads the
+audio bed, and a mismatch either trims the picture or leaves the audio hanging past it.
 
 ## 7. Voice
 

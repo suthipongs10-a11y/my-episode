@@ -1,0 +1,9 @@
+{
+  "prompt": "Aerial view of industrial lithium brine evaporation ponds in a desert salt flat, geometric rectangular basins in vivid turquoise, green and pale yellow separated by pale earthen banks. Photograph looking straight down, the pond complex isolated on a pure white background around its edges, sharp focus, generous empty margin. No text, no vehicles, no buildings.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "1K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T04:46:31"
+}

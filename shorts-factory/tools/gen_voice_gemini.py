@@ -159,8 +159,14 @@ def synth(cfg, text, out_path):
     }, ensure_ascii=False).encode("utf-8")
 
     url = API.format(model=cfg["model"]) + "?key=" + cfg["key"]
-    # The preview TTS models rate-limit readily and a 6-line job trips it, so back off rather
-    # than failing a run halfway and leaving a half-cached voice directory behind.
+    # The preview TTS models rate-limit readily and a long job trips it, so back off rather
+    # than failing halfway and leaving a half-cached voice directory behind.
+    #
+    # 400 is in the retry set, which is normally wrong — a malformed request will just fail
+    # five times. It is here because it was MEASURED: vox-6 line 9 died on 400
+    # INVALID_ARGUMENT mid-run, and the identical request then succeeded three times out of
+    # three when replayed by hand. This endpoint emits spurious 400s. A genuinely bad request
+    # still fails, just five times more slowly, and the error text is printed either way.
     for attempt in range(5):
         req = urllib.request.Request(url, data=body,
                                      headers={"Content-Type": "application/json"},
@@ -171,12 +177,15 @@ def synth(cfg, text, out_path):
             break
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:600]
-            if e.code in (429, 500, 503) and attempt < 4:
+            if e.code in (400, 429, 500, 503) and attempt < 4:
                 wait = 2 ** attempt * 5
                 print(f"      HTTP {e.code}, retrying in {wait}s")
                 time.sleep(wait)
                 continue
-            sys.exit(f"Gemini returned {e.code} for {text[:40]!r}\n{detail}")
+            hint = ("\n(400 here usually means a transient endpoint fault rather than a bad "
+                    "request — replaying the same line by hand often works. Re-run; the cache "
+                    "keeps every line already generated.)" if e.code == 400 else "")
+            sys.exit(f"Gemini returned {e.code} for {text[:40]!r}\n{detail}{hint}")
         except Exception as e:
             sys.exit(f"Gemini unreachable: {type(e).__name__}: {e}")
     else:
