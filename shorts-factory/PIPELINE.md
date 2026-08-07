@@ -170,6 +170,13 @@ a round number. vox-6 was first cut at 117s against a 108.4s script and the 8.6s
 read as the video ending twice. `durationSec` in beats.json must match — that is what pads the
 audio bed, and a mismatch either trims the picture or leaves the audio hanging past it.
 
+**In a long scene, two things wanting the same vertical band must take turns.** A `Sequence`
+with no `durationInFrames` never leaves, so the later element draws straight over the earlier
+one and both become unreadable. vox-8 shipped this three times in one pass — a chart over a
+photo, a pH curve over a photo, a tool over a hand — because its scenes run 30-50s and hold
+many elements. Give the first one `durationInFrames={<next cue> - <this cue> - 18}`. The 18 is
+the fade. Short videos hide this bug; anything past about 20s per scene will not.
+
 ## 7. Voice
 
 **The voice belongs to the CHANNEL — see `channels/README.md`.** A video says
@@ -187,10 +194,15 @@ prompt: Algieba 45.86s, Leda 50.42s (+10%). Include the pace lever (`พูด�
 every channel's style string; without it Leda ran 53.30s. When a locked voice overruns, grow the
 composition — up to the 60s ceiling — rather than cutting the script a second time.
 
-**Estimate line length from the MEASURED rate, never by eye.** Leda reads the `say` field at
-**~14 Thai characters per second**, spaces included. vox-7's first pass was eyeballed and ran
-75.18s against a 52s budget — 30% out, three lines' worth. Count characters before generating;
-the check costs nothing and a re-generation costs a full API pass.
+**Estimate line length from the MEASURED rate, never by eye.** Leda **14.0** Thai characters
+per second, Algieba **14.5**, spaces included, counted on the `say` field. vox-7's first pass
+was eyeballed and ran 75.18s against a 52s budget — 30% out, three lines' worth. Count
+characters before generating; the check costs nothing and a re-generation costs a full API pass.
+
+**Do not derive one voice's rate from another's clip length.** Algieba was assumed 10% faster
+than Leda because an old pair of finished videos differed by that much; measured across vox-8's
+61 lines it is 3%. Clip lengths differ by content and pausing, not just by voice. Measure each
+voice once on real work and write the number in `beats.json`'s `paceNote`.
 
 Two things the rate does not capture, so leave headroom: spelled-out numbers inflate the `say`
 field well past the `text` it replaces, and a line with three clauses pauses between them (one

@@ -7,11 +7,11 @@
 		"width": 1080,
 		"height": 1920,
 		"fps": 30,
-		"durationSec": 540
+		"durationSec": 570
 	},
 	"voicePlan": "เสียงและสไตล์มาจาก channels/agri.json (Algieba)",
 	"voiceStatus": "gemini:gemini-3.1-flash-tts-preview/Algieba — line timings are REAL (measured from the audio). No per-word times: Gemini returns audio only. Run a forced aligner if a track needs them.",
-	"paceNote": "Algieba เร็วกว่า Leda ~10% → ประมาณ 15.4 อักษรไทย/วินาที (Leda วัดได้ 14.0) นับจากฟิลด์ say รวมช่องว่าง ตรวจหลังเจนรอบแรกเสมอ",
+	"paceNote": "วัดจริงจาก 61 บรรทัดนี้: Algieba อ่านฟิลด์ say ที่ 14.46 อักษรไทย/วินาที (รวมช่องว่าง) — ประมาณไว้ 15.4 จากการอนุมานว่าเร็วกว่า Leda 10% ซึ่งผิด จริง ๆ เร็วกว่าแค่ ~3% (Leda 14.0) อย่าอนุมานอัตราจากการเทียบความยาวคลิปเก่า ให้วัดจากงานจริง",
 	"sayNote": "ทุกบรรทัดมี say: เปอร์เซ็นต์ ตัวเลขช่วง ตัวย่อองค์กร (IFDC, IRRI) และ pH เป็นหมวดที่ TTS พลาดบ่อยที่สุด",
 	"structureNote": "ชุด 'สูตรลับจากต่างประเทศ' ใช้โครงของช่องสุขภาพ (ฮุก → กลไก → หลักฐาน → ข้อจำกัด → สรุป) เพราะคนดูเอาไปทำกับที่นาตัวเอง ต่างจาก vox-2 ที่เป็นสารคดีประวัติศาสตร์ล้วน",
 	"vo": [
