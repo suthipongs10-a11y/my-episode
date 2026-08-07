@@ -53,15 +53,39 @@ for f in sorted(glob.glob('channels/*.json')):
     print(f\"{c['slug']:8s} {c['name'][:30]:32s} voice={c['voice']}  videos={len(c['videos'])}\")"
 ```
 
+## Visual theme — `"theme"` in the channel file
+
+The collage kit ships two skins, and a channel picks one:
+
+| theme | material | for |
+|---|---|---|
+| `paper` (default) | aged paper, sepia, ink | documentary, history, anything with an archive |
+| `blueprint` | dark technical grid, cyan/amber, light-on-dark | technology, teardowns, systems |
+
+**Sepia paper is a claim about time.** On a four-thousand-year-old rice site that is exactly
+right; on a brand-new car it reads as ironic. So the EV channel needed a different material —
+but not a different engine. Everything that makes the kit work (board camera, parallax,
+entrance choreography, chips, leader lines, projected maps, the frame-0 loop) is
+material-agnostic; only the palette and background texture carried the "old" signal.
+
+`remotion/src/shots/_proof/SkinProofBlueprint.tsx` is the proof and renders in seconds. It uses
+the identical components as the rice and water films with `theme="blueprint"` and a grid instead
+of paper fibre. **Look at it before arguing about whether a new channel needs a new engine.**
+
+A shot opts in with `<CollageBoard theme="blueprint">`. Adding a third skin is a palette object
+in `collage.tsx` — the keys are the contract, the hex values are not.
+
 ## What is NOT per channel
 
 Shared by everything, in `PIPELINE.md` / `vox-shorts/DESIGN.md` / `brand.md`: the collage visual
 language, the fact-table discipline, "information is real, texture is generated", the QA pass,
 frame-0-composed loops, no CTA outros, the Thai typography fixes.
 
-**Do not fork the pipeline per channel.** A channel differs in voice, topic bank and editorial
-rules. If it needs a different *visual language*, that is a new track (like `ai-shorts/`), not a
-new channel file.
+**Do not fork the pipeline per channel.** A channel differs in voice, topic bank, editorial
+rules and *skin*. A skin is a palette swap on the same kit — cheap, and `theme` covers it. Only
+a genuinely different way of MAKING PIXELS (a video model, live footage) is a new track like
+`ai-shorts/`. An earlier version of this file called any visual difference a new track; the
+blueprint skin proved that too strict.
 
 ## The gap this registry does not close
 

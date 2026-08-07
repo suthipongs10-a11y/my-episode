@@ -9,6 +9,8 @@ import { FONT_BODY, FONT_EDITORIAL } from '../fonts';
 // across the board and layers carry depth for parallax. All motion frame-based.
 // =============================================================================
 
+// The default theme: aged paper, sepia, ink. A DOCUMENTARY material — it says archive, and
+// that is exactly right for a 4000-year-old rice site or a 1945 memo.
 export const VOX = {
   paper: '#efe6d3',
   paperDeep: '#e0d2b8',
@@ -18,7 +20,49 @@ export const VOX = {
   yellow: '#e8b73a',
   teal: '#33695d',
   cream: '#faf5ea',
+  land: '#dcccab', //      map fill for the WORLD layer
+  landHi: '#cbb489', //    map fill for the highlighted country
 } as const;
+
+// Record<..., string>, NOT `typeof VOX` — `as const` narrows each value to its own literal
+// type, so a second palette could never satisfy it. The KEYS are the contract; the hex
+// values are not.
+export type Theme = Record<keyof typeof VOX, string>;
+
+// A SECOND SKIN ON THE SAME ENGINE — for technical channels (EV teardowns and the like).
+//
+// Sepia paper is a claim about time. On a brand-new car it reads as ironic, so the aged-paper
+// look genuinely fights that subject matter. But the fix is not a different engine: everything
+// that makes this kit work — the board camera, parallax, the entrance choreography, chips,
+// leader lines, real projected maps, the frame-0 loop — is material-agnostic. Only the palette
+// and the background texture carry the "old" signal.
+//
+// So `blueprint` swaps the material and keeps the machinery. Technical drawing on gridded paper
+// is a real documentary tradition of its own (patent drawings, service manuals, exploded
+// diagrams), which means the collage grammar still tells the truth about the subject rather
+// than decorating it.
+//
+// The rule that stays: information is real, texture is generated. A blueprint of a battery pack
+// must be drawn from the actual pack layout, not styled to look like it was.
+export const BLUEPRINT: Theme = {
+  paper: '#0e1a24', //     deep technical navy
+  paperDeep: '#16283a',
+  ink: '#e8f4fb', //       light ink ON dark — inverted from paper
+  inkSoft: '#8fb4cc',
+  red: '#ff5c47', //       warning / the failure mode
+  yellow: '#ffc94a', //    the highlight, same job as the marker pen
+  teal: '#3fd0c9', //      the "current flows here" accent
+  cream: '#16283a', //     card fill, i.e. a panel rather than a paper scrap
+  land: '#1d3549',
+  landHi: '#265069',
+};
+
+export const THEMES = { paper: VOX, blueprint: BLUEPRINT } as const;
+export type ThemeName = keyof typeof THEMES;
+
+// Components read the theme from here, defaulting to paper so every existing shot is untouched.
+const ThemeCtx = createContext<Theme>(VOX);
+export const useTheme = () => useContext(ThemeCtx);
 
 export const EASE_OUT = Easing.bezier(0.33, 1, 0.68, 1);
 export const EASE_INOUT = Easing.bezier(0.42, 0, 0.24, 1);
@@ -46,8 +90,9 @@ export const CollageBoard: React.FC<{
   fontBody?: string;
   fontDisplay?: string;
   tracking?: string; // kicker letter-spacing; Thai wants far less of it than latin small-caps
+  theme?: ThemeName; // 'paper' (default) | 'blueprint' — see THEMES
   children: React.ReactNode;
-}> = ({ cam, fontBody, fontDisplay, tracking, children }) => {
+}> = ({ cam, fontBody, fontDisplay, tracking, theme = 'paper', children }) => {
   const frame = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
   const fs = cam.map((k) => k.f);
@@ -66,7 +111,9 @@ export const CollageBoard: React.FC<{
           ...(tracking ? { ['--vox-tracking' as string]: tracking } : {}),
         }}
       >
-        <CamCtx.Provider value={{ offX: camX - W / 2, offY: camY - H / 2, zoom }}>{children}</CamCtx.Provider>
+        <ThemeCtx.Provider value={THEMES[theme]}>
+          <CamCtx.Provider value={{ offX: camX - W / 2, offY: camY - H / 2, zoom }}>{children}</CamCtx.Provider>
+        </ThemeCtx.Provider>
       </div>
     </AbsoluteFill>
   );
@@ -178,6 +225,7 @@ export const Cutout: React.FC<{
   shadow?: number; // 0..3 elevation
   z?: number;
 }> = ({ src, x, y, w, at, dur, enter, rotate, depth, drift, sticker = 5, shadow = 2, z }) => {
+  const VOX = useTheme();
   const s = sticker;
   const outline = s > 0
     ? `drop-shadow(${s}px 0 0 ${VOX.cream}) drop-shadow(-${s}px 0 0 ${VOX.cream}) drop-shadow(0 ${s}px 0 ${VOX.cream}) drop-shadow(0 -${s}px 0 ${VOX.cream}) `
@@ -209,6 +257,7 @@ export const ArchivalPhoto: React.FC<{
   caption?: string;
   z?: number;
 }> = ({ src, x, y, w, at, dur, enter = 'place', rotate = -2, depth, drift, tape = true, treatment = 'sepia', caption, z }) => {
+  const VOX = useTheme();
   const filt =
     treatment === 'sepia' ? 'grayscale(1) sepia(0.42) contrast(1.06) brightness(0.97)'
     : treatment === 'mono' ? 'grayscale(1) contrast(1.1)'
@@ -245,6 +294,7 @@ export const ArchivalPhoto: React.FC<{
 // fibre grain and a soft vignette. Size it to the full canvas, depth ~ -0.06.
 // -----------------------------------------------------------------------------
 export const PaperBG: React.FC<{ src?: string; w: number; h: number; depth?: number }> = ({ src, w, h, depth = -0.06 }) => {
+  const VOX = useTheme();
   const { offX, offY } = useContext(CamCtx);
   return (
     <div
@@ -296,7 +346,9 @@ export const LabelChip: React.FC<{
   //                       for text on cream (e.g. VOX.yellow)
   depth?: number;
   z?: number;
-}> = ({ text, x, y, at = 0, size = 30, rotate = -1.5, accent, kicker, kickerColor, depth = 0.02, z }) => (
+}> = ({ text, x, y, at = 0, size = 30, rotate = -1.5, accent, kicker, kickerColor, depth = 0.02, z }) => {
+  const VOX = useTheme();
+  return (
   // Width is an ESTIMATE, and it is load-bearing: the inner box starts at x - w/2, so `x` is a
   // left-ish anchor and an over-wide estimate walks the chip leftwards.
   //
@@ -324,6 +376,7 @@ export const LabelChip: React.FC<{
     </div>
   </Layer>
 );
+};
 
 // -----------------------------------------------------------------------------
 // SerifStatement — the big editorial line; each word rises in, optional words
@@ -343,17 +396,18 @@ export const SerifStatement: React.FC<{
   //                    photos): bare ink and the yellow sweep both die against sepia tones
   depth?: number;
   z?: number;
-}> = ({ words, x, y, w, at = 0, size = 64, color = VOX.ink, hlColor = VOX.yellow, align = 'center', backing = false, depth = 0.03, z }) => {
+}> = ({ words, x, y, w, at = 0, size = 64, color, hlColor, align = 'center', backing = false, depth = 0.03, z }) => {
+  const VOX = useTheme();
   const frame = useCurrentFrame();
   const allIn = at + words.length * 3 + 10;
   return (
     <Layer x={x} y={y} w={w} at={at} dur={1} enter="none" depth={depth} drift={0.5} z={z}>
-      <div style={{ fontFamily: `var(--vox-display, ${FONT_EDITORIAL})`, fontSize: size, fontWeight: 700, color, textAlign: align, lineHeight: backing ? 1.42 : 1.22, margin: 0 }}>
+      <div style={{ fontFamily: `var(--vox-display, ${FONT_EDITORIAL})`, fontSize: size, fontWeight: 700, color: color ?? VOX.ink, textAlign: align, lineHeight: backing ? 1.42 : 1.22, margin: 0 }}>
         {words.map((wd, i) => {
           const p = interpolate(frame, [at + i * 3, at + i * 3 + 9], [0, 1], { easing: EASE_OUT, ...clamp });
           const sweep = wd.hl ? interpolate(frame, [allIn, allIn + 12], [0, 100], { easing: EASE_INOUT, ...clamp }) : 0;
           const bg = wd.hl
-            ? `linear-gradient(to right, ${hlColor} ${sweep}%, ${backing ? VOX.cream : 'transparent'} ${sweep}%)`
+            ? `linear-gradient(to right, ${hlColor ?? VOX.yellow} ${sweep}%, ${backing ? VOX.cream : 'transparent'} ${sweep}%)`
             : backing
               ? VOX.cream
               : undefined;
@@ -393,7 +447,9 @@ export const RubberStamp: React.FC<{
   rotate?: number;
   depth?: number;
   z?: number;
-}> = ({ text, x, y, at = 0, size = 72, color = VOX.red, rotate = -11, depth = 0.04, z }) => {
+}> = ({ text, x, y, at = 0, size = 72, color, rotate = -11, depth = 0.04, z }) => {
+  const VOX = useTheme();
+  const c = color ?? VOX.red;
   const frame = useCurrentFrame();
   const p = interpolate(frame, [at, at + 7], [0, 1], { easing: EASE_PLACE, ...clamp });
   return (
@@ -413,7 +469,7 @@ export const RubberStamp: React.FC<{
             letterSpacing: size * 0.08,
             textTransform: 'uppercase',
             color,
-            border: `${Math.max(5, size * 0.09)}px solid ${color}`,
+            border: `${Math.max(5, size * 0.09)}px solid ${c}`,
             borderRadius: size * 0.12,
             padding: `${size * 0.12}px ${size * 0.3}px`,
             whiteSpace: 'nowrap',
@@ -443,7 +499,9 @@ export const SketchArrow: React.FC<{
   head?: boolean;
   id: string; // unique per instance (mask id)
   z?: number;
-}> = ({ d, vb, at = 0, dur = 20, color = VOX.red, width = 7, dashed = false, head = true, id, z }) => {
+}> = ({ d, vb, at = 0, dur = 20, color, width = 7, dashed = false, head = true, id, z }) => {
+  const VOX = useTheme();
+  const c = color ?? VOX.red;
   const frame = useCurrentFrame();
   const prog = interpolate(frame, [at, at + dur], [0, 1], { easing: EASE_INOUT, ...clamp });
   if (frame < at || prog <= 0.001) return null;
@@ -459,14 +517,14 @@ export const SketchArrow: React.FC<{
           <mask id={id}>
             <path d={d} fill="none" stroke="#fff" strokeWidth={width * 3} strokeDasharray={evolved.strokeDasharray} strokeDashoffset={evolved.strokeDashoffset} />
           </mask>
-          <path d={d} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeDasharray={`${width * 2.6} ${width * 2.2}`} mask={`url(#${id})`} />
+          <path d={d} fill="none" stroke={c} strokeWidth={width} strokeLinecap="round" strokeDasharray={`${width * 2.6} ${width * 2.2}`} mask={`url(#${id})`} />
         </>
       ) : (
-        <path d={d} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeDasharray={evolved.strokeDasharray} strokeDashoffset={evolved.strokeDashoffset} />
+        <path d={d} fill="none" stroke={c} strokeWidth={width} strokeLinecap="round" strokeDasharray={evolved.strokeDasharray} strokeDashoffset={evolved.strokeDashoffset} />
       )}
       {head && prog > 0.06 ? (
         <g transform={`translate(${tip.x}, ${tip.y}) rotate(${ang})`}>
-          <path d={`M 0 0 L ${-width * 3.2} ${-width * 1.9} M 0 0 L ${-width * 3.2} ${width * 1.9}`} stroke={color} strokeWidth={width} strokeLinecap="round" fill="none" />
+          <path d={`M 0 0 L ${-width * 3.2} ${-width * 1.9} M 0 0 L ${-width * 3.2} ${width * 1.9}`} stroke={c} strokeWidth={width} strokeLinecap="round" fill="none" />
         </g>
       ) : null}
     </svg>

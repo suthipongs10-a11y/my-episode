@@ -11,7 +11,7 @@
 import React from 'react';
 import { interpolate, useCurrentFrame } from 'remotion';
 import { Country, Ring, WORLD } from './geo/world';
-import { VOX } from './collage';
+import { VOX, useTheme } from './collage';
 import { FONT_BODY, FONT_DISPLAY } from '../fonts';
 
 export type { Country, Ring };
@@ -301,33 +301,38 @@ export const PaperMap: React.FC<{
   w?: number;
   h?: number;
   children?: React.ReactNode;
-}> = ({ scale, context = [], highlight, highlightName, world = false, w = 1080, h = 1920, children }) => (
+}> = ({ scale, context = [], highlight, highlightName, world = false, w = 1080, h = 1920, children }) => {
+  const VOX = useTheme();
+  return (
   <svg viewBox={`0 0 ${w} ${h}`} style={{ display: 'block', width: w, height: h, overflow: 'visible' }}>
     {world ? (
-      <WorldLayer scale={scale} except={highlightName ? [highlightName] : []} fill="#dcccab" stroke={VOX.inkSoft} opacity={0.95} />
+      <WorldLayer scale={scale} except={highlightName ? [highlightName] : []} fill={VOX.land} stroke={VOX.inkSoft} opacity={0.95} />
     ) : (
       context.map((c) => (
         <CountryShape key={c.name} scale={scale} country={c} fill={VOX.paperDeep} stroke={VOX.inkSoft} strokeWidth={1.6} opacity={0.72} />
       ))
     )}
     {highlight ? (
-      <CountryShape scale={scale} country={highlight} fill="#cbb489" stroke={VOX.ink} strokeWidth={2.4} opacity={0.95} />
+      <CountryShape scale={scale} country={highlight} fill={VOX.landHi} stroke={VOX.ink} strokeWidth={2.4} opacity={0.95} />
     ) : null}
     {children}
   </svg>
-);
+  );
+};
 
 // A located point. Rings pulse out of it so the eye cannot miss it.
-export const SitePin: React.FC<{ x: number; y: number; at: number; color?: string }> = ({ x, y, at, color = VOX.red }) => {
+export const SitePin: React.FC<{ x: number; y: number; at: number; color?: string }> = ({ x, y, at, color }) => {
+  const VOX = useTheme();
+  const pin = color ?? VOX.red;
   const frame = useCurrentFrame();
   const p = interpolate(frame, [at, at + 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   if (frame < at) return null;
   const pulse = ((frame - at) % 46) / 46;
   return (
     <g opacity={p}>
-      <circle cx={x} cy={y} r={5 + pulse * 26} fill="none" stroke={color} strokeWidth={2} opacity={(1 - pulse) * 0.7} />
-      <circle cx={x} cy={y} r={7} fill={color} />
-      <circle cx={x} cy={y} r={13} fill="none" stroke={color} strokeWidth={2.5} />
+      <circle cx={x} cy={y} r={5 + pulse * 26} fill="none" stroke={pin} strokeWidth={2} opacity={(1 - pulse) * 0.7} />
+      <circle cx={x} cy={y} r={7} fill={pin} />
+      <circle cx={x} cy={y} r={13} fill="none" stroke={pin} strokeWidth={2.5} />
     </g>
   );
 };
