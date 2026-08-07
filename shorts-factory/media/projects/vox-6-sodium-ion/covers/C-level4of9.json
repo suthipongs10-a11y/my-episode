@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold vertical YouTube thumbnail, 1080x1920, dark navy blueprint background (deep midnight blue #0e1a24) with a faint thin cyan technical grid.\n\nCentre: a horizontal row of nine flat rectangular blocks, like a progress scale. The first four blocks are filled solid coral red; the remaining five are empty dark outlines. Below the row, small white numerals 1 through 9 under each block, perfectly spelled.\n\nAbove the row, large Thai text on ONE single line, perfectly spelled, heavy geometric sans-serif, pure white:\nsolid-state อยู่ตรงนี้\n\nBelow the row, one enormous number in coral red, 4x the size of any other type:\n4 / 9\n\nAt the bottom, one short line of bright amber Thai text, one line only, perfectly spelled:\nตัวที่มาถึงจริง คือแบตจากเกลือ\n\nFlat solid colours: deep midnight blue, pure white, coral red, bright amber. No gradient, no glow, no 3D, no reflections. High contrast, crisp edges. Keep 8% clear margin on the left and right, 6% clear at top and bottom.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "9:16",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T07:08:40"
+}

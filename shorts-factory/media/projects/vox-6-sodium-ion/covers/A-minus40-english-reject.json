@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold vertical YouTube thumbnail, 1080x1920, dark navy blueprint background (deep midnight blue #0e1a24) with a faint thin cyan technical grid.\n\nLeft side: a large white pile of coarse salt crystals, brightly lit, photographic, sitting on the grid. Right side: a single bare silver cylindrical battery cell standing upright, metallic, clean studio lighting.\n\nHuge text in the upper third, in Thai, on ONE single line, perfectly spelled, in a heavy geometric sans-serif:\nแบตจากเกลือ\n\nDirectly below it, one enormous number in bright amber yellow, 4x the size of any other type:\n-40 degrees\n\nBelow the number, one short line of smaller white Thai text, perfectly spelled, one line only:\nยิ่งหนาว ยิ่งได้เปรียบ\n\nFlat solid colours: deep midnight blue, pure white, bright amber yellow, one bright cyan accent. No gradient, no glow, no lens flare, no bokeh. High contrast. Crisp edges. Keep 8% clear margin on the left and right, 6% clear at top and bottom - no text or object may touch any edge. Text must be sharp, level, and fully inside the frame.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "9:16",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T07:08:12"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold vertical YouTube thumbnail, 1080x1920, warm cream paper background (#efe6d3) with subtle paper grain, editorial magazine style.\n\nLower half: a large clean photograph of a single human ear in profile, an older adult, soft even lighting, cut out cleanly and placed on the cream background like a magazine collage. No jewellery, no earring, no hearing device.\n\nUpper third: large Thai headline in dark ink, heavy geometric sans-serif, on ONE single line, perfectly spelled:\nหูกับความจำ เกี่ยวกันอย่างไร\n\nBeside the ear, one enormous number in brick red, 4x the size of any other type:\n7%\n\nBelow the number, one short line of dark ink Thai text, one line only, perfectly spelled:\nเท่ากับไขมันในเลือด\n\nFlat solid colours: warm cream, dark ink, brick red. Photographic only for the ear; everything else flat. No gradient, no glow, no 3D, no neon. Keep 8% clear margin on the left and right, 6% clear at top and bottom.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "9:16",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T07:09:58"
+}

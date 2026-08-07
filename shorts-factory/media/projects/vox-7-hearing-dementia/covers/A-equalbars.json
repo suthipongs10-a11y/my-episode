@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold vertical YouTube thumbnail, 1080x1920, warm cream paper background (#efe6d3) with a very subtle paper grain, editorial magazine style.\n\nCentre of the frame: two thick horizontal brick-red bars of EXACTLY the same length, stacked one above the other with clear space between them, drawn flat like a printed chart. To the right of both bars, one shared brick-red bracket joining them.\n\nAbove the top bar, small dark ink Thai label, perfectly spelled, one line:\nหูตึง\n\nAbove the lower bar, small dark ink Thai label, perfectly spelled, one line:\nไขมัน LDL\n\nTo the right of the bracket, one enormous number in brick red, 4x the size of any other type, perfectly spelled:\n7%\n\nLarge Thai headline across the upper third, dark ink on cream, heavy geometric sans-serif, on ONE single line, perfectly spelled:\nเท่ากันพอดี\n\nAt the bottom, one line of smaller dark ink Thai text, one line only, perfectly spelled:\nปัจจัยเสี่ยงสมองเสื่อม\n\nFlat solid colours only: warm cream, dark ink brown-black, brick red, one mustard yellow accent. No gradient, no glow, no drop shadow, no 3D. Crisp flat editorial print look. Keep 8% clear margin on the left and right, 6% clear at top and bottom - nothing touches an edge.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "9:16",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T07:09:32"
+}
