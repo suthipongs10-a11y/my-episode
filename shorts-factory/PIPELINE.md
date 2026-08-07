@@ -21,6 +21,20 @@ export REMOTION_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium_headless_shell-1194
 Remotion's own Chrome download is blocked here. Full Chrome is rejected too ("Old Headless
 mode has been removed") — it must be the **headless shell**.
 Keys: `GOOGLE_TTS_API_KEY` (voice + images). ElevenLabs/OpenAI/fal/Replicate are unreachable.
+`gen_image.py` looks for **`GEMINI_API_KEY`**, which the environment does not set — export it
+from the TTS key for the call (`export GEMINI_API_KEY="$GOOGLE_TTS_API_KEY"`). Never write it
+to a file; `.env` is gitignored but the repo is public and a key in a command is a key on disk
+the moment someone redirects it.
+
+**Web research: search works, fetching sources does not.** The proxy refuses CONNECT (403) to
+`who.int`, `iris.who.int`, `thelancet.com`, `pmc.ncbi.nlm.nih.gov`, `europepmc.org`,
+`jamanetwork.com`, `bmj.com`, `cochranelibrary.com`, `clinicaltrials.gov`, `nia.nih.gov`,
+`alz.org` and `georgeinstitute.org` — every medical primary source tried so far. Do not route
+around it. For the health channel, whose first rule is "cite guidelines, not news", this is a
+standing constraint: either get the PDFs from the operator, or **triangulate** — re-search with
+different query wording and record in `script.md` how many independent result sets each figure
+appeared in. It is weaker than reading the paper and must be labelled as such. It also works:
+vox-7's spine was wrong in the idea file and the second search caught it.
 
 ---
 
@@ -93,6 +107,14 @@ the training data. Specify a genuinely different FORM — vox-5's second attempt
 small orange city hatchback on steel wheels and escaped. The failed one is kept beside it as
 `car-modelY-lookalike.png`. **Look at what came back; the prompt's intent is not evidence.**
 
+**The same trap catches PLACES.** vox-7 asked for "mid-rise apartment blocks in haze" for a
+line about the dust Thai viewers breathe, and got unmistakable Soviet-era panel blocks —
+because that is what the words mean statistically. Under Thai narration it would have asserted
+a location the video has no source for. Fixed by removing the architecture entirely: flat
+silhouettes, no windows, no features, recognisable as nowhere. Reject kept as
+`haze-sovietblocks-reject.png`. When a shot only needs atmosphere, generate atmosphere — every
+identifiable detail is a claim you did not intend to make. Caption it as an illustration too.
+
 ## 5. Composition — `remotion/src/shots/vox-N/`
 
 `CollageBoard cam={CAM}` + `Sequence` per beat + a `CUE` table of global frames.
@@ -140,6 +162,16 @@ real hook line, never from a spec sheet.
 prompt: Algieba 45.86s, Leda 50.42s (+10%). Include the pace lever (`พูดเร็วขึ้นเล็กน้อย`) in
 every channel's style string; without it Leda ran 53.30s. When a locked voice overruns, grow the
 composition — up to the 60s ceiling — rather than cutting the script a second time.
+
+**Estimate line length from the MEASURED rate, never by eye.** Leda reads the `say` field at
+**~14 Thai characters per second**, spaces included. vox-7's first pass was eyeballed and ran
+75.18s against a 52s budget — 30% out, three lines' worth. Count characters before generating;
+the check costs nothing and a re-generation costs a full API pass.
+
+Two things the rate does not capture, so leave headroom: spelled-out numbers inflate the `say`
+field well past the `text` it replaces, and a line with three clauses pauses between them (one
+vox-7 line came in 2.4s over its character count, and it was the one with three clauses).
+Under 60s is a hard gate — a Short that measures 60.06s is not a Short.
 
 ```bash
 python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --retime \

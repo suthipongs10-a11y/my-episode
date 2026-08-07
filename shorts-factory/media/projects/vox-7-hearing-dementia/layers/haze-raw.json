@@ -1,0 +1,9 @@
+{
+  "prompt": "Thick grey-brown air pollution haze filling the whole frame, with a few faint dark rectangular tower silhouettes barely showing through near the bottom. The towers are pure flat silhouettes with NO window detail, NO balconies, NO architectural features, NO signage — unrecognisable as any particular city or country. Almost abstract: mostly empty hazy air, very low contrast, muted warm grey and brown. Atmospheric photograph, no people, no vehicles, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T06:03:04"
+}

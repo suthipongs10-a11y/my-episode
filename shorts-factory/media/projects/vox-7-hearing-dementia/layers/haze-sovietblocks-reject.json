@@ -1,0 +1,9 @@
+{
+  "prompt": "A city skyline of mid-rise apartment blocks almost dissolved in thick grey-brown air pollution haze, photographed from a distance against a plain pale sky. Flat hazy light, low contrast, muted brown-grey palette, buildings fading into the smog toward the back. Documentary photograph, no people, no vehicles, no signage, no text, no logos.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T06:01:56"
+}

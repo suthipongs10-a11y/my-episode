@@ -158,5 +158,13 @@
   "width": 1080,
   "height": 1920,
   "transparent": false
+ },
+ {
+  "id": "Vox7Hearing",
+  "durationInSeconds": 58,
+  "fps": 30,
+  "width": 1080,
+  "height": 1920,
+  "transparent": false
  }
 ]

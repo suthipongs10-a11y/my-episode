@@ -1,0 +1,9 @@
+{
+  "prompt": "A clean editorial photograph of a single human ear in profile, an older adult, warm neutral skin, soft even studio lighting on a plain light grey seamless background. Sharp focus on the ear itself. No jewellery, no earring, no hearing device, no hair covering the ear. Documentary stock-photo look, natural colour, no filter, no text.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-07T06:01:08"
+}
