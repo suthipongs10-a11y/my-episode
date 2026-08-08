@@ -140,6 +140,43 @@ scene, and keep 1:1 only for cutouts that sit on the board as objects.
 
 **No generated image may be presented as a document.** No AI image inside `ArchivalPhoto`
 with a factual caption. Say "a farmer", never "the farmer". vox-1 broke this; don't copy it.
+
+### ⬛ Free stock photos are not available here — and mostly should not be wanted
+
+Every free-image host is refused by the network policy at CONNECT, measured 2026-08-08:
+`commons.wikimedia.org`, `upload.wikimedia.org`, `api.pexels.com`, `images.pexels.com`,
+`api.unsplash.com`, `images.unsplash.com`, `pixabay.com`, `cdn.pixabay.com`, `openverse.org`,
+`api.openverse.org` — all `403`. That is a policy denial, not a hiccup. **Do not route around
+it.** The operator can widen the environment's network policy if they ever want it.
+
+Three reasons to be glad, before asking for it to be opened:
+
+1. **Stock photos of real products carry real logos.** A photograph of a charging station or a
+   car almost always has a brand in frame, which walks straight into `channels/ev.json` rule 3
+   (no brand promotion). Generated cut-outs are brand-free by construction — that is why
+   vox-10's prompts all end with "no badges, no readable text".
+2. **The licences do not cover what the photo contains.** Unsplash/Pexels grant commercial
+   use of the *image*; they grant nothing over identifiable people or trademarks inside it.
+   Wikimedia Commons is mostly CC BY-SA, which would put an attribution obligation on screen.
+3. **It would break the channel's look.** vox-9 set the EV house style — product photography
+   on white, cut out, over blueprint navy — and stock photography does not match it.
+
+### ✅ What IS reachable: package registries
+
+`registry.npmjs.org`, `pypi.org` and `files.pythonhosted.org` are on the proxy's allowlist.
+That makes **icon and symbol sets** a genuine free-asset route, even though photos are not:
+
+```bash
+npm pack @tabler/icons     # 11,314 SVGs, MIT, commercial use, no attribution required
+```
+
+Verified 2026-08-08 — includes `battery-*`, `battery-charging`, `bolt`, `plug`, `temperature`,
+`gauge`, which is most of an EV explainer's iconography, and the flat outline style suits the
+blueprint skin directly. **Check the licence file inside the package before shipping anything
+from it**, and prefer MIT / Apache-2.0 / CC0 over anything with an attribution clause.
+
+Icons are for symbols and chrome. They are not a substitute for a diagram carrying numbers —
+that rule (§4 top) does not bend.
 Committed to `media/projects/<proj>/layers/`.
 
 **No generated image may be presented as a real company's product either.** A video about a
