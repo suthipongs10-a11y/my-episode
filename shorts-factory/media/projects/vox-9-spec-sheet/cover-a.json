@@ -1,0 +1,9 @@
+{
+  "prompt": "A YouTube thumbnail in the style of a dark technical blueprint panel. Background: deep navy blue (#0e1a24) with a faint darker navy engineering grid, completely flat, no gradient, no glow, no vignette.\n\nLAYOUT, with generous empty margins of 8% on the left and right and 6% on top and bottom:\n- Across the TOP, one single line of Thai text, perfectly spelled, in a bold clean sans-serif, warm off-white: รถคันเดียวกัน สองตัวเลข\n- BELOW it, two very large numerals side by side, each about four times the height of the Thai text, in heavy condensed sans: on the left '620' in bright teal (#3fd0c9), on the right '488' in warm amber (#ffc94a). Between the two numerals a large amber question mark.\n- Under the left numeral a small teal outlined pill containing the Latin letters CLTC. Under the right numeral a small amber outlined pill containing the Latin letters WLTP.\n\nEverything perfectly spelled. Flat solid colours only, named colours, no gradient, no glow, no drop shadow, no photographic elements. Absolutely no cars, no vehicles, no wheels, no brand logos and no other text anywhere in the image.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T02:11:23"
+}

@@ -56,6 +56,8 @@ const MARGIN_L = 170;
 const A = (f: string) => staticFile(`projects/vox-9-spec-sheet/layers/${f}`);
 
 // ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues-vox9.mjs. Do not hand-edit.
+// 32 of 48 lines are still ESTIMATED windows, not measured audio.
+// Re-run the voice tool with --retime, then re-run this script, before the final render.
 const C = {
   hook: 15, spread: 295, gap: 539,
   norank: 793, whyno: 955,
@@ -64,11 +66,11 @@ const C = {
   tbl: 4331, row1: 4483, row2: 4709, row34: 4960, tblPoint: 5351,
   kwh: 5769, buffer: 5959, bufWhy: 6275, disclose: 6746,
   chg: 7118, curve: 7256, mg49: 7632, mg64: 8063, window: 8526,
-  same: 8995, sameEv: 9313, sameLesson: 9754,
+  same: 8995, sameEv: 9313, sameLesson: 9755,
   pwr: 10039, r85: 10142, pwrPoint: 10598,
   safe: 10904, proto: 11015, years: 11400, safePoint: 11738,
   adas: 12024, j3016: 12178, adasPoint: 12586,
-  cmpQ: 12982, cmpA: 13136, cmpEx: 13510,
+  cmpQ: 12983, cmpA: 13136, cmpEx: 13510,
   sum: 13932, sumLead: 14156, three: 14324, close: 14658,
   tail: 14876,
 } as const;
