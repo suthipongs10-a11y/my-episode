@@ -63,6 +63,9 @@ A `say` FIELD, FOR WHEN THE ENGINE READS A NUMBER WRONG
 CONFIGURATION — environment, nothing hardcoded (CLAUDE.md §2.1)
 
   GOOGLE_TTS_API_KEY   required. Also accepts GEMINI_API_KEY.
+  GEMINI_API_KEY_2..9  optional extra keys, rotated to only when one is fully spent.
+                       ⚠️ Quota is per Google Cloud PROJECT, not per key — extra keys from
+                       the same project add nothing. See collect_keys() for what does work.
   GEMINI_TTS_MODEL     [default: gemini-3.1-flash-tts-preview]
                        also valid: gemini-2.5-pro-preview-tts, gemini-2.5-flash-preview-tts
   GEMINI_TTS_VOICE     prebuilt voice name        [default: Algieba]
@@ -130,6 +133,69 @@ def load_env():
     return {**env, **os.environ}
 
 
+def collect_keys(env):
+    """Every Gemini key the environment offers, in preference order, deduped.
+
+    Reads GOOGLE_TTS_API_KEY, GEMINI_API_KEY, and GEMINI_API_KEY_2..GEMINI_API_KEY_9.
+    Any of them may itself hold a comma-separated list.
+
+    ⚠️ MORE KEYS IS USUALLY NOT MORE QUOTA. Gemini rate limits (RPM/TPM/RPD) are enforced
+    PER GOOGLE CLOUD PROJECT, not per key. Ten keys minted in one project share one pool and
+    buy you exactly nothing — the second key hits the same wall the first did, immediately.
+    Extra keys only add throughput when each comes from a SEPARATE project.
+
+    The honest alternatives, in order of how well they work:
+      1. Enable billing on the project. The paid tier raises RPD by orders of magnitude and
+         makes this whole problem disappear. For a pipeline that ships videos, this is the fix.
+      2. Separate Google Cloud projects under the same account — legitimate, and genuinely
+         separate quota. More setup, and each needs its own key here.
+      3. Wait for the reset. RPD rolls over at MIDNIGHT PACIFIC TIME, which is not 24h after
+         you hit the wall — often it is only a few hours away. Check before assuming a day.
+
+    Separate *accounts* created to multiply free quota is a different thing from separate
+    projects, and is the kind of thing provider terms tend to prohibit. Not recommended here.
+    """
+    out, seen = [], set()
+    names = ["GOOGLE_TTS_API_KEY", "GEMINI_API_KEY"] + [f"GEMINI_API_KEY_{i}" for i in range(2, 10)]
+    for n in names:
+        for k in (env.get(n) or "").split(","):
+            k = k.strip()
+            if k and k not in seen:
+                seen.add(k)
+                out.append(k)
+    return out
+
+
+class KeyRing:
+    """Hands out one key at a time; advances only when the current one is fully spent.
+
+    Deliberately NOT round-robin. Spreading requests across keys evenly would spread them
+    across the same project pool for no gain, and would make a failure look like a flake on
+    every key instead of a wall on one. Drain a key, then move on.
+    """
+
+    def __init__(self, keys):
+        self.keys = keys
+        self.i = 0
+
+    def __len__(self):
+        return len(self.keys)
+
+    def current(self):
+        return self.keys[self.i]
+
+    def exhaust(self):
+        """Retire the current key. True if another is available, False if that was the last."""
+        tail = f"…{self.current()[-4:]}" if self.current() else "?"
+        if self.i + 1 >= len(self.keys):
+            print(f"      key {self.i + 1}/{len(self.keys)} ({tail}) is spent — no keys left")
+            return False
+        self.i += 1
+        print(f"      key {self.i}/{len(self.keys)} ({tail}) is spent — switching to key "
+              f"{self.i + 1}/{len(self.keys)}")
+        return True
+
+
 def run(cmd, **kw):
     return subprocess.run(cmd, check=True, capture_output=True, text=True, **kw)
 
@@ -158,7 +224,7 @@ def synth(cfg, text, out_path):
         },
     }, ensure_ascii=False).encode("utf-8")
 
-    url = API.format(model=cfg["model"]) + "?key=" + cfg["key"]
+    ring = cfg["keys"]
     # The preview TTS models rate-limit readily and a long job trips it, so back off rather
     # than failing halfway and leaving a half-cached voice directory behind.
     #
@@ -174,7 +240,9 @@ def synth(cfg, text, out_path):
     # bytes — went through first try. So: a 400 that survives a full re-run is STICKY TO THAT
     # TEXT, not to the moment. Do not keep re-running; rewrite the line. Both failures cost
     # about the same to diagnose, which is why both are written down here.
-    for attempt in range(5):
+    attempt = 0
+    while True:
+        url = API.format(model=cfg["model"]) + "?key=" + ring.current()
         req = urllib.request.Request(url, data=body,
                                      headers={"Content-Type": "application/json"},
                                      method="POST")
@@ -184,10 +252,17 @@ def synth(cfg, text, out_path):
             break
         except urllib.error.HTTPError as e:
             detail = e.read().decode("utf-8", "replace")[:600]
+            # A 429 that survives the whole backoff ladder is not congestion, it is the daily
+            # cap. Rotate to the next key and start the ladder over; see KeyRing on why extra
+            # keys only help when they come from a DIFFERENT Google Cloud project.
+            if e.code == 429 and attempt >= 4 and ring.exhaust():
+                attempt = 0
+                continue
             if e.code in (400, 429, 500, 503) and attempt < 4:
                 wait = 2 ** attempt * 5
                 print(f"      HTTP {e.code}, retrying in {wait}s")
                 time.sleep(wait)
+                attempt += 1
                 continue
             hint = ("\n(400 comes in two flavours. TRANSIENT: re-run once — the cache keeps "
                     "every line already generated, and the same request often goes through. "
@@ -195,11 +270,15 @@ def synth(cfg, text, out_path):
                     "that exact text. Stop re-running and reword the line; same meaning, "
                     "different bytes, and it goes through. Measured on vox-6 and vox-8.)"
                     if e.code == 400 else "")
+            if e.code == 429:
+                hint = (f"\n(Daily quota is spent on all {len(ring)} key(s) this run had. "
+                        "RPD resets at MIDNIGHT PACIFIC, not 24h after you hit the wall. "
+                        "Every line already generated is cached, so re-running later costs "
+                        "only what is missing. Adding more keys helps ONLY if they come from "
+                        "different Google Cloud projects — quota is per project, not per key.)")
             sys.exit(f"Gemini returned {e.code} for {text[:40]!r}\n{detail}{hint}")
         except Exception as e:
             sys.exit(f"Gemini unreachable: {type(e).__name__}: {e}")
-    else:
-        sys.exit("Gemini kept rate-limiting after 5 attempts")
 
     try:
         inline = payload["candidates"][0]["content"]["parts"][0]["inlineData"]
@@ -296,14 +375,17 @@ def main():
             locked = {}
     chan = load_channel(locked.get("channel"))
     cfg = {
-        "key": env.get("GOOGLE_TTS_API_KEY") or env.get("GEMINI_API_KEY"),
+        "keys": KeyRing(collect_keys(env)),
         "model": args.model or locked.get("model") or env.get("GEMINI_TTS_MODEL", DEFAULT_MODEL),
         "voice": (args.voice or locked.get("voice") or chan.get("voice")
                   or env.get("GEMINI_TTS_VOICE", DEFAULT_VOICE)),
         "style": args.style or locked.get("style") or chan.get("style") or env.get("GEMINI_TTS_STYLE"),
     }
-    if not cfg["key"] and not args.dry_run:
+    if not len(cfg["keys"]) and not args.dry_run:
         sys.exit("GOOGLE_TTS_API_KEY (or GEMINI_API_KEY) is not set in env or .env")
+    if len(cfg["keys"]) > 1:
+        print(f"keys: {len(cfg['keys'])} available "
+              f"(rotates only when one is fully spent; see collect_keys docstring)")
 
     if args.audition:
         voices = [v.strip() for v in (args.voices or DEFAULT_VOICE).split(",") if v.strip()]

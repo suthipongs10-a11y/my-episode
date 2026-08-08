@@ -259,6 +259,33 @@ Exhausted looks like `HTTP 429` → backoff → `RESOURCE_EXHAUSTED` with a
 `"check your plan and billing"` message. That is a wall, not the transient 429 the ladder is
 for, and hammering it wastes nothing but time.
 
+**The reset is MIDNIGHT PACIFIC, not 24h after you hit the wall.** Often it is only a few
+hours out. Check the clock before writing off a day — `TZ=America/Los_Angeles date`.
+
+### ⬛ More API keys is usually NOT more quota
+
+Both tools take `GEMINI_API_KEY_2`..`_9` and rotate when a key is fully spent (not
+round-robin — draining one and moving on is the only behaviour that gains anything).
+
+**But Gemini's limits are enforced per Google Cloud PROJECT, not per key.** Keys minted in
+one project share one pool, so key 2 hits the wall key 1 just hit, instantly. Adding keys
+from the same project is the intuitive move and it does nothing at all.
+
+What works, best first:
+
+1. **Enable billing on the project.** The paid tier raises the daily cap by orders of
+   magnitude and deletes this whole class of problem. For a pipeline shipping videos, this is
+   the real answer and everything below is a workaround.
+2. **Separate Google Cloud projects** under the same account — legitimate, genuinely separate
+   quota, one key each.
+3. **Wait for midnight Pacific.**
+
+Separate *accounts* created to multiply free quota is a different thing from separate
+projects and is the kind of thing provider terms tend to prohibit. Not a route to take.
+
+**Image and TTS quotas are separate**, which is why layers and covers kept working on the day
+vox-10's voice was blocked.
+
 **Never swap TTS models to dodge it.** Measured: `gemini-2.5-flash-preview-tts` reads ~23%
 faster (17.5 vs 14.17 ch/s), which silently rewrites the video's length. And two engines inside
 one video is worse than waiting — if you switch, you re-generate *every* line, not the rest.

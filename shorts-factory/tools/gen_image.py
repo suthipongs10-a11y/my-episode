@@ -96,8 +96,19 @@ def main():
         print("[dry-run] validated; no API call.")
         return
 
-    api_key = load_env().get("GEMINI_API_KEY", "").strip()
-    if not api_key:
+    # Same key list as gen_voice_gemini.py — read that tool's collect_keys() docstring for
+    # why extra keys only buy quota when each comes from a different Google Cloud project.
+    # Note the image and TTS models have SEPARATE daily quotas, so images often still work
+    # on a day TTS is spent.
+    env = load_env()
+    api_keys, seen = [], set()
+    for n in ["GEMINI_API_KEY", "GOOGLE_TTS_API_KEY"] + [f"GEMINI_API_KEY_{i}" for i in range(2, 10)]:
+        for k in (env.get(n) or "").split(","):
+            k = k.strip()
+            if k and k not in seen:
+                seen.add(k)
+                api_keys.append(k)
+    if not api_keys:
         sys.exit("GEMINI_API_KEY not set in .env")
 
     from google import genai
@@ -115,12 +126,25 @@ def main():
     if seed is not None and "seed" in types.GenerateContentConfig.model_fields:
         cfg_kwargs["seed"] = seed
 
-    client = genai.Client(api_key=api_key)
-    try:
-        resp = client.models.generate_content(
-            model=model, contents=contents, config=types.GenerateContentConfig(**cfg_kwargs))
-    except Exception as e:
-        sys.exit(f"Gemini API error: {type(e).__name__}: {e}")
+    resp = None
+    for i, api_key in enumerate(api_keys):
+        client = genai.Client(api_key=api_key)
+        try:
+            resp = client.models.generate_content(
+                model=model, contents=contents,
+                config=types.GenerateContentConfig(**cfg_kwargs))
+            break
+        except Exception as e:
+            spent = "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e)
+            if spent and i + 1 < len(api_keys):
+                print(f"  key {i + 1}/{len(api_keys)} is spent — switching to key {i + 2}")
+                continue
+            hint = ""
+            if spent:
+                hint = (f"\n(Quota spent on all {len(api_keys)} key(s). RPD resets at MIDNIGHT "
+                        "PACIFIC, not 24h after the wall. More keys help only if they come "
+                        "from different Google Cloud projects — quota is per project.)")
+            sys.exit(f"Gemini API error: {type(e).__name__}: {e}{hint}")
 
     img_bytes, texts = None, []
     for cand in (resp.candidates or []):

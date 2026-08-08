@@ -62,6 +62,15 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
    `--audition` got through on the retry ladder, which briefly looked like the quota had
    reset. It had not — the 67-line run died on `RESOURCE_EXHAUSTED` a minute later. Do not
    conclude the quota is back from one lucky call; check by running the real job.
+
+   **The reset is midnight Pacific, not 24h after the wall.** `TZ=America/Los_Angeles date`
+   answers it exactly. (From 2026-08-08 06:41 PDT that was ~17h out = 2026-08-09 14:00 Thai.)
+
+   **Extra API keys will not fix this unless they come from different Google Cloud projects.**
+   Both tools now read `GEMINI_API_KEY_2`..`_9` and rotate when a key is fully spent, but
+   Gemini enforces limits **per project**, so keys minted in one project share one pool and
+   add nothing. The real fix is enabling billing on the project. `PIPELINE.md` §7 has the
+   full ordering; `.env.example` repeats it where the keys are actually typed.
 1. **vox-4 and vox-5 have no voice at all** — both rendered silent months ago and stalled there.
    They are the two cheapest finished videos available: script and composition already exist,
    they just need `gen_voice_gemini.py --voice Umbriel` and a mux.
