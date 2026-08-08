@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of an electric vehicle battery liquid cooling plate: a flat rectangular aluminium panel with serpentine internal coolant channels visible as raised ridges across its face, and two short cylindrical coolant ports on one edge. Isolated on plain white background, soft even studio light, three-quarter view from slightly above. No brand logos, no badges, no stickers, no readable text or numbers of any kind. No cars, no people, no background.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T03:53:55"
+}

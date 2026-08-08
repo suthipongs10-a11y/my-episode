@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a generic DC fast charging pedestal for electric vehicles, a tall rounded rectangular floor-standing unit in plain light grey, with a completely blank dark switched-off display panel showing nothing at all, and one thick black charging cable coiled on a hook at the side. Isolated on plain white background, soft even studio light, straight-on three-quarter view. Absolutely no brand logos, no badges, no emblems, no company names, no readable text or numbers of any kind anywhere. No cars, no people, no buildings, no background scenery.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T03:52:36"
+}

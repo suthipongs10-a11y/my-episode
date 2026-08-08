@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a physical scientific teaching model of a layered crystal structure: eight flat horizontal hexagonal lattice sheets made of dark grey rods and spheres, held parallel and evenly spaced one above another on thin clear vertical supports, with visible open gaps between the sheets. A few small bright silver spheres sit in the gaps between the layers. Isolated on plain white background, soft even studio light, slight three-quarter angle so the gaps between layers are clearly visible. No text, no numbers, no labels, no logos anywhere. Clean physical model, not a computer rendering diagram.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T03:53:03"
+}

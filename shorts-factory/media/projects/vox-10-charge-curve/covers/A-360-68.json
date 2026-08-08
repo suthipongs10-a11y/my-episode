@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold horizontal YouTube thumbnail, 1280x720 landscape, very dark navy blue background (#0f1a2d) with a faint thin blueprint grid, technical drawing style.\n\nLEFT HALF: large Thai headline in warm off-white, heavy geometric sans-serif, on ONE single line, perfectly spelled:\nตู้ 360 แต่ได้ 68\n\nDirectly under the headline on the left half, two numbers side by side separated by a thick amber arrow pointing right.\nThe LEFT number is muted grey-blue and plain, reading exactly: 360\nThe RIGHT number is bright amber and MUCH larger, at least twice the height of the left one, reading exactly: 68\nUnder both numbers, one short line of small off-white text, perfectly spelled: กิโลวัตต์\n\nRIGHT HALF: a simple flat line graph drawn like a printed engineering figure. A single bright amber curve starts high on the left, runs flat for a short distance, then bends downward and decays toward the lower right, never reaching the bottom. Thin off-white axis lines along the left and bottom edges only. No tick labels, no numbers on the graph, no legend.\n\nFlat solid colours only: very dark navy, warm off-white, bright amber, muted grey-blue. No gradient, no glow, no drop shadow, no 3D, no lens flare, no photographic texture. No car, no charging station, no cable, no logos, no brand names anywhere. Keep 8% clear margin left and right, 6% top and bottom — nothing touches an edge.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T03:59:20"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of an industrial power electronics rectifier module: a slim rack-mount metal chassis with a dense black aluminium heatsink fin array across its front face and two circular cooling fans set into it, heavy copper busbar terminals protruding at one end. Isolated on plain white background, soft even studio light, three-quarter view. No brand logos, no badges, no labels, no stickers, no readable text or numbers of any kind anywhere.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T03:54:18"
+}

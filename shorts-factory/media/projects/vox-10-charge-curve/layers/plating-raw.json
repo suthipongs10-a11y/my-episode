@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a physical sculptural teaching model: a flat dark grey slab lying horizontally, with rough spiky silver metallic crystals growing upward out of its top surface in irregular clusters, like frost or mossy metal whiskers. The crystals are clearly sitting ON TOP of the slab surface, not inside it. Stylised sculpture made of matte metal, deliberately simplified and obviously a model. Isolated on plain white background, soft even studio light, low three-quarter angle. No text, no numbers, no labels, no scale bars, no logos. Must NOT look like a real electron microscope photograph.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T03:53:28"
+}
