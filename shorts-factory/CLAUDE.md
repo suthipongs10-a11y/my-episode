@@ -41,6 +41,11 @@ IDEAS.md          the TSX-shorts idea bank + niche ranking
 starting a video; it carries the gotchas that already cost time once (browser executable, font
 loading, Thai layout, Gemini TTS quirks, cover prompts). `SETUP.md` is the reference behind it.
 
+**`STATUS.md` is where every video stands** — finished, half-done, and what is worth doing next.
+Read it right after PIPELINE, and **update it at the end of any session that moves a video.**
+It exists because a cleared conversation loses everything not written to a file, and the
+per-video state was the one thing that had never been written down.
+
 ## Conventions (hard rules)
 
 - **Run everything from the repo root.** Tools resolve engine paths (media/library, catalogs)
