@@ -242,6 +242,38 @@ python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --retime \
 - Bed is auto-normalised to −14 LUFS / −1.5 dBTP (raw output clips at +0.6 dBTP).
 - New voice? `--audition "<hook line>" --voices A,B,C` and listen. Never pick from a spec sheet.
 
+### ⬛ The daily TTS quota is a planning constraint, not an error to retry through
+
+**100 requests per day per model.** One line = one request, so a video's line count IS its
+quota cost, and the number is knowable before you generate anything. vox-9 (32 remaining) plus
+vox-10 (67) came to 99 of 100 — arithmetically possible, and still the wrong plan, because it
+leaves no room for a single retry. **Finish one video per reset day.** Count the lines against
+what the day has left before starting, and if two videos are waiting, say which goes first.
+
+**A lucky `--audition` does not mean the quota reset.** Measured 2026-08-08: one audition got
+through the retry ladder and looked like proof the window had reopened; the real 67-line run
+died on `RESOURCE_EXHAUSTED` a minute later. The retry ladder can walk a *single* call through
+a gap that a sustained run cannot use. **Test with the real job, not with a probe.**
+
+Exhausted looks like `HTTP 429` → backoff → `RESOURCE_EXHAUSTED` with a
+`"check your plan and billing"` message. That is a wall, not the transient 429 the ladder is
+for, and hammering it wastes nothing but time.
+
+**Never swap TTS models to dodge it.** Measured: `gemini-2.5-flash-preview-tts` reads ~23%
+faster (17.5 vs 14.17 ch/s), which silently rewrites the video's length. And two engines inside
+one video is worse than waiting — if you switch, you re-generate *every* line, not the rest.
+
+### ⬛ When voice is blocked, the video is not
+
+Voice-first (above) says the composition waits for measured windows. It does **not** say the
+whole video waits. Everything before §5 is independently doable and is most of the work:
+research and `script.md`, `beats.json` with windows estimated from the measured rate, layers,
+cover, and the publish kit. The image API is a **separate quota** and is usually still up.
+
+Mark every `vo` entry `"timing": "estimated"` and put the reason in `voiceStatus`, so the next
+session knows at a glance that the numbers are provisional and the composition is deliberately
+absent rather than forgotten.
+
 ## 8. Retime — mechanically, never by eye
 
 VO lengths changed → remap **every** cue and camera keyframe through a piecewise-linear map
