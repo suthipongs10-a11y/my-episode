@@ -1,0 +1,9 @@
+{
+  "prompt": "Editorial photograph of an empty automotive chassis dynamometer test cell: two large polished steel rollers set into a grey concrete floor, thick instrumentation cables running to a control cabinet, cooling fan duct aimed at the empty test position, cold neutral fluorescent lighting, clinical and industrial, shallow depth of field. The test position is EMPTY. Absolutely no cars or vehicles anywhere in frame. No brand logos, no badges, no emblems, no readable text of any kind.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T01:46:42"
+}

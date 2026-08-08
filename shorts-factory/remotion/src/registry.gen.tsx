@@ -23,6 +23,7 @@ import Shot19, { compositionConfig as cfg19 } from './shots/vox-6/Vox6SodiumIon'
 import Shot20, { compositionConfig as cfg20 } from './shots/vox-7/Vox7Hearing';
 import Shot21, { compositionConfig as cfg21 } from './shots/vox-8/Vox8UreaDeep';
 import Shot22, { compositionConfig as cfg22 } from './shots/vox-8w/Vox8UreaDeepWide';
+import Shot23, { compositionConfig as cfg23 } from './shots/vox-9/Vox9SpecSheet';
 
 export const shots: { Comp: React.FC; config: any }[] = [
   { Comp: Shot0 as React.FC, config: cfg0 },
@@ -48,4 +49,5 @@ export const shots: { Comp: React.FC; config: any }[] = [
   { Comp: Shot20 as React.FC, config: cfg20 },
   { Comp: Shot21 as React.FC, config: cfg21 },
   { Comp: Shot22 as React.FC, config: cfg22 },
+  { Comp: Shot23 as React.FC, config: cfg23 },
 ];

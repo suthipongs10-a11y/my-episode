@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a row of five prismatic lithium battery cells in a bare aluminium module frame, copper busbars across the terminals, isolated on plain white background, soft studio light, engineering sample look, no branding. Absolutely no cars or vehicles anywhere in frame. No brand logos, no badges, no emblems, no readable text of any kind.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T01:47:55"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a generic DC fast-charging connector head, thick black cable, matte grey plastic housing, metal pins visible, held upright, isolated on plain white background, soft even studio light, no branding. Absolutely no cars or vehicles anywhere in frame. No brand logos, no badges, no emblems, no readable text of any kind.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "1:1",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-08T01:47:31"
+}
