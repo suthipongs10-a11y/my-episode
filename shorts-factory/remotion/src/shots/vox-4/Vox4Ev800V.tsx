@@ -31,10 +31,20 @@ import { FONT_TH, FONT_TH_DISPLAY } from '../../fonts';
 // merely looks explanatory would break the same rule that forbids an AI painting inside a
 // document frame.
 //
-// TIMING IS PROVISIONAL — the voice has not been recorded. Every CUE below comes from
-// beats.json's ESTIMATED windows. After Umbriel is generated, --retime and push every cue and
-// camera keyframe through the piecewise-linear map (PIPELINE §8). Leda ran 10% off Algieba on
-// an identical script; assume Umbriel can too.
+// TIMING IS REAL — Umbriel recorded 2026-08-09, beats.json --retimed from the audio, and every
+// CUE and CAM keyframe below pushed through the piecewise-linear map (PIPELINE §8). Largest
+// move 55f (1.83s); all moves forward and monotonic.
+//
+// THREE THINGS THE RETIME TOUCHED THAT §8 DOES NOT MENTION, AND ALL THREE WOULD HAVE SHIPPED
+// BROKEN. Remapping only CUE and CAM is not enough when the sections are fixed-length:
+//   1. Every `durationInFrames` was sized against the OLD line lengths. Lines got longer, so
+//      two cards began vanishing mid-sentence — packIn by 0.81s, leaving an empty screen while
+//      the narrator kept talking. Durations are now remapped by preserving each section's
+//      ORIGINAL slack past its own line, so the relationship is what the author chose.
+//   2. Every `SceneFade out=` was a frame count into its sequence, so a changed duration moves
+//      the fade. All five rescaled to keep the same 4-frame fade.
+//   3. twistCard still ends 23f before its line — that is ORIGINAL and correct, because
+//      titleBack has no durationInFrames and covers the tail. Checked, not assumed.
 // =============================================================================
 export const compositionConfig = {
   id: 'Vox4Ev800V',
@@ -53,44 +63,44 @@ const CUE = {
   hookBadges: -30,
 
   // s02 equation  f165-393
-  eqCard: 158,
-  pathThick: 206,
-  pathThin: 250,
+  eqCard: 189,
+  pathThick: 239,
+  pathThin: 286,
 
   // s03 mechanism  f411-675 — the payoff of the whole video
-  sqCard: 408,
-  sqBig: 448,
-  sqSmall: 512,
-  sqVerdict: 566,
+  sqCard: 451,
+  sqBig: 489,
+  sqSmall: 549,
+  sqVerdict: 600,
 
   // s04 result  f693-987
-  packIn: 690,
-  cableCmp: 748,
-  specChip: 830,
+  packIn: 718,
+  cableCmp: 781,
+  specChip: 870,
 
   // s05 tradeoff  f1005-1293
-  devCard: 1000,
-  sicRow: 1078,
-  costStamp: 1180,
+  devCard: 1055,
+  sicRow: 1130,
+  costStamp: 1226,
 
   // s06 twist  f1311-1479
-  twistCard: 1306,
-  titleBack: 1440,
+  twistCard: 1347,
+  titleBack: 1489,
 } as const;
 
 const CAM = [
   { f: 0, x: 540, y: 960, z: 1 },
-  { f: 160, x: 540, y: 960, z: 1.05 },
-  { f: 300, x: 540, y: 980, z: 1.14 },
-  { f: 430, x: 540, y: 1000, z: 1.18 },
-  { f: 600, x: 542, y: 1004, z: 1.26 },
-  { f: 700, x: 540, y: 960, z: 1.06 },
-  { f: 970, x: 542, y: 962, z: 1.08 },
-  { f: 1050, x: 540, y: 985, z: 1.14 },
-  { f: 1290, x: 540, y: 988, z: 1.16 },
-  { f: 1360, x: 540, y: 975, z: 1.04 },
-  { f: 1470, x: 540, y: 960, z: 1 },
-  { f: 1559, x: 540, y: 960, z: 1 },
+  { f: 191, x: 540, y: 960, z: 1.05 },
+  { f: 338, x: 540, y: 980, z: 1.14 },
+  { f: 472, x: 540, y: 1000, z: 1.18 },
+  { f: 632, x: 542, y: 1004, z: 1.26 },
+  { f: 728, x: 540, y: 960, z: 1.06 },
+  { f: 1024, x: 542, y: 962, z: 1.08 },
+  { f: 1103, x: 540, y: 985, z: 1.14 },
+  { f: 1331, x: 540, y: 988, z: 1.16 },
+  { f: 1404, x: 540, y: 975, z: 1.04 },
+  { f: 1521, x: 540, y: 960, z: 1 },
+  { f: 1560, x: 540, y: 960, z: 1 },
 ];
 
 const TITLE_WORDS = [{ t: 'ไม่ใช่แรงดัน' }, { t: 'แต่เป็นกระแส', hl: true }];
@@ -265,8 +275,8 @@ const Vox4Ev800V: React.FC = () => (
       </Sequence>
 
       {/* ---- P = V x I : the same power, two ways ---- */}
-      <Sequence from={CUE.eqCard} durationInFrames={260} layout="none">
-        <SceneFade out={256}>
+      <Sequence from={CUE.eqCard} durationInFrames={272} layout="none">
+        <SceneFade out={268}>
           <Panel at={0} y={720} kicker="กำลังไฟฟ้า" head="P = V × I" headSize={62} mono
             sub="กำลังเท่ากัน ได้จากแรงดันต่ำ+กระแสสูง หรือแรงดันสูง+กระแสต่ำ" />
           <Layer x={540} y={1330} w={W} at={CUE.pathThick - CUE.eqCard} dur={1} enter="none" depth={0.05} drift={0.3}>
@@ -276,8 +286,8 @@ const Vox4Ev800V: React.FC = () => (
       </Sequence>
 
       {/* ---- THE MECHANISM: heat goes as the SQUARE ---- */}
-      <Sequence from={CUE.sqCard} durationInFrames={295} layout="none">
-        <SceneFade out={291}>
+      <Sequence from={CUE.sqCard} durationInFrames={280} layout="none">
+        <SceneFade out={276}>
           <Panel at={0} y={660} kicker="ความร้อนที่เสียไปในตัวนำ" head="P = I² × R" headSize={62} mono accent={BLUEPRINT.yellow}
             sub="ยกกำลังสอง ไม่ใช่เชิงเส้น — นี่คือทั้งเรื่อง" />
           <Layer x={540} y={1290} w={W} at={CUE.sqBig - CUE.sqCard} dur={1} enter="none" depth={0.05} drift={0.3}>
@@ -291,8 +301,8 @@ const Vox4Ev800V: React.FC = () => (
       </Sequence>
 
       {/* ---- what that buys ---- */}
-      <Sequence from={CUE.packIn} durationInFrames={300} layout="none">
-        <SceneFade out={296}>
+      <Sequence from={CUE.packIn} durationInFrames={327} layout="none">
+        <SceneFade out={323}>
           <Layer x={540} y={880} w={W} at={0} dur={18} enter="place" rotate={0.3} depth={0} drift={0.3}>
             <PackPlan at={4} />
           </Layer>
@@ -307,8 +317,8 @@ const Vox4Ev800V: React.FC = () => (
       </Sequence>
 
       {/* ---- the trade: the switches have to change ---- */}
-      <Sequence from={CUE.devCard} durationInFrames={310} layout="none">
-        <SceneFade out={306}>
+      <Sequence from={CUE.devCard} durationInFrames={296} layout="none">
+        <SceneFade out={292}>
           <Panel at={0} y={800} kicker="ข้อแลก" head="สวิตช์ต้องเปลี่ยนทั้งชุด" headSize={44} accent={BLUEPRINT.red}
             sub="IGBT ซิลิคอนของระบบ 400V ทนได้ราว 650 โวลต์ — พอที่ 400V ไม่พอที่ 800V" />
           <Sequence from={CUE.sicRow - CUE.devCard} layout="none">
@@ -323,8 +333,8 @@ const Vox4Ev800V: React.FC = () => (
       </Sequence>
 
       {/* ---- twist: the number on the sign is the charger's ---- */}
-      <Sequence from={CUE.twistCard} durationInFrames={150} layout="none">
-        <SceneFade out={146}>
+      <Sequence from={CUE.twistCard} durationInFrames={161} layout="none">
+        <SceneFade out={157}>
           <Panel at={0} y={980} kicker="อ่านสเปกให้ถูก" head="350 kW คือกำลังของตู้" headSize={50} accent={BLUEPRINT.yellow}
             sub="ไม่ใช่กำลังที่รถรับได้จริง — รถไม่ได้แตะตัวเลขนั้น" />
         </SceneFade>

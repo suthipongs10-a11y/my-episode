@@ -41,7 +41,7 @@ import { FONT_TH, FONT_TH_DISPLAY } from '../../fonts';
 // =============================================================================
 export const compositionConfig = {
   id: 'Vox5TeslaDry',
-  durationInSeconds: 54,
+  durationInSeconds: 58,
   fps: 30,
   width: 1080,
   height: 1920,
@@ -57,46 +57,46 @@ const CUE = {
   hookCell: -20,
 
   // s02 wet  f207-435
-  powderIn: 200,
-  foilIn: 250,
-  nmpCard: 300,
+  powderIn: 218,
+  foilIn: 286,
+  nmpCard: 357,
 
   // s03 oven  f453-717 — the hero image
-  ovenIn: 448,
-  ovenChip: 520,
-  recoverChip: 600,
+  ovenIn: 562,
+  ovenChip: 620,
+  recoverChip: 683,
 
   // s04 cost  f735-1041
-  costCard: 730,
-  costBar: 790,
-  limitLine: 900,
+  costCard: 789,
+  costBar: 844,
+  limitLine: 946,
 
   // s05 dry  f1059-1347
-  rollersIn: 1050,
-  dryCard: 1110,
-  strike: 1210,
+  rollersIn: 1085,
+  dryCard: 1147,
+  strike: 1252,
 
   // s06 twist  f1365-1623
-  cellIn: 1360,
-  robotIn: 1400,
-  gigaCard: 1440,
-  titleBack: 1520,
+  cellIn: 1409,
+  robotIn: 1459,
+  gigaCard: 1510,
+  titleBack: 1612,
 } as const;
 
 const CAM = [
   { f: 0, x: 540, y: 960, z: 1 },
-  { f: 200, x: 540, y: 960, z: 1.05 },
-  { f: 330, x: 540, y: 985, z: 1.12 },
-  { f: 440, x: 540, y: 990, z: 1.14 },
-  { f: 520, x: 540, y: 940, z: 1.02 },
-  { f: 720, x: 540, y: 945, z: 1.04 },
-  { f: 820, x: 540, y: 990, z: 1.12 },
-  { f: 1040, x: 542, y: 992, z: 1.14 },
-  { f: 1120, x: 540, y: 975, z: 1.08 },
-  { f: 1350, x: 540, y: 978, z: 1.1 },
-  { f: 1430, x: 540, y: 970, z: 1.04 },
-  { f: 1540, x: 540, y: 960, z: 1 },
-  { f: 1619, x: 540, y: 960, z: 1 },
+  { f: 218, x: 540, y: 960, z: 1.05 },
+  { f: 400, x: 540, y: 985, z: 1.12 },
+  { f: 554, x: 540, y: 990, z: 1.14 },
+  { f: 620, x: 540, y: 940, z: 1.02 },
+  { f: 779, x: 540, y: 945, z: 1.04 },
+  { f: 872, x: 540, y: 990, z: 1.12 },
+  { f: 1075, x: 542, y: 992, z: 1.14 },
+  { f: 1158, x: 540, y: 975, z: 1.08 },
+  { f: 1399, x: 540, y: 978, z: 1.1 },
+  { f: 1497, x: 540, y: 970, z: 1.04 },
+  { f: 1638, x: 540, y: 960, z: 1 },
+  { f: 1739, x: 540, y: 960, z: 1 },
 ];
 
 const TITLE_WORDS = [{ t: 'เทคโนโลยีใหม่ล่าสุด' }, { t: 'คือการเอาเครื่องจักรออก', hl: true }];
@@ -182,8 +182,8 @@ const Vox5TeslaDry: React.FC = () => (
       </Sequence>
 
       {/* ---- the wet way: powder + solvent onto foil ---- */}
-      <Sequence from={CUE.powderIn} durationInFrames={262} layout="none">
-        <SceneFade out={258}>
+      <Sequence from={CUE.powderIn} durationInFrames={358} layout="none">
+        <SceneFade out={354}>
           <Cutout src={asset('powder.png')} x={330} y={760} w={420} at={0} enter="place" rotate={-2} depth={0.1} sticker={0} shadow={2} />
           <Sequence from={CUE.foilIn - CUE.powderIn} layout="none">
             <Cutout src={asset('foil.png')} x={760} y={1120} w={420} at={0} enter="slide-r" rotate={2.5} depth={0.09} sticker={0} shadow={3} />
@@ -197,8 +197,8 @@ const Vox5TeslaDry: React.FC = () => (
       </Sequence>
 
       {/* ---- THE HERO IMAGE: the oven, and its length ---- */}
-      <Sequence from={CUE.ovenIn} durationInFrames={278} layout="none">
-        <SceneFade out={274}>
+      <Sequence from={CUE.ovenIn} durationInFrames={223} layout="none">
+        <SceneFade out={219}>
           <Cutout src={asset('oven.png')} x={560} y={900} w={1010} at={0} enter="slide-r" rotate={-0.8} depth={0.06} sticker={0} shadow={3} />
           <Sequence from={CUE.ovenChip - CUE.ovenIn} layout="none">
             <LabelChip x={110} y={1300} at={0} anchor="left" text="ยาวได้หลายสิบเมตร" kicker="เตาอบไล่ตัวทำละลาย" accent={BLUEPRINT.yellow} kickerColor={BLUEPRINT.inkSoft} size={34} rotate={-1.3} z={6} />
@@ -210,8 +210,8 @@ const Vox5TeslaDry: React.FC = () => (
       </Sequence>
 
       {/* ---- what it costs ---- */}
-      <Sequence from={CUE.costCard} durationInFrames={320} layout="none">
-        <SceneFade out={316}>
+      <Sequence from={CUE.costCard} durationInFrames={296} layout="none">
+        <SceneFade out={292}>
           <Panel at={0} y={760} kicker="ราคาของสองขั้นตอนนั้น" head="กินพลังงานมากที่สุดในกระบวนการ" headSize={38} accent={BLUEPRINT.red} />
           <Sequence from={CUE.costBar - CUE.costCard} layout="none">
             <CostBar at={0} />
@@ -224,8 +224,8 @@ const Vox5TeslaDry: React.FC = () => (
       </Sequence>
 
       {/* ---- the dry way ---- */}
-      <Sequence from={CUE.rollersIn} durationInFrames={310} layout="none">
-        <SceneFade out={306}>
+      <Sequence from={CUE.rollersIn} durationInFrames={324} layout="none">
+        <SceneFade out={320}>
           <Cutout src={asset('rollers.png')} x={560} y={840} w={780} at={0} enter="place" rotate={1} depth={0.08} sticker={0} shadow={3} />
           <Cutout src={asset('powder.png')} x={200} y={620} w={280} at={8} enter="slide-l" rotate={-3} depth={0.12} sticker={0} shadow={2} />
           <SketchArrow id="powder-direct" d={`M 300 720 Q 400 780 470 812`} vb={{ w: W, h: H }} at={18} dur={16} head color={BLUEPRINT.teal} width={3.4} />
@@ -241,8 +241,8 @@ const Vox5TeslaDry: React.FC = () => (
       </Sequence>
 
       {/* ---- twist: the newest technology is a subtraction ---- */}
-      <Sequence from={CUE.cellIn} durationInFrames={180} layout="none">
-        <SceneFade out={176}>
+      <Sequence from={CUE.cellIn} durationInFrames={220} layout="none">
+        <SceneFade out={216}>
           <Cutout src={asset('cell.png')} x={310} y={880} w={210} at={0} enter="place" rotate={-3} depth={0.12} sticker={0} shadow={3} />
           <Sequence from={CUE.robotIn - CUE.cellIn} layout="none">
             <Cutout src={asset('robot.png')} x={700} y={800} w={620} at={0} enter="slide-r" rotate={2} depth={0.07} sticker={0} shadow={3} />
