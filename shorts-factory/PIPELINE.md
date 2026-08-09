@@ -348,6 +348,31 @@ picture leads voice, which is correct. Don't chase it.
 
 ## 9. Render + mux
 
+### ⬛ A backgrounded job is not running until you have SEEN it running
+
+`render-all.mjs` lives in `remotion/`, and the shell's cwd resets between calls. Launching it
+with `nohup node scripts/render-all.mjs …` from the repo root dies instantly with
+`MODULE_NOT_FOUND` — and `nohup` swallows it, `$!` still prints a pid, so it looks launched.
+
+Measured 2026-08-09: vox-9's render and vox-10's voice were both reported as running and both
+had been dead for the better part of an hour. The tell was `uptime` showing load 0.09 while
+supposedly rendering 15,000 frames on 4 cores.
+
+**After launching anything in the background, wait a few seconds and prove it is alive** before
+saying so — and check progress, not just the pid, since a dead pid and a stalled one look the
+same from the outside:
+
+```bash
+cd remotion && nohup node scripts/render-all.mjs <Comp> --scale=1 > /tmp/r.log 2>&1 &
+sleep 15
+tr '\r' '\n' < /tmp/r.log | grep -oE "[0-9]+%" | tail -1     # a percentage = really rendering
+pgrep -f "render-all.mjs <Comp>" >/dev/null && echo alive || tail -5 /tmp/r.log
+```
+
+Two cheap cross-checks that catch a lie immediately: **`uptime` load** should be near the core
+count during a render, and the **output mtime** should be moving. Reporting "it's running" on
+the strength of a pid alone wasted about fifty minutes of the operator's time.
+
 ```bash
 node scripts/render-all.mjs <CompId> --scale=1
 python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --style "…" \
