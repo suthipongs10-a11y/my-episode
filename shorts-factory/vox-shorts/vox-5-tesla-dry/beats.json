@@ -7,7 +7,7 @@
 		"width": 1080,
 		"height": 1920,
 		"fps": 30,
-		"durationSec": 54
+		"durationSec": 58
 	},
 	"voicePlan": "เสียงและสไตล์มาจาก channels/ev.json (Umbriel) — ห้ามก็อปมาไว้ที่นี่",
 	"voiceStatus": "gemini:gemini-3.1-flash-tts-preview/Umbriel — line timings are REAL (measured from the audio). No per-word times: Gemini returns audio only. Run a forced aligner if a track needs them.",
@@ -133,5 +133,6 @@
 				"title returns"
 			]
 		}
-	]
+	],
+	"formatNote": "แนวตั้ง 1080x1920 (ต่ำกว่า 60 วิ = Shorts) · ความยาวขยายจาก 54 เป็น 58 วินาที เมื่ออัดเสียง Umbriel จริงแล้วพบว่า VO จบที่ 57.06s ซึ่งยาวกว่าคอมโพสิชันเดิม ยังต่ำกว่าเพดาน 60 วินาทีของ Shorts เหลือหาง 0.94s"
 }

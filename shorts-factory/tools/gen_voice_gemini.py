@@ -449,6 +449,15 @@ def main():
             c["line"]["start"] = round(t, 3)
             c["line"]["end"] = round(t + c["dur"], 3)
             c["line"]["seconds"] = round(c["dur"], 3)
+            # These windows now come from real audio, so say so PER LINE. Without this the
+            # file contradicts itself: voiceStatus below announces "timings are REAL" while
+            # individual lines still carry timing:"estimated" from when they were planned.
+            # Measured on vox-9 — a run generated all 48 lines and retimed them, and 32 kept
+            # the stale label because they were written across separate runs. Downstream
+            # trusts the per-line field, not the header: gen-cues-vox9.mjs read it and
+            # stamped a false "32 of 48 lines are still ESTIMATED" warning into the TSX.
+            if c["line"].get("timing") != "measured":
+                c["line"]["timing"] = "measured"
             t += c["dur"] + args.gap
         print(f"\nretimed: VO now ends at {t - args.gap:.2f}s")
     else:

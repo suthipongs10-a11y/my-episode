@@ -56,23 +56,22 @@ const MARGIN_L = 170;
 const A = (f: string) => staticFile(`projects/vox-9-spec-sheet/layers/${f}`);
 
 // ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues-vox9.mjs. Do not hand-edit.
-// 32 of 48 lines are still ESTIMATED windows, not measured audio.
-// Re-run the voice tool with --retime, then re-run this script, before the final render.
+// All windows are measured from the real audio.
 const C = {
   hook: 15, spread: 295, gap: 539,
   norank: 793, whyno: 955,
   setup: 1250, china: 1456, uk: 1799, delta: 2110,
   cyc: 2403, nedc: 2729, others: 3104, factors: 3575, check: 3917,
-  tbl: 4331, row1: 4483, row2: 4709, row34: 4960, tblPoint: 5351,
-  kwh: 5769, buffer: 5959, bufWhy: 6275, disclose: 6746,
-  chg: 7118, curve: 7256, mg49: 7632, mg64: 8063, window: 8526,
-  same: 8995, sameEv: 9313, sameLesson: 9755,
-  pwr: 10039, r85: 10142, pwrPoint: 10598,
-  safe: 10904, proto: 11015, years: 11400, safePoint: 11738,
-  adas: 12024, j3016: 12178, adasPoint: 12586,
-  cmpQ: 12983, cmpA: 13136, cmpEx: 13510,
-  sum: 13932, sumLead: 14156, three: 14324, close: 14658,
-  tail: 14876,
+  tbl: 4331, row1: 4483, row2: 4709, row34: 4941, tblPoint: 5308,
+  kwh: 5711, buffer: 5895, bufWhy: 6211, disclose: 6671,
+  chg: 7052, curve: 7207, mg49: 7593, mg64: 7985, window: 8494,
+  same: 8968, sameEv: 9293, sameLesson: 9695,
+  pwr: 10005, r85: 10107, pwrPoint: 10547,
+  safe: 10855, proto: 10972, years: 11367, safePoint: 11705,
+  adas: 12010, j3016: 12175, adasPoint: 12583,
+  cmpQ: 12957, cmpA: 13108, cmpEx: 13471,
+  sum: 13850, sumLead: 14096, three: 14269, close: 14677,
+  tail: 14865,
 } as const;
 // ---- END GENERATED CUES
 
