@@ -41,6 +41,12 @@ IDEAS.md          the TSX-shorts idea bank + niche ranking
 starting a video; it carries the gotchas that already cost time once (browser executable, font
 loading, Thai layout, Gemini TTS quirks, cover prompts). `SETUP.md` is the reference behind it.
 
+**`REVIEW.md` is the extra runbook for the `saas` channel** — affiliate/SaaS review videos.
+Read it *in addition to* `PIPELINE.md` whenever `beats.json` says `"channel": "saas"`. It covers
+the three things a monetised channel has and the others do not: legally-required disclosure
+inside the first 30 seconds, the review beat grammar (which has a mandatory "who should NOT buy"
+beat), and how to source price claims when the vendor's own page is unreachable.
+
 **`STATUS.md` is where every video stands** — finished, half-done, and what is worth doing next.
 Read it right after PIPELINE, and **update it at the end of any session that moves a video.**
 It exists because a cleared conversation loses everything not written to a file, and the

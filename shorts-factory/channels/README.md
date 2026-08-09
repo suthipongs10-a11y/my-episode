@@ -48,6 +48,11 @@ Current locks — audition on the real hook line, never from a spec sheet:
 | เกษตรที่คนไทยควรรู้ (`agri`) | `Algieba` | 2026-08-04 |
 | สุขภาพแบบเข้าใจง่าย (`health`) | `Leda` | 2026-08-04 |
 | The EV Insight (`ev`) | `Umbriel` | 2026-08-04 |
+| ก่อนกดสมัคร (`saas`) | `Iapetus` — **provisional** | 2026-08-09 |
+
+`saas` is the one entry above that is not a real lock. Nobody has listened to it: it was chosen
+by measuring pause structure across four auditions (`PIPELINE.md` §7), which ranks delivery but
+says nothing about timbre. **Listen and confirm, or replace it, before its first video.**
 
 The per-video fields still work as an escape hatch and warn when they contradict the channel.
 **An unknown slug is a hard error, not a fallback** — a typo must never quietly resolve to the
@@ -60,7 +65,7 @@ python3 -c "
 import json,glob
 for f in sorted(glob.glob('channels/*.json')):
     c=json.load(open(f,encoding='utf-8'))
-    print(f\"{c['slug']:8s} {c['name'][:30]:32s} voice={c['voice']}  videos={len(c['videos'])}\")"
+    print(f\"{c['slug']:8s} {str(c['name'])[:30]:32s} voice={str(c['voice']):12s} videos={len(c['videos'])}\")"
 ```
 
 ## Visual theme — `"theme"` in the channel file

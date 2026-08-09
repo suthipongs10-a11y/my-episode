@@ -16,8 +16,16 @@
 | `agri` | เกษตรที่คนไทยควรรู้ | Algieba | vox-2, vox-8 |
 | `health` | (สุขภาพแบบเข้าใจง่าย) | Leda | vox-3, vox-7 |
 | `ev` | The EV Insight | Umbriel | vox-4, vox-5, vox-6, vox-9, vox-10 |
+| `saas` | ก่อนกดสมัคร | Iapetus **(provisional)** | — none yet |
 
 Voices must stay unique per channel — `channels/README.md` makes a duplicate a hard error.
+
+**`saas` is new (2026-08-09) and is the first channel with a monetisation model.** It reviews
+affiliate/SaaS offers, so it carries obligations no other channel has — disclosure inside the
+first 30 seconds, a mandatory "who should NOT buy" beat, and a date stamp on every price.
+`REVIEW.md` is its runbook and is read *in addition to* `PIPELINE.md`, not instead of it.
+Its voice is picked from measurement, not from listening: **the four audition mp3s are waiting
+for the operator's ear** and the lock is not real until they confirm.
 
 ## Videos
 
@@ -41,6 +49,19 @@ correct — they are the three over 60s. See `PIPELINE.md` §3.
 the current one (it is the form-filling checklist, not just copy). vox-2 has only the old file.
 
 ## Open work, in the order it is worth doing
+
+−1. **`saas` channel: two answers are needed before its first video can start.**
+   `vox-shorts/IDEAS-saas.md` ends with both. (a) **Which affiliate programmes is the operator
+   actually signed up to?** Reviewing an offer we hold no link for is unpaid work for the
+   vendor — `REVIEW.md` §2.1 makes it the first question, and nobody but the operator can
+   answer it. (b) **Thai or English?** Default is Thai: the factory's fonts, voices and three
+   existing channels are all Thai, and the strongest topic in the bank ("เครื่องมือฝรั่งกับคน
+   ใช้ไทย") only exists in Thai.
+
+   Also open, and cheaper: **confirm or replace Iapetus by ear.** The audition files are in the
+   session scratchpad and die with the container — regenerate with
+   `--audition` (4 TTS requests) if they are gone.
+
 
 0. **Every EV video is finished.** vox-4, vox-5, vox-9 and vox-10 are all rendered, muxed and
    stream-verified, each with a cover and a publish kit. What remains on them is fact-checking,

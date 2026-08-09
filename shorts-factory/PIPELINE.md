@@ -20,17 +20,44 @@ export REMOTION_BROWSER_EXECUTABLE=/opt/pw-browsers/chromium_headless_shell-1194
 ```
 Remotion's own Chrome download is blocked here. Full Chrome is rejected too ("Old Headless
 mode has been removed") — it must be the **headless shell**.
+
+**A fresh container has neither `ffmpeg` nor `ffprobe`, and they come from different places.**
+Measured 2026-08-09 on a new container: both missing, and the usual downloads are blocked. The
+package registries are on the proxy allowlist, so:
+
+```bash
+pip install imageio-ffmpeg          # ffmpeg only — ships no ffprobe
+ln -sf "$(python3 -c 'import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())')" /usr/local/bin/ffmpeg
+npm pack @ffprobe-installer/linux-x64 && tar xzf ffprobe-installer-linux-x64-*.tgz
+install -m 755 package/ffprobe /usr/local/bin/ffprobe
+```
+
+`pip install static-ffmpeg` looks like the one-step answer and is not: it collides with the
+Debian-installed `packaging`, and it fetches its binaries from GitHub at runtime, which is
+blocked. **Do both steps.** `gen_voice_gemini.py` calls `ffprobe` to measure every clip, so
+missing it fails *after* the API calls have been spent — an audition that cost quota and
+printed a traceback instead of durations.
+
 Keys: `GOOGLE_TTS_API_KEY` (voice + images). ElevenLabs/OpenAI/fal/Replicate are unreachable.
 `gen_image.py` looks for **`GEMINI_API_KEY`**, which the environment does not set — export it
 from the TTS key for the call (`export GEMINI_API_KEY="$GOOGLE_TTS_API_KEY"`). Never write it
 to a file; `.env` is gitignored but the repo is public and a key in a command is a key on disk
 the moment someone redirects it.
 
-**Web research: search works, fetching sources does not.** The proxy refuses CONNECT (403) to
-`who.int`, `iris.who.int`, `thelancet.com`, `pmc.ncbi.nlm.nih.gov`, `europepmc.org`,
-`jamanetwork.com`, `bmj.com`, `cochranelibrary.com`, `clinicaltrials.gov`, `nia.nih.gov`,
-`alz.org` and `georgeinstitute.org` — every medical primary source tried so far. Do not route
-around it. For the health channel, whose first rule is "cite guidelines, not news", this is a
+**Web research: search works, fetching sources does not — for EVERY domain, not just the
+medical ones.** Re-measured 2026-08-09 and the boundary is now exact: the proxy answers **403
+to CONNECT** for every host tried, including `example.com`. The `WebFetch` tool returns
+`EGRESS_BLOCKED` on the same hosts, so it is not a second route — it is the same wall. What is
+*not* blocked is the proxy's `noProxy` allowlist: `registry.npmjs.org`, `jsr.io`, `pypi.org`,
+`files.pythonhosted.org`, `index.crates.io`, `proxy.golang.org` — plus
+`generativelanguage.googleapis.com`, which is why the whole pipeline still runs. Check the live
+policy with `curl -sS "$HTTPS_PROXY/__agentproxy/status"`; its `recentRelayFailures` names every
+host just refused, which is the fastest way to tell a policy denial from a broken URL.
+
+The earlier reading of this — that the block was aimed at `who.int`, `thelancet.com`,
+`pmc.ncbi.nlm.nih.gov` and the rest of the medical hosts — was an artefact of which domains had
+been tried. It is a blanket policy. **Do not route
+around it.** For the health channel, whose first rule is "cite guidelines, not news", this is a
 standing constraint: either get the PDFs from the operator, or **triangulate** — re-search with
 different query wording and record in `script.md` how many independent result sets each figure
 appeared in. It is weaker than reading the paper and must be labelled as such. It also works:
@@ -251,6 +278,29 @@ real hook line, never from a spec sheet.
 prompt: Algieba 45.86s, Leda 50.42s (+10%). Include the pace lever (`พูดเร็วขึ้นเล็กน้อย`) in
 every channel's style string; without it Leda ran 53.30s. When a locked voice overruns, grow the
 composition — up to the 60s ceiling — rather than cutting the script a second time.
+
+### ⬛ The difference is PAUSING, not speaking rate — so aim the style lever at pauses
+
+Measured 2026-08-09, four voices on one 113-character Thai line, no style string, speech time
+separated from silence with `ffmpeg -af silencedetect=noise=-32dB:d=0.18`:
+
+| voice | clip | pauses | silence | **speech** |
+|---|---|---|---|---|
+| Charon | 11.28s | 8 | 2.59s | **8.69s** |
+| Iapetus | 10.04s | 4 | 1.36s | **8.68s** |
+| Orus | 10.56s | 6 | 2.11s | **8.45s** |
+| Sadaltager | 10.48s | 6 | 2.02s | **8.46s** |
+
+**Speech time is within 3% across all four. The 12% spread in clip length is entirely
+pausing.** So "voices differ in pace" is true of the clip and false of the voice, and the
+practical consequence is which words in the style string do the work: **`ไม่เว้นวรรคนาน` aims at
+the variable that actually moves; `พูดเร็วขึ้น` aims at one that barely does.** Keep both — they
+are already in every channel's style — but when a voice overruns, lengthen the pause lever
+first.
+
+It also gives auditioning a measurable axis when nobody can listen yet: fewest pauses = most
+connected delivery, which suits dense material. Timbre still needs an ear — this does not
+replace the listen, it just stops the choice from being blind.
 
 **Estimate line length from the MEASURED rate, never by eye.** Leda **14.0** Thai characters
 per second, Algieba **14.5**, spaces included, counted on the `say` field. vox-7's first pass
