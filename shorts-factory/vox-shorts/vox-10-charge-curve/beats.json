@@ -10,7 +10,7 @@
 		"durationSec": 528
 	},
 	"voicePlan": "Umbriel จาก channels/ev.json — ห้ามระบุเสียงบนบรรทัดคำสั่ง",
-	"voiceStatus": "gemini:gemini-3.1-flash-tts-preview/Umbriel — ครบ 67 บรรทัด เวลาทุกบรรทัดวัดจากเสียงจริง สามบรรทัด (36, 39, 61) เขียนใหม่เพราะโดน sticky HTTP 400 ดู sayNote ของแต่ละบรรทัด",
+	"voiceStatus": "gemini:gemini-3.1-flash-tts-preview/Umbriel — line timings are REAL (measured from the audio). No per-word times: Gemini returns audio only. Run a forced aligner if a track needs them.",
 	"paceNote": "หน้าต่างทุกบรรทัดคำนวณจากอัตราที่วัดจริง 14.17 อักษรไทย/วินาที (รวมช่องว่าง) บนฟิลด์ say — ค่านี้มาจาก vox-9 (16 บรรทัด) ยืนยัน 14.22 ของ vox-6 ต่างกัน 0.4% ไม่ได้กะด้วยสายตา (PIPELINE §7) · ตัวเลขจะขยับเมื่อเจนเสียงจริงแล้ว --retime",
 	"sayNote": "ตัวเลขทุกตัวสะกดเป็นคำไทยในฟิลด์ say เพราะ Gemini normalise ไม่สม่ำเสมอรายประโยค text เก็บรูปตัวเลขไว้สำหรับซับและสำหรับอ่าน",
 	"formatNote": "แนวนอน 1920x1080 ตาม PIPELINE §3 · ความยาว 528 วินาที (8:48) ตั้งจากเสียงจริงที่จบ 526.14s ไม่ใช่จากค่าประมาณเดิม 515 — เขียน composition ที่ความยาวนี้ตั้งแต่แรก อย่าใช้ 515",

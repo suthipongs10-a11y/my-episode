@@ -7,7 +7,7 @@
 > **Update it at the end of any session that finishes or starts a video.** A stale STATUS is
 > worse than none, because it will be believed.
 >
-> Last updated: **2026-08-08** (vox-10 started; vox-9 and vox-10 both waiting on TTS quota)
+> Last updated: **2026-08-09** (all four EV videos finished — vox-4, vox-5, vox-9, vox-10)
 
 ## Channels
 
@@ -26,13 +26,13 @@ Voices must stay unique per channel — `channels/README.md` makes a duplicate a
 | 1 | `vox-1-coffee` | `_demo` | — | — | — | — |
 | 2 | `vox-2-thai-rice` | agri | ✅ 14 | ✅ voiced | ⚠️ old `publish.th.md` only | ✅ 3 |
 | 3 | `vox-3-eight-glasses` | health | ✅ 22 | ✅ voiced | ❌ | ❌ |
-| 4 | `vox-4-ev-800v` | ev | ❌ | ⚠️ **silent** | ❌ | ❌ |
-| 5 | `vox-5-tesla-dry` | ev | ❌ | ⚠️ **silent** | ❌ | ❌ |
+| 4 | `vox-4-ev-800v` | ev | ✅ 6 | ✅ voiced | ✅ | ✅ 1 + upload jpg |
+| 5 | `vox-5-tesla-dry` | ev | ✅ 6 | ✅ voiced **58s** | ✅ | ✅ 1 + upload jpg |
 | 6 | `vox-6-sodium-ion` | ev | ✅ 14 | ✅ voiced | ✅ | ✅ 3 |
 | 7 | `vox-7-hearing-dementia` | health | ✅ 25 | ✅ voiced | ✅ | ✅ 2 |
 | 8 | `vox-8-urea-deep` | agri | ✅ 62 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg |
-| 9 | `vox-9-spec-sheet` | ev | ⚠️ **16/48 — โควตา** | ❌ | ✅ | ✅ 1 + upload jpg |
-| 10 | `vox-10-charge-curve` | ev | ❌ **0/67 — โควตา** | ❌ | ✅ | ✅ 1 + upload jpg |
+| 9 | `vox-9-spec-sheet` | ev | ✅ 48 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg |
+| 10 | `vox-10-charge-curve` | ev | ✅ 67 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg |
 
 **vox-8, vox-9 and vox-10 are the landscape videos.** Everything else is 1080×1920. That is
 correct — they are the three over 60s. See `PIPELINE.md` §3.
@@ -42,56 +42,36 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
 
 ## Open work, in the order it is worth doing
 
-0. **Two videos are waiting on the same TTS quota, and it will not stretch to both.**
-   Gemini TTS is capped at **100 requests per day per model**. vox-9 needs **32** lines,
-   vox-10 needs **67** — 99 of 100, with no room for a single retry.
-   **Do vox-9 to completion on the first reset day, vox-10 on the next.**
-   The tool caches, so re-running the same command generates only what is missing.
+0. **Every EV video is finished.** vox-4, vox-5, vox-9 and vox-10 are all rendered, muxed and
+   stream-verified, each with a cover and a publish kit. What remains on them is fact-checking,
+   not production — see the numbered items below.
 
-   - **vox-9** → `python tools/gen_voice_gemini.py --beats vox-shorts/vox-9-spec-sheet/beats.json --retime`
-     then `node scripts/gen-cues-vox9.mjs` → re-QA moved cues → render → mux.
-     Full procedure: `vox-shorts/vox-9-spec-sheet/POST-KIT.md` §10.
-   - **vox-10** → voice, `--retime`, THEN write the composition (it does not exist yet, by
-     design — PIPELINE §7 voice-first). Layers and cover are already done.
+   The TTS quota wall that blocked vox-9 and vox-10 is gone: the operator supplied extra keys
+   from **separate Google Cloud projects** (as a comma-separated list in `GOOGLE_TTS_API_KEY`),
+   and the tool reports `keys: 3 available`. Quota was never hit again across ~120 lines.
+   Still true, and still the thing to remember: **keys from the SAME project share one pool**
+   and add nothing — `PIPELINE.md` §7.
 
-   **Do not swap TTS models to dodge the quota** — measured, the 2.5 model reads ~23% faster
-   and would drop both videos below their length targets, and mixing two engines inside one
-   video is worse than waiting.
+1. **Thai SRT captions for all nine voiced videos.** Now the biggest single win available:
+   every `beats.json` carries exact measured per-line timings, so an SRT is a pure transform
+   of data already on disk. YouTube's Thai auto-captions are poor.
 
-   **A single audition call may succeed while a real run fails.** Measured 2026-08-08: one
-   `--audition` got through on the retry ladder, which briefly looked like the quota had
-   reset. It had not — the 67-line run died on `RESOURCE_EXHAUSTED` a minute later. Do not
-   conclude the quota is back from one lucky call; check by running the real job.
-
-   **The reset is midnight Pacific, not 24h after the wall.** `TZ=America/Los_Angeles date`
-   answers it exactly. (From 2026-08-08 06:41 PDT that was ~17h out = 2026-08-09 14:00 Thai.)
-
-   **Extra API keys will not fix this unless they come from different Google Cloud projects.**
-   Both tools now read `GEMINI_API_KEY_2`..`_9` and rotate when a key is fully spent, but
-   Gemini enforces limits **per project**, so keys minted in one project share one pool and
-   add nothing. The real fix is enabling billing on the project. `PIPELINE.md` §7 has the
-   full ordering; `.env.example` repeats it where the keys are actually typed.
-1. **vox-4 and vox-5 have no voice at all** — both rendered silent months ago and stalled there.
-   They are the two cheapest finished videos available: script and composition already exist,
-   they just need `gen_voice_gemini.py --voice Umbriel` and a mux.
-2. **vox-2, vox-3, vox-4, vox-5 have no publish kit.** vox-2's needs the least work (it has an
-   old `publish.th.md` and covers already).
-3. **No SRT captions on anything.** Thai auto-captions on YouTube are poor, and every video's
-   `beats.json` already carries exact per-line timings — an SRT is a pure transform of data we
-   already have, for all 6 voiced videos.
-4. **vox-10's blocking fact-check** — `vox-shorts/vox-10-charge-curve/POST-KIT.md` §9. The
+2. **vox-2 and vox-3 still have no publish kit** — the last two videos without one.
+   vox-2 needs the least work: it has an old `publish.th.md` and three covers already.
+   vox-3 needs a cover too.
+3. **vox-10's blocking fact-check** — `vox-shorts/vox-10-charge-curve/POST-KIT.md` §9. The
    hook number (10→80% takes 18–35 min; 80→100% takes another 25–45) is only grade **C**, and
    it is carrying the title, the cover AND the main graph. If it is wrong, all three change
    together. Check it before anything else on that video.
-5. **vox-9's blocking fact-checks** — `vox-shorts/vox-9-spec-sheet/POST-KIT.md` §9. Fetching is
+4. **vox-9's blocking fact-checks** — `vox-shorts/vox-9-spec-sheet/POST-KIT.md` §9. Fetching is
    blocked for EVERY domain now, not just the medical hosts in `PIPELINE.md` §0, so every spec
    figure is triangulated from search results and graded A/B/C in its `script.md`. The weak rows
    are Deepal S05's Thai availability, whether its CLTC figure is 610 or 620 (**the cover says
    620**), and which charging power the Thai MG S5 EV trim actually has.
-6. **vox-8's blocking fact-checks** — `vox-shorts/vox-8-urea-deep/POST-KIT.md` §9. The Thai
+5. **vox-8's blocking fact-checks** — `vox-shorts/vox-8-urea-deep/POST-KIT.md` §9. The Thai
    context figures (37% of cost, 41% of national fertiliser) and "millions of farmers" in
    Bangladesh are the weak rows. Do not publish before those.
-7. **vox-7 has the same class of open checks**, for the same reason (§0: sources unreachable).
+6. **vox-7 has the same class of open checks**, for the same reason (§0: sources unreachable).
 
 ## What is NOT in git, and dies with the container
 
@@ -108,9 +88,10 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
 Everything below is in git and is read by a fresh session:
 
 - **`CLAUDE.md`** — loaded automatically, every session, no prompting needed
-- **`PIPELINE.md`** — 376 lines, the runbook, and the record of every mistake that cost time:
-  orientation by length (§3), band collisions (§6), measured reading rates (§7), the sticky
-  HTTP 400 (§7), title patterns and thumbnail pairing (§10), the 2 MB cover limit (§11)
+- **`PIPELINE.md`** — the runbook, and the record of every mistake that cost time: orientation
+  by length (§3), band collisions (§6), measured reading rates and the sticky HTTP 400 (§7),
+  the TTS quota and why extra keys rarely help (§7), proving a background job is actually
+  alive (§9), title patterns and thumbnail pairing (§10), the 2 MB cover limit (§11)
 - **`channels/*.json`** — voice, style, editorial rules, playlists per channel
 - **per video** — `script.md` (facts + how each was sourced), `beats.json` (every timing),
   `POST-KIT.md`, `covers.th.md` (prompts + what was measured on the result)
