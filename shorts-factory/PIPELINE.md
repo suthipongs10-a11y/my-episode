@@ -373,6 +373,21 @@ Two cheap cross-checks that catch a lie immediately: **`uptime` load** should be
 count during a render, and the **output mtime** should be moving. Reporting "it's running" on
 the strength of a pid alone wasted about fifty minutes of the operator's time.
 
+**And `pgrep -f` will match your own watcher.** A monitor loop containing the string
+`render-all.mjs Vox9SpecSheet` is itself a process whose command line contains that string, so
+`pgrep -f` reports the job alive forever after it exits. Measured the same day, one hour after
+the bug above: both jobs had finished and the watcher kept printing `alive=y`.
+
+Match the interpreter, not the pattern:
+
+```bash
+pgrep -x python -a          # actual python processes, with their args
+pgrep -x node   -a
+```
+
+Empty output is the honest answer. **The liveness check that lies is worse than none**, because
+it converts "I don't know" into a confident wrong claim.
+
 ```bash
 node scripts/render-all.mjs <CompId> --scale=1
 python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --style "…" \
