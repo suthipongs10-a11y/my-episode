@@ -196,6 +196,15 @@ class KeyRing:
         return True
 
 
+class StickyLine(Exception):
+    """One line the endpoint refuses, after the retry ladder. Collected, not fatal."""
+
+    def __init__(self, text, detail):
+        super().__init__(text)
+        self.text = text
+        self.detail = detail
+
+
 def run(cmd, **kw):
     return subprocess.run(cmd, check=True, capture_output=True, text=True, **kw)
 
@@ -276,6 +285,13 @@ def synth(cfg, text, out_path):
                         "Every line already generated is cached, so re-running later costs "
                         "only what is missing. Adding more keys helps ONLY if they come from "
                         "different Google Cloud projects — quota is per project, not per key.)")
+            # A sticky 400 used to kill the whole run, losing every line after it and costing a
+            # restart per bad line. Measured four times across vox-8/9/10, always one line at a
+            # time, so a 67-line script could need four full restarts to find them all. Raise
+            # instead of exiting: the caller collects the failures, keeps generating, and reports
+            # every bad line at the end so ONE reword pass fixes them together.
+            if e.code == 400:
+                raise StickyLine(text, detail)
             sys.exit(f"Gemini returned {e.code} for {text[:40]!r}\n{detail}{hint}")
         except Exception as e:
             sys.exit(f"Gemini unreachable: {type(e).__name__}: {e}")
@@ -416,6 +432,7 @@ def main():
               f"A channel's videos are meant to share one narrator.\n")
 
     clips = []
+    sticky = []
     for i, line in enumerate(vo):
         # `say` overrides what is spoken without touching the readable script (see docstring).
         text = line.get("say") or line["text"]
@@ -430,7 +447,12 @@ def main():
                   f"{'  (say override)' if line.get('say') else ''}")
             continue
         if not cached:
-            synth(cfg, text, out)
+            try:
+                synth(cfg, text, out)
+            except StickyLine as sl:
+                sticky.append((i, line, sl))
+                print(f"  [{i}] ⛔ STICKY 400 — skipped, run continues: {text[:56]}…")
+                continue
         d = duration(out)
         clips.append({"path": out, "dur": d, "line": line})
         est = line["end"] - line["start"]
@@ -441,6 +463,24 @@ def main():
     if args.dry_run:
         print("\ndry run: nothing contacted, nothing written")
         return
+
+    # Report every refused line at once. Nothing is written when any line is missing: a bed
+    # built from an incomplete set would look finished while silently dropping narration, and
+    # --retime would pack the survivors into wrong windows.
+    if sticky:
+        print(f"\n{'=' * 70}")
+        print(f"⛔ {len(sticky)} line(s) refused with a sticky HTTP 400. Nothing written.")
+        print(f"{'=' * 70}")
+        for i, line, _ in sticky:
+            print(f"\n  [{i}] {line.get('segment', '?')}")
+            print(f"      {line.get('say') or line['text']}")
+        print("\nThis is the vox-8/9/10 failure mode: ordinary prose the endpoint rejects by")
+        print("its exact bytes, surviving the whole retry ladder. It is NOT quota and NOT a")
+        print("malformed request. The fix that has worked every time: reword each line above —")
+        print("same meaning, different bytes — and re-run. The cache keeps everything already")
+        print("generated, so the re-run only costs the lines you changed.")
+        print("Record why in that line's sayNote so nobody restores the original wording.")
+        sys.exit(1)
 
     if args.retime:
         t = vo[0]["start"]

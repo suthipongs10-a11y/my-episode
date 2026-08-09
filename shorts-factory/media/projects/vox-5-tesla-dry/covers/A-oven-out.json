@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold vertical YouTube Shorts thumbnail, 1080x1920 portrait, very dark navy blue background (#0f1a2d) with a faint thin blueprint grid, technical drawing style.\n\nTOP THIRD: large Thai headline in warm off-white, heavy geometric sans-serif, stacked on exactly two lines, perfectly spelled:\nของใหม่ล่าสุด\nคือการเอาออก\n\nMIDDLE: a simple flat side-view line drawing of a very long industrial drying oven tunnel, drawn as a plain elongated horizontal rectangle with a few vertical division lines and a small roller at each end, in muted grey-blue outline. A thick bright red diagonal cross is drawn straight over the whole oven, cancelling it out.\n\nBOTTOM THIRD: one enormous number in bright amber, far larger than any other element on the page, perfectly spelled and reading exactly:\n40%\nDirectly under it, one short line of warm off-white Thai text on ONE line, perfectly spelled:\nของต้นทุนผลิตเซลล์\n\nFlat solid colours only: very dark navy, warm off-white, bright amber, muted grey-blue, bright red. No gradient, no glow, no drop shadow, no 3D, no photographic texture. No car, no battery cell, no logos, no brand names, no other numbers anywhere. Keep 8% clear margin left and right, 6% top and bottom.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "9:16",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-09T04:57:07"
+}
