@@ -50,6 +50,17 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
 
 ## Open work, in the order it is worth doing
 
+−2. **The website question is researched and waiting on a direction call.** The operator asked
+   (2026-08-18) whether a website is the better affiliate play and which programmes give a
+   site a real chance of traffic. **`RESEARCH-website.md` is the answer** — short version:
+   a pure SEO review blog is the one model 2026 has killed (zero-click ~68%, affiliate sites
+   the hardest-hit category in the March 2026 core update, AI Overviews already on Thai
+   SERPs too); what still works is a site fed by traffic we control — the video factory —
+   plus free tools/measured comparison tables, monetised in Thailand via finance CPL
+   (credit cards 400–1,050฿/approved application via Accesstrade) and travel (Agoda ~5%),
+   plus recurring SaaS/AI for the `saas` channel's audience. §5.4 has a W0–W3 phase plan,
+   gated; §7 has the two questions that must be answered before W0 starts.
+
 −1. **`saas` channel: two answers are needed before its first video can start.**
    `vox-shorts/IDEAS-saas.md` ends with both. (a) **Which affiliate programmes is the operator
    actually signed up to?** Reviewing an offer we hold no link for is unpaid work for the
