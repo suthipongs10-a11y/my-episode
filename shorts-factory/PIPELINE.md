@@ -141,6 +141,39 @@ scene, and keep 1:1 only for cutouts that sit on the board as objects.
 **No generated image may be presented as a document.** No AI image inside `ArchivalPhoto`
 with a factual caption. Say "a farmer", never "the farmer". vox-1 broke this; don't copy it.
 
+### ⬛ EVERY SCENE SITS ON A PHOTOGRAPH — locked 2026-08-18, all channels
+
+**`brand.md` §4a is the rule; this is how to satisfy it.** A scene on a flat fill reads as a
+slide. One full-frame plate per scene, dimmed until the type wins, with cut-out props on top.
+
+```bash
+node remotion/scripts/check-scene-imagery.mjs           # count BEFORE the first render
+node remotion/scripts/check-scene-imagery.mjs --check   # exit 1 if a scene has no plate (CI)
+```
+
+**vox-11 cost three full renders to learn this** — four images, then twelve, then twenty-four,
+each round prompted by the operator looking at the result. The count that would have caught
+both rounds takes a second. Run it before rendering, not after.
+
+Producing a set of plates:
+
+- **Prompt the subject of the scene, not "a nice background".** The seedling beat gets
+  seedlings; the harvest beat gets a harvest. A plate showing something else is worse than a
+  flat fill, because it is now also a claim.
+- **Ask for the light.** "low sun just above a flat horizon", "warm backlight", "big cumulus
+  sky" — the light is what gives the frame depth, and it is the thing the model will drop first
+  if you do not name it.
+- **People: no faces, ever.** Backs, conical hats, hands only, small distant figures. These are
+  faceless channels and the rule against asserting a person points the same way, so there is no
+  trade-off to make — say `seen from behind, face not visible` in the prompt.
+- **Places: no landmarks, no architecture.** `completely empty flat horizon — no mountains, no
+  buildings, no poles, no vehicles, no people` is the line that works. Hills behind a paddy are
+  fine (common across a whole region, name nothing); a skyline is not.
+- **Dim per image, 0.80–0.87 over the paper colour.** A noon sky needs more than a dusk field.
+  **Judge it on whether the headline reads at 320px, not on whether the photo looks good.**
+- **Check them as a contact sheet, not one at a time.** Twelve `Read`s of twelve images is slow
+  and makes them hard to compare; paste them into one grid with Pillow and look once.
+
 ### ⬛ Free stock photos are not available here — and mostly should not be wanted
 
 Every free-image host is refused by the network policy at CONNECT, measured 2026-08-08:
@@ -222,6 +255,12 @@ Two of vox-6's are general enough to check for every time:
 - **A long line with a short picture reads as a stall.** Sort the beats by VO seconds and look
   at the longest one first: vox-6's 10.16s line was a single card on an empty grid. Over ~8s a
   card needs a diagram under it, and the diagram is usually the argument already in the script.
+
+**Before the first render, count the scenes with no picture.** `check-scene-imagery.mjs`
+prints scenes / no-plate / no-prop per shot. Both columns should be zero on a new video
+(`brand.md` §4a). This is the cheapest check in the file and it is the one that was skipped
+three times on vox-11 — each miss cost a fifteen-minute render that a one-second count would
+have prevented.
 
 For a video over 60s, also check the tail: composition length must be **last word + ~4s**, not
 a round number. vox-6 was first cut at 117s against a 108.4s script and the 8.6s of silence

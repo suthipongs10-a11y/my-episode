@@ -75,6 +75,13 @@ jobs:
         # and checks what the tools report about them.
         run: ./tools/test-client-survey.py
 
+      - name: Every vox scene has a background, not a flat fill
+        # brand.md §4a, locked 2026-08-18. vox-11 needed three full renders to reach it
+        # because nobody counted the empty scenes first; this is that count, in CI.
+        # Shots older than the rule are listed by name inside the script, not skipped silently.
+        working-directory: shorts-factory/remotion
+        run: node scripts/check-scene-imagery.mjs --check
+
       - name: Thai captions are generated, not typed
         # shorts-factory/tools/gen_srt.py turns each video's measured line timings into an
         # SRT. Its own --check needs the wav files, which are gitignored, so what CI can

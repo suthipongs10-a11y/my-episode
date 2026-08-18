@@ -53,6 +53,28 @@ Headlines tight tracking; body normal; mono for anything literally code/terminal
 - **Window chrome** (browser/terminal mockups): rounded panel, top bar with 3 traffic-light dots
   + a mono label; content on the dark ink scale.
 
+## 4a. Scene backgrounds — **every scene sits on a photograph, never a flat fill**
+
+**Locked 2026-08-18, on the operator's instruction, and it applies to every video on every
+channel from here on.** A scene whose background is a single flat colour reads as a slide, not
+as a film. The fix is one full-frame photograph per scene, dimmed back until the type wins.
+
+- **One plate per scene, minimum.** Count the scenes with no plate BEFORE the first render
+  (`node remotion/scripts/check-scene-imagery.mjs`). vox-11 needed three full renders to reach
+  this because the count was never taken — see PIPELINE.md §4.
+- **The plate is subject matter, not wallpaper.** Pick the image the scene is about: the
+  seedling beat gets seedlings, the harvest beat gets a harvest. A scene backed by a photo of
+  something else is worse than a flat fill, because now it is also lying.
+- **Dim is per image, not a constant.** A bright noon sky needs more of the base colour over it
+  than a dusk field does. Typical 0.80–0.87 over the paper colour. **The test is whether the
+  headline still reads at 320px, not whether the photo looks good.**
+- **Props on top.** Cut-out objects on white keep the foreground; the plate is depth behind
+  them. A scene with a plate and no prop is flat in a different way.
+- **People: no faces.** These are faceless channels. Backs, hats, hands, distant figures. This
+  also happens to satisfy "never assert a person", so there is no trade to make.
+- **Places: no landmarks.** A recognisable skyline or monument claims a location the script has
+  no source for. Anonymous is both safer and more reusable (PIPELINE.md §4, the vox-7 case).
+
 ## 5. Motion language — calm & premium
 
 - **Entrances:** fade + rise. `opacity 0→1` and `translateY 24px→0` over ~7 frames at the shorts'

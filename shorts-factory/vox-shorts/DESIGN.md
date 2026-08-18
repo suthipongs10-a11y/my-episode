@@ -34,6 +34,11 @@ a virtual camera, not from complex per-image animation.
    statements MUST use `backing` — cream strips behind every word, highlight sweeps over the
    strip. Bare ink and the yellow sweep both die against sepia tones; chips with light
    accents (VOX.yellow) need `kickerColor` dark.
+7. **Every scene has a photograph behind it** (locked 2026-08-18 — see `brand.md` §4a).
+   A full-frame plate of the thing the scene is about, dimmed 0.80–0.87 over the paper colour
+   so type wins, with cut-out props on top. **Flat single-colour backgrounds are not a style
+   choice here, they are an unfinished scene.** Run
+   `node remotion/scripts/check-scene-imagery.mjs` before the first render, not after it.
 6. **Archival treatment** — old photos get duotone/sepia + white photo border + slight
    rotation; screenshots/documents get paper-scan treatment.
 

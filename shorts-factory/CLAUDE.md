@@ -67,4 +67,7 @@ per-video state was the one thing that had never been written down.
   canonical clip lives in `media/projects/<name>/`.
 - **Costs (ai-shorts only):** state the derived generation cost BEFORE spending it, and never
   regenerate a locked character from text (see /make-ai-short's iron rules).
+- **Every scene sits on a photograph, never a flat fill** (`brand.md` §4a, locked 2026-08-18,
+  all channels). One full-frame plate per scene dimmed 0.80–0.87, cut-out props on top, no
+  faces, no landmarks. Count before rendering: `node remotion/scripts/check-scene-imagery.mjs`.
 - **QA is not optional:** render frames at phone scale and READ them before any full render.
