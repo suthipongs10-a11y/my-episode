@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold horizontal YouTube thumbnail, 1920x1080 landscape, very dark navy blue background (#0e1a24) with a faint thin blueprint grid, flat technical drawing style.\n\nLEFT HALF: large Thai headline in warm off-white, heavy geometric sans-serif, stacked on exactly two lines, perfectly spelled, reading exactly:\nธาตุที่ข้าวกินมากที่สุด\nอยู่ในถุงปุ๋ยเท่านี้\nDirectly below the headline, one short line of muted grey-blue Thai text on ONE line, perfectly spelled, much smaller: ในสูตร N-P-K\n\nRIGHT HALF: one enormous numeral in bright amber, at least four times taller than the headline text, perfectly formed, reading exactly:\n0\nThe numeral sits inside a simple flat outline drawing of a fertiliser sack, drawn as a plain rounded rectangle in muted grey-blue outline with a folded top edge, so the amber zero appears printed on the sack.\n\nFlat solid colours only: very dark navy, warm off-white, bright amber, muted grey-blue. No gradient, no glow, no drop shadow, no 3D, no photographic texture, no rice plants, no people, no logos, no brand names, no other numbers or letters anywhere except the specified Thai text and the single 0.\nKeep 8% clear margin left and right, 6% top and bottom.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T04:34:26"
+}

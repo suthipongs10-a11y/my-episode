@@ -267,6 +267,17 @@ const BagsNoSilicon: React.FC<{ at: number; showGap?: boolean }> = ({ at, showGa
           <div style={{ fontFamily: FONT_TH, fontSize: 20, color: T.yellow, marginTop: 10, textAlign: 'center' }}>ซิลิกอน</div>
         </div>
       </div>
+      {/* ACCURACY, found in keyword research and worth a restarted render.
+          Silicate IS sold in Thailand — TPI Polene's SILICA + กรดซิลิคอน sits on Thai Watsadu's
+          shelves as a สารปรับสภาพดิน, and step 4 of the summary says so. The narration's
+          "not on any bag" is about the N-P-K GRADE, so the row now names what it is talking
+          about. A hook a viewer can disprove at a hardware store is not a hook. */}
+      <div style={{
+        fontFamily: FONT_TH, fontSize: 21, color: T.inkSoft, marginTop: 22, letterSpacing: '0.6px',
+        opacity: grow(frame, at + (showGap ? 50 : 0), 24),
+      }}>
+        สูตรปุ๋ยที่ขายทั่วไปในไทย — ตัวเลขสามตัวคือ N–P–K และไม่มีช่องของซิลิกอน
+      </div>
     </Layer>
   );
 };

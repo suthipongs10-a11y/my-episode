@@ -489,6 +489,18 @@ bars at 614px == 614px; vox-8 measured `85%` at 307px against `38%` at 191px = 1
 downscale to **320px wide** and *look at it* — that is the real size in a phone feed, and it is
 the only check that catches Thai that is technically correct and practically unreadable.
 
+### ⬛ Ask for a bigger ratio than you want — the ceiling was the prompt, not the model
+
+vox-8 measured 1.61× and vox-10 measured 1.60×, and it was written down here that "the model
+does not seem to exceed ~1.6×" and the acceptance bar was lowered to 1.5× to match.
+
+**That conclusion was wrong.** Both prompts had asked for `3-4x larger`. vox-11 asked for
+**`at least four times taller than the headline text`** and measured **3.19×** — twice the
+supposed ceiling, first try, same model.
+
+The lesson is not about covers. It was a limit inferred from two samples that shared a cause
+nobody varied. **Name the number you want and overshoot it**, then measure what came back.
+
 ---
 
 ## 12. Captions → `captions.th.srt`
