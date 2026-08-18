@@ -1,0 +1,9 @@
+{
+  "prompt": "Extreme close-up product photograph of a small heap of white spherical fertiliser prills, each a smooth round pellet about the size of a peppercorn, slightly translucent, piled loosely so individual pellets are sharp and distinct. Isolated on a plain pure white background, soft even studio light, slightly elevated angle. No text, no numbers, no labels, no logos, no bag, no scoop, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T05:00:07"
+}

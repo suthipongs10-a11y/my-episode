@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of one clump of green rice plants, about fifteen upright leaf blades rising from a common base, cut at the base and stood upright, healthy mid-season green. Isolated on a plain pure white background, soft even studio light, straight-on view. No text, no numbers, no labels, no logos, no soil, no pot, no field, no sky, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T05:00:35"
+}

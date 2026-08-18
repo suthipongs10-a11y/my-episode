@@ -34,9 +34,20 @@ import { FONT_TH, FONT_TH_DISPLAY } from '../../fonts';
 //    shipped its LFP exception drawn ON TOP of rule 3 and QA caught it late; the fix there
 //    was to reserve the box's height in the layout, and this file reserves it from the start.
 //
-// Every number-bearing diagram below is drawn, never generated (PIPELINE §4). The four
-// generated images are objects on white — a bale, husks, a leaf, a lump of slag — and none
-// of them carries a figure.
+// Every number-bearing diagram below is drawn, never generated (PIPELINE §4). The generated
+// images carry no figures at all: ten are objects photographed on white and cut out, and two
+// are atmosphere plates. Added in a second pass on the operator's note that the video was too
+// thin visually — the VOICE AND CUES WERE NOT TOUCHED, so this file is the only thing that
+// changed and the mux target is still 490.000s.
+//
+// Placement rule for the props: every one sits in the BOTTOM-LEFT quadrant (x 250-600,
+// y 740-1000), which is empty in every scene because the headline column stops around y 600
+// and the diagram cards start at x 820. That is why they could be added without re-checking
+// each scene's layout from scratch — one reserved band, not twelve decisions.
+//
+// The two plates are the places, and both are deliberately anonymous: a flat horizon with no
+// hills, buildings, poles, vehicles or people, so neither asserts a country. PIPELINE §4
+// records what happened to vox-7 when a place looked like somewhere.
 // =============================================================================
 
 export const compositionConfig = {
@@ -352,7 +363,7 @@ const RootPumps: React.FC<{ at: number; showPush?: boolean }> = ({ at, showPush 
       <Card w={800}>
         <svg width={740} height={430} viewBox="0 0 740 430">
           <text x={20} y={26} fontFamily={FONT_TH} fontSize={21} fill={T.inkSoft}>น้ำในดิน</text>
-          <text x={560} y={26} fontFamily={FONT_TH} fontSize={21} fill={T.inkSoft}>ท่อลำเลียง</text>
+          <text x={630} y={26} fontFamily={FONT_TH} fontSize={21} fill={T.inkSoft}>ท่อลำเลียง</text>
 
           <line x1={20} y1={190} x2={200} y2={190} stroke={T.inkSoft} strokeWidth={3} opacity={g} />
           <Membrane x={210} label="ตัวที่ 1" kind="เปิดทางให้เข้า" color={T.teal} o={g} />
@@ -779,8 +790,10 @@ const Vox11SiliconRice: React.FC = () => (
       {/* 1 — HOOK: three bags, then the gap where silicon is not */}
       <Scene from={0} dur={C.s05_start - 12}>
         <Title at={C.s01_bags} />
+        <Prop src={A('fert-sack.png')} x={1600} y={870} w={190} at={C.s02_npk - C.s01_bags} rot={-2} caption="ถุงปุ๋ยที่ซื้อกันทุกฤดู" />
         <BagsNoSilicon at={C.s02_npk - C.s01_bags} showGap={false} />
         <Scene from={C.s03_missing - C.s01_bags} dur={C.s05_start - C.s03_missing - 12}>
+          <Prop src={A('fert-sack.png')} x={1600} y={870} w={190} at={0} rot={-2} caption="ถุงปุ๋ยที่ซื้อกันทุกฤดู" />
           <BagsNoSilicon at={0} showGap />
         </Scene>
       </Scene>
@@ -788,8 +801,10 @@ const Vox11SiliconRice: React.FC = () => (
       {/* 2 — HOW MUCH: the one quantitative claim the video rests on */}
       <Scene from={C.s05_start} dur={C.s10_accident - C.s05_start - 12}>
         <Head at={0} kicker="ปริมาณที่ข้าวดูดขึ้นมา" head="ไนโตรเจนคือสิ่งที่เราซื้อ" sub="ซิลิกอนคือสิ่งที่เราไม่เคยซื้อ" y={330} />
+        <Prop src={A('fert-granules.png')} x={450} y={880} w={380} at={C.s06_nitrogen - C.s05_start} rot={1.5} caption="เม็ดปุ๋ยไนโตรเจน" />
         <UptakeBars at={C.s06_nitrogen - C.s05_start} showSi={false} />
         <Scene from={C.s07_silicon - C.s05_start} dur={C.s10_accident - C.s07_silicon - 12}>
+          <Prop src={A('fert-granules.png')} x={450} y={880} w={380} at={0} rot={1.5} caption="เม็ดปุ๋ยไนโตรเจน" />
           <UptakeBars at={0} showSi showRatio />
         </Scene>
       </Scene>
@@ -797,8 +812,10 @@ const Vox11SiliconRice: React.FC = () => (
       {/* 3 — TWO PUMPS: rice pays energy for this, so it is not an accident */}
       <Scene from={C.s10_accident} dur={C.s15_becomes - C.s10_accident - 12}>
         <Head at={0} kicker="กลไก 1" head="ข้าวไม่ได้ดูดมันขึ้นมาโดยบังเอิญ" sub="รากมีตัวขนส่งสองตัว ทำงานต่อกันเป็นทอด" y={330} />
+        <Prop src={A('rice-roots.png')} x={470} y={827} w={620} at={C.s11_two - C.s10_accident} rot={-1} caption="รากข้าว — จุดที่ตัวขนส่งทั้งสองอยู่" />
         <RootPumps at={C.s11_two - C.s10_accident} />
         <Scene from={C.s13_energy - C.s10_accident} dur={C.s15_becomes - C.s13_energy - 12}>
+          <Prop src={A('rice-roots.png')} x={470} y={827} w={620} at={0} rot={-1} caption="รากข้าว — จุดที่ตัวขนส่งทั้งสองอยู่" />
           <RootPumps at={0} showPush />
         </Scene>
       </Scene>
@@ -806,11 +823,14 @@ const Vox11SiliconRice: React.FC = () => (
       {/* 4 — THE GLASS: water leaves, silicon cannot */}
       <Scene from={C.s15_becomes} dur={C.s20_four - C.s15_becomes - 12}>
         <Head at={0} kicker="กลไก 2" head="ต้นข้าวสร้างแก้วขึ้นมาในตัวเอง" sub="กรดซิลิสิกขึ้นมากับน้ำ แล้วน้ำก็ทิ้งมันไว้" y={330} />
+        <Prop src={A('rice-clump.png')} x={400} y={805} w={200} at={C.s16_acid - C.s15_becomes} rot={1} caption="กอข้าว" />
         <SilicaDeposit at={C.s16_acid - C.s15_becomes} />
         <Scene from={C.s17_evaporate - C.s15_becomes} dur={C.s18_silica - C.s17_evaporate - 6}>
+          <Prop src={A('rice-clump.png')} x={400} y={805} w={200} at={0} rot={1} caption="กอข้าว" />
           <SilicaDeposit at={0} showVapour />
         </Scene>
         <Scene from={C.s18_silica - C.s15_becomes} dur={C.s20_four - C.s18_silica - 12}>
+          <Prop src={A('rice-clump.png')} x={400} y={805} w={200} at={0} rot={1} caption="กอข้าว" />
           <SilicaDeposit at={0} showVapour showGlass />
         </Scene>
       </Scene>
@@ -830,9 +850,11 @@ const Vox11SiliconRice: React.FC = () => (
         <Head at={0} kicker="แล้วทำไมไม่มีใครพูดถึง" head="คำตอบไม่ได้อยู่ในนา" sub="มันอยู่ในหนังสือเรียน" y={330} accent={BLUEPRINT.yellow} />
         <Rule1939 at={C.s27_1939 - C.s25_question} />
         <Scene from={C.s29_ricesurvives - C.s25_question} dur={C.s30_dropped - C.s29_ricesurvives - 4}>
+          <Prop src={A('panicle.png')} x={470} y={794} w={560} at={0} rot={-2} caption="ยังออกรวงได้ — และนั่นคือเหตุผลที่มันตกเกณฑ์" />
           <Rule1939 at={0} showTest />
         </Scene>
         <Scene from={C.s30_dropped - C.s25_question} dur={C.s31_notwait - C.s30_dropped - 12}>
+          <Prop src={A('panicle.png')} x={470} y={794} w={560} at={0} rot={-2} caption="ยังออกรวงได้ — และนั่นคือเหตุผลที่มันตกเกณฑ์" />
           <Rule1939 at={0} showTest showVerdict />
         </Scene>
       </Scene>
@@ -848,10 +870,11 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 8 — THE CYCLE, AND THE CUT */}
       <Scene from={C.s37_wherefrom} dur={C.s43_burnthought - C.s37_wherefrom - 12}>
-        <Plate src={A('straw-bale-raw.png')} at={0} pos="50% 55%" dim={0.86} />
+        <Plate src={A('stubble-raw.png')} at={0} pos="50% 60%" dim={0.84} />
         <Head at={0} kicker="ซิลิกอนในนาไทยมาจากไหน" head="ไม่ได้มาจากหิน" sub="มาจากซากของข้าวรุ่นก่อนหน้า ที่ยังอยู่ในดินแปลงนั้น" y={330} />
         <SiCycleBroken at={C.s40_previous - C.s37_wherefrom} />
         <Scene from={C.s41_bank - C.s37_wherefrom} dur={C.s43_burnthought - C.s41_bank - 12}>
+          <Prop src={A('straw-bale.png')} x={400} y={916} w={340} at={14} rot={-2} />
           <SiCycleBroken at={0} showCut />
           <LabelChip text="ฟางคือธนาคารซิลิกอนของนาแปลงนั้น" x={MARGIN_L + 300} y={760} at={16} size={30} accent={BLUEPRINT.yellow} />
         </Scene>
@@ -859,6 +882,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 9 — TRAP 1: the ledger. Both columns, always together. */}
       <Scene from={C.s43_burnthought} dur={C.s50_advice - C.s43_burnthought - 12}>
+        <Plate src={A('field-burning-raw.png')} at={0} pos="50% 45%" dim={0.82} />
         <Head at={0} kicker="กับดักที่ 1" head="ไฟไม่ได้ทำให้ซิลิกอนหาย" sub="ซิลิกาไม่ระเหย — มันอยู่ในขี้เถ้า" y={320} accent={BLUEPRINT.red} />
         <BurnLedger at={C.s45_ash - C.s43_burnthought} />
         <Scene from={C.s46_whatislost - C.s43_burnthought} dur={C.s47_realcause - C.s46_whatislost - 4}>
@@ -871,13 +895,15 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 10 — TRAP 2: the most useful minute in the video */}
       <Scene from={C.s50_advice} dur={C.s57_bothsides - C.s50_advice - 12}>
-        <Prop src={A('husk-pile.png')} x={540} y={800} w={560} at={C.s51_sounds - C.s50_advice} rot={-1} caption="แกลบ · ซิลิกา 2–10%" />
+        <Prop src={A('husk-pile.png')} x={560} y={882} w={440} at={C.s51_sounds - C.s50_advice} rot={-1} caption="แกลบ · ซิลิกา 2–10%" />
         <Head at={0} kicker="กับดักที่ 2" head="ขี้เถ้าแกลบอาจใช้ไม่ได้" sub="ถ้ามันผ่านการเผาที่ร้อนเกินไปมาแล้ว" y={300} accent={BLUEPRINT.red} />
         <AshCrystal at={C.s52_mustdissolve - C.s50_advice} />
         <Scene from={C.s53_crystal - C.s50_advice} dur={C.s55_practical - C.s53_crystal - 4}>
+          <Prop src={A('ash-heap.png')} x={310} y={935} w={260} at={10} rot={2} caption="ขี้เถ้า" />
           <AshCrystal at={0} showCrystal />
         </Scene>
         <Scene from={C.s55_practical - C.s50_advice} dur={C.s57_bothsides - C.s55_practical - 12}>
+          <Prop src={A('ash-heap.png')} x={310} y={935} w={260} at={0} rot={2} caption="ขี้เถ้า" />
           <AshCrystal at={0} showCrystal showAdvice />
         </Scene>
       </Scene>
@@ -885,6 +911,7 @@ const Vox11SiliconRice: React.FC = () => (
       {/* 11 — EVIDENCE: every number wears its condition */}
       <Scene from={C.s57_bothsides} dur={C.s62_problem - C.s57_bothsides - 12}>
         <Head at={0} kicker="หลักฐาน" head="ต้องพูดให้ครบทั้งสองด้าน" y={300} />
+        <Prop src={A('panicle.png')} x={470} y={828} w={520} at={C.s58_meta - C.s57_bothsides} rot={2} />
         <EvidenceLadder at={C.s58_meta - C.s57_bothsides} upto={1} />
         <Scene from={C.s60_thaipot - C.s57_bothsides} dur={C.s61_saturates - C.s60_thaipot - 4}>
           <EvidenceLadder at={0} upto={2} />
@@ -896,6 +923,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 12 — THE ANSWER: four steps, caveat in the same frame */}
       <Scene from={C.s62_problem} dur={C.tail - C.s62_problem}>
+        <Plate src={A('straw-bale-raw.png')} at={0} pos="50% 55%" dim={0.88} />
         <Head at={0} kicker="สรุป — ปัญหา · ทางแก้ · เริ่มยังไง" head="เริ่มยังไง" y={280} />
         <FourSteps at={C.s63_step1 - C.s62_problem} upto={1} />
         <Scene from={C.s65_step2 - C.s62_problem} dur={C.s66_step3 - C.s65_step2 - 4}><FourSteps at={0} upto={2} /></Scene>

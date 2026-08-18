@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a single mature rice panicle, the drooping seed head heavy with golden-tan grains still in their husks, attached to a short length of dry stem. Isolated on a plain pure white background, soft even studio light, slight three-quarter angle, sharp focus on individual grains. No text, no numbers, no labels, no logos, no hands, no people, no field.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T05:00:48"
+}

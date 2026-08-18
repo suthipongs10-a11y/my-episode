@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of a harvested rice field after the combine has passed: neat parallel rows of short pale gold cut stubble stretching to a flat empty horizon, dry cracked pale soil visible between the rows, a few loose straw stalks lying about. Soft overcast daylight, muted colours. Completely empty flat horizon — no mountains, no hills, no buildings, no trees, no poles, no vehicles, no machinery, no people, no animals, no text. Nothing in the frame identifies a country or a place. Documentary photograph, straight-on eye level.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T05:01:45"
+}

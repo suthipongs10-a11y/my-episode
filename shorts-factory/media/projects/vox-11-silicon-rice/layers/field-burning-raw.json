@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of a harvested rice field being burned: low orange flames running in a line across flat dry stubble, thick pale grey smoke drifting up and to the right and filling the upper half of the frame, scorched black ground in the foreground. Overcast hazy light, muted desaturated colours. Completely empty flat horizon — no mountains, no hills, no buildings, no houses, no trees, no poles, no vehicles, no machinery, no people, no animals, no text. Nothing in the frame identifies a country or a place. Documentary photograph, not dramatic, not cinematic, no lens flare.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T05:01:31"
+}
