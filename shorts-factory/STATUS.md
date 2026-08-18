@@ -7,13 +7,13 @@
 > **Update it at the end of any session that finishes or starts a video.** A stale STATUS is
 > worse than none, because it will be believed.
 >
-> Last updated: **2026-08-18** (Thai captions generated for all nine voiced videos)
+> Last updated: **2026-08-18** (captions for all nine; vox-11 built — silicon in rice)
 
 ## Channels
 
 | slug | name | voice | videos |
 |---|---|---|---|
-| `agri` | เกษตรที่คนไทยควรรู้ | Algieba | vox-2, vox-8 |
+| `agri` | เกษตรที่คนไทยควรรู้ | Algieba | vox-2, vox-8, vox-11 |
 | `health` | (สุขภาพแบบเข้าใจง่าย) | Leda | vox-3, vox-7 |
 | `ev` | The EV Insight | Umbriel | vox-4, vox-5, vox-6, vox-9, vox-10 |
 
@@ -33,36 +33,35 @@ Voices must stay unique per channel — `channels/README.md` makes a duplicate a
 | 8 | `vox-8-urea-deep` | agri | ✅ 62 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 133 |
 | 9 | `vox-9-spec-sheet` | ev | ✅ 48 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 109 |
 | 10 | `vox-10-charge-curve` | ev | ✅ 67 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 129 |
+| 11 | `vox-11-silicon-rice` | agri | ✅ 70 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 118 |
 
-**vox-8, vox-9 and vox-10 are the landscape videos.** Everything else is 1080×1920. That is
-correct — they are the three over 60s. See `PIPELINE.md` §3.
+**vox-8, vox-9, vox-10 and vox-11 are the landscape videos.** Everything else is 1080×1920.
+That is correct — they are the four over 60s. See `PIPELINE.md` §3.
 
 **`POST-KIT.md` supersedes `publish.th.md`.** vox-6 and vox-7 still carry both; the POST-KIT is
 the current one (it is the form-filling checklist, not just copy). vox-2 has only the old file.
 
 ## Open work, in the order it is worth doing
 
-0. **Every EV video is finished.** vox-4, vox-5, vox-9 and vox-10 are all rendered, muxed and
-   stream-verified, each with a cover and a publish kit. What remains on them is fact-checking,
-   not production — see the numbered items below.
+0. **Everything produced so far is finished.** Eleven videos, nine of them voiced and rendered,
+   all with captions. What remains on each is fact-checking, not production.
 
-   The TTS quota wall that blocked vox-9 and vox-10 is gone: the operator supplied extra keys
-   from **separate Google Cloud projects** (as a comma-separated list in `GOOGLE_TTS_API_KEY`),
-   and the tool reports `keys: 3 available`. Quota was never hit again across ~120 lines.
-   Still true, and still the thing to remember: **keys from the SAME project share one pool**
-   and add nothing — `PIPELINE.md` §7.
+1. **vox-11's blocking fact-checks** — `vox-shorts/vox-11-silicon-rice/POST-KIT.md` §9. The
+   newest video and the one with the most load on a single figure: **silicon uptake of
+   150–300 kg/ha**, because the whole second beat ("1.5–3× more than nitrogen") is arithmetic
+   on top of it. Then the ~850°C crystallisation point, because the recommended title rests
+   on it.
 
-1. ~~**Thai SRT captions for all nine voiced videos.**~~ **Done 2026-08-18.**
-   `tools/gen_srt.py` builds each `captions.th.srt` from the measured line windows in
-   `beats.json`; `PIPELINE.md` §12 is the write-up. 460 cues across nine videos, and every
-   POST-KIT's YouTube form row now names its file instead of saying "not done yet".
+   Two things this video learned that apply to the next one:
 
-   Two things worth knowing before touching it. **89% of cue boundaries land on a silence
-   detected in the real wav**, not on a proportional guess — so regenerating captions needs
-   the `voice/` wavs present, and the tool refuses to write without them. And **the self-test
-   passed against every bug it was written to catch** until it was rewritten to drive the real
-   229 script lines; if you change the layout logic, re-run the mutation checks in §12, do not
-   just watch it go green.
+   - **Do the keyword research BEFORE the render, not after the script.** It found that
+     silicate fertiliser is sold in Thailand, which scoped the hook — and it found it at 19%
+     of a render, which had to be thrown away. The search that sells the video is also the
+     search that fact-checks its framing.
+   - **A limit inferred from two samples is not a limit.** `PIPELINE.md` §11 had recorded
+     "the model tops out near 1.6×" for cover number ratios from vox-8 and vox-10. vox-11
+     measured 3.19× by asking for a bigger number in the prompt. Both earlier prompts had
+     asked for the same thing as each other; nobody varied it.
 
 2. **vox-2 and vox-3 still have no publish kit** — the last two videos without one.
    vox-2 needs the least work: it has an old `publish.th.md` and three covers already.
