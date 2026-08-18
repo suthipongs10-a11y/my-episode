@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph looking up through ripe golden rice panicles toward a low warm sun, the sunlight breaking between the grains in soft rays, strong warm backlight, the stalks in near silhouette against a bright hazy sky. Dreamy, warm, natural lens character with no artificial flare. No people, no buildings, no text, no logos.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:01:45"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "Close photograph of rice at the heading stage: young pale green panicles just emerging above the leaves, dense and upright, shallow depth of field with soft bokeh behind, warm afternoon sunlight raking across from the left. Delicate detail on the flowering grains. No people, no buildings, no text, no logos.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:01:13"
+}

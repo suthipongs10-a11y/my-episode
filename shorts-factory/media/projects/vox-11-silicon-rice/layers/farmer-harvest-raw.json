@@ -1,0 +1,9 @@
+{
+  "prompt": "Close photograph of a pair of weathered hands harvesting rice by hand, one hand gathering a bunch of golden rice stalks and the other holding a small curved sickle mid-cut. Only hands and forearms in frame, no face, no head, no torso. Warm afternoon light, shallow depth of field, golden stalks filling the background. Documentary photograph. No text, no logos, no watch, no jewellery, no brand marks.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:03:05"
+}

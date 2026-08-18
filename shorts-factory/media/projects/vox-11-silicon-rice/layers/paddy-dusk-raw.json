@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of a rice paddy at dusk, the sun a warm disc low on a flat horizon, the sky graded from deep orange near the sun to soft blue above, silhouetted rice plants along the bottom third, still water catching the last light. Calm and quiet. No people, no buildings, no vehicles, no machinery, no text, no logos, no landmarks.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:03:20"
+}

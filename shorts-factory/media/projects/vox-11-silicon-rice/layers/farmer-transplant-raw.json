@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of a rice farmer transplanting young rice seedlings in a flooded paddy, seen from behind and slightly to the side, bent forward at work, wearing a wide conical straw hat and long sleeves. The face is completely hidden by the hat and the angle. Soft early morning light, still water reflecting the sky. Documentary photograph, natural and unposed. No other people, no buildings, no vehicles, no machinery, no text, no logos, no landmarks.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:02:31"
+}

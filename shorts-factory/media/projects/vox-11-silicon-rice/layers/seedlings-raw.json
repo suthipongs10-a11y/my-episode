@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of bright green rice seedlings newly transplanted in a flooded paddy, small tufts standing in neat rows in shallow water, their reflections doubled in the still surface, soft morning light from the side. Fresh vivid green, calm and clean. No people, no buildings, no vehicles, no machinery, no text, no logos, no landmarks.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:00:37"
+}

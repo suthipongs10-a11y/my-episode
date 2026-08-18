@@ -789,6 +789,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 1 — HOOK: three bags, then the gap where silicon is not */}
       <Scene from={0} dur={C.s05_start - 12}>
+        <Plate src={A('paddy-sunrise-raw.png')} at={0} pos="50% 50%" dim={0.82} />
         <Title at={C.s01_bags} />
         <Prop src={A('fert-sack.png')} x={1600} y={870} w={190} at={C.s02_npk - C.s01_bags} rot={-2} caption="ถุงปุ๋ยที่ซื้อกันทุกฤดู" />
         <BagsNoSilicon at={C.s02_npk - C.s01_bags} showGap={false} />
@@ -800,10 +801,12 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 2 — HOW MUCH: the one quantitative claim the video rests on */}
       <Scene from={C.s05_start} dur={C.s10_accident - C.s05_start - 12}>
+        <Plate src={A('seedlings-raw.png')} at={0} pos="50% 55%" dim={0.87} />
         <Head at={0} kicker="ปริมาณที่ข้าวดูดขึ้นมา" head="ไนโตรเจนคือสิ่งที่เราซื้อ" sub="ซิลิกอนคือสิ่งที่เราไม่เคยซื้อ" y={330} />
         <Prop src={A('fert-granules.png')} x={450} y={880} w={380} at={C.s06_nitrogen - C.s05_start} rot={1.5} caption="เม็ดปุ๋ยไนโตรเจน" />
         <UptakeBars at={C.s06_nitrogen - C.s05_start} showSi={false} />
         <Scene from={C.s07_silicon - C.s05_start} dur={C.s10_accident - C.s07_silicon - 12}>
+          <Plate src={A('farmer-transplant-raw.png')} at={0} pos="50% 50%" dim={0.85} />
           <Prop src={A('fert-granules.png')} x={450} y={880} w={380} at={0} rot={1.5} caption="เม็ดปุ๋ยไนโตรเจน" />
           <UptakeBars at={0} showSi showRatio />
         </Scene>
@@ -811,6 +814,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 3 — TWO PUMPS: rice pays energy for this, so it is not an accident */}
       <Scene from={C.s10_accident} dur={C.s15_becomes - C.s10_accident - 12}>
+        <Plate src={A('tillering-raw.png')} at={0} pos="50% 55%" dim={0.87} />
         <Head at={0} kicker="กลไก 1" head="ข้าวไม่ได้ดูดมันขึ้นมาโดยบังเอิญ" sub="รากมีตัวขนส่งสองตัว ทำงานต่อกันเป็นทอด" y={330} />
         <Prop src={A('rice-roots.png')} x={470} y={827} w={620} at={C.s11_two - C.s10_accident} rot={-1} caption="รากข้าว — จุดที่ตัวขนส่งทั้งสองอยู่" />
         <RootPumps at={C.s11_two - C.s10_accident} />
@@ -822,6 +826,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 4 — THE GLASS: water leaves, silicon cannot */}
       <Scene from={C.s15_becomes} dur={C.s20_four - C.s15_becomes - 12}>
+        <Plate src={A('sun-through-rice-raw.png')} at={0} pos="50% 50%" dim={0.83} />
         <Head at={0} kicker="กลไก 2" head="ต้นข้าวสร้างแก้วขึ้นมาในตัวเอง" sub="กรดซิลิสิกขึ้นมากับน้ำ แล้วน้ำก็ทิ้งมันไว้" y={330} />
         <Prop src={A('rice-clump.png')} x={400} y={805} w={200} at={C.s16_acid - C.s15_becomes} rot={1} caption="กอข้าว" />
         <SilicaDeposit at={C.s16_acid - C.s15_becomes} />
@@ -837,6 +842,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 5 — THE ARMOUR: four consequences, one per line */}
       <Scene from={C.s20_four} dur={C.s25_question - C.s20_four - 12}>
+        <Plate src={A('heading-raw.png')} at={0} pos="50% 50%" dim={0.85} />
         <Prop src={A('leaf-blade.png')} x={560} y={760} w={720} at={C.s21_blast - C.s20_four} rot={-2} caption="ขอบใบข้าวที่คมเหมือนเลื่อย คือซิลิกา" />
         <Head at={0} kicker="กลไก 3" head="แก้วนั้นทำอะไรได้บ้าง" y={300} />
         <ArmourFour at={C.s21_blast - C.s20_four} upto={1} />
@@ -847,6 +853,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 6 — THE TURN: a rule written in 1939 */}
       <Scene from={C.s25_question} dur={C.s31_notwait - C.s25_question - 12}>
+        <Plate src={A('golden-field-raw.png')} at={0} pos="50% 55%" dim={0.85} />
         <Head at={0} kicker="แล้วทำไมไม่มีใครพูดถึง" head="คำตอบไม่ได้อยู่ในนา" sub="มันอยู่ในหนังสือเรียน" y={330} accent={BLUEPRINT.yellow} />
         <Rule1939 at={C.s27_1939 - C.s25_question} />
         <Scene from={C.s29_ricesurvives - C.s25_question} dur={C.s30_dropped - C.s29_ricesurvives - 4}>
@@ -861,6 +868,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 7 — JAPAN: did not wait for the textbook */}
       <Scene from={C.s31_notwait} dur={C.s37_wherefrom - C.s31_notwait - 12}>
+        <Plate src={A('paddy-dusk-raw.png')} at={0} pos="50% 45%" dim={0.80} />
         <Prop src={A('slag-lump.png')} x={520} y={740} w={420} at={C.s34_slag - C.s31_notwait} rot={2} caption="ตะกรันจากเตาถลุงเหล็ก" />
         <Head at={0} kicker="ญี่ปุ่น" head="ไม่ได้รอให้ตำราเปลี่ยน" y={280} />
         <JapanTimeline at={C.s33_1952 - C.s31_notwait} upto={1} />
@@ -895,6 +903,7 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 10 — TRAP 2: the most useful minute in the video */}
       <Scene from={C.s50_advice} dur={C.s57_bothsides - C.s50_advice - 12}>
+        <Plate src={A('farmer-harvest-raw.png')} at={0} pos="50% 50%" dim={0.84} />
         <Prop src={A('husk-pile.png')} x={560} y={882} w={440} at={C.s51_sounds - C.s50_advice} rot={-1} caption="แกลบ · ซิลิกา 2–10%" />
         <Head at={0} kicker="กับดักที่ 2" head="ขี้เถ้าแกลบอาจใช้ไม่ได้" sub="ถ้ามันผ่านการเผาที่ร้อนเกินไปมาแล้ว" y={300} accent={BLUEPRINT.red} />
         <AshCrystal at={C.s52_mustdissolve - C.s50_advice} />
@@ -910,20 +919,23 @@ const Vox11SiliconRice: React.FC = () => (
 
       {/* 11 — EVIDENCE: every number wears its condition */}
       <Scene from={C.s57_bothsides} dur={C.s62_problem - C.s57_bothsides - 12}>
+        <Plate src={A('paddy-clouds-raw.png')} at={0} pos="50% 60%" dim={0.87} />
         <Head at={0} kicker="หลักฐาน" head="ต้องพูดให้ครบทั้งสองด้าน" y={300} />
         <Prop src={A('panicle.png')} x={470} y={828} w={520} at={C.s58_meta - C.s57_bothsides} rot={2} />
         <EvidenceLadder at={C.s58_meta - C.s57_bothsides} upto={1} />
         <Scene from={C.s60_thaipot - C.s57_bothsides} dur={C.s61_saturates - C.s60_thaipot - 4}>
+          <Plate src={A('rice-in-hands-raw.png')} at={0} pos="50% 50%" dim={0.85} />
           <EvidenceLadder at={0} upto={2} />
         </Scene>
         <Scene from={C.s61_saturates - C.s57_bothsides} dur={C.s62_problem - C.s61_saturates - 12}>
+          <Plate src={A('rice-in-hands-raw.png')} at={0} pos="50% 50%" dim={0.85} />
           <EvidenceLadder at={0} upto={3} />
         </Scene>
       </Scene>
 
       {/* 12 — THE ANSWER: four steps, caveat in the same frame */}
       <Scene from={C.s62_problem} dur={C.tail - C.s62_problem}>
-        <Plate src={A('straw-bale-raw.png')} at={0} pos="50% 55%" dim={0.88} />
+        <Plate src={A('farmer-walking-raw.png')} at={0} pos="50% 50%" dim={0.83} />
         <Head at={0} kicker="สรุป — ปัญหา · ทางแก้ · เริ่มยังไง" head="เริ่มยังไง" y={280} />
         <FourSteps at={C.s63_step1 - C.s62_problem} upto={1} />
         <Scene from={C.s65_step2 - C.s62_problem} dur={C.s66_step3 - C.s65_step2 - 4}><FourSteps at={0} upto={2} /></Scene>

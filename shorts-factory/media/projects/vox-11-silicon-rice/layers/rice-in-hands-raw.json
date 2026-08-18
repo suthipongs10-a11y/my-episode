@@ -1,0 +1,9 @@
+{
+  "prompt": "Close photograph of two cupped open hands holding a small heap of unmilled golden rice grains still in their husks, hands only, no face, no head, no torso in frame, warm natural daylight, soft neutral out-of-focus background of golden field. Documentary photograph. No text, no logos, no jewellery, no watch.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:03:52"
+}

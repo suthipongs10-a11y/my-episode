@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of a flooded rice paddy at sunrise. The low sun sits just above a flat horizon, its warm orange light reflecting in long streaks across the still water between the young rice rows. Soft mist over the water, warm golden and teal tones, gentle backlight. Peaceful, natural, documentary photography. No buildings, no vehicles, no machinery, no text, no logos. Nothing that identifies a specific place or landmark.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:00:23"
+}

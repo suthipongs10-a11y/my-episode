@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of a rice field fully ripe and ready to harvest, an unbroken expanse of golden yellow heavy drooping panicles stretching to a flat horizon under a soft blue sky with light clouds, warm late afternoon sun from low on the right. Rich gold tones. No people, no buildings, no vehicles, no machinery, no text, no logos, no landmarks.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T06:01:31"
+}
