@@ -1,0 +1,9 @@
+{
+  "prompt": "Extreme close-up product photograph of one detached blade of green rice leaf lying flat and slightly curled, showing long parallel veins and the fine sawtooth edge, sharp focus across the blade, isolated on a plain pure white background, soft even studio light. No text, no numbers, no labels, no logos, no hands, no soil, no water, no other plants.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T04:14:29"
+}

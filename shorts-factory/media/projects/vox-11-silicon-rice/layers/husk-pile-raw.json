@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a small conical heap of loose rice husks, thousands of individual pale tan boat-shaped hulls, dry and papery, isolated on a plain pure white background, soft even studio light, slightly elevated three-quarter angle so individual husks are visible at the surface. No text, no numbers, no labels, no logos, no sacks, no bags, no scoops, no tools, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T04:14:14"
+}

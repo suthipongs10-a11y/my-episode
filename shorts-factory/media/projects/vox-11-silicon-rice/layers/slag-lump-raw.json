@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a single lump of cooled blast furnace slag: a dense angular rock-like chunk about the size of a fist, hard grey with a faint greenish cast, rough vesicular surface pitted with small round gas cavities, isolated on a plain pure white background, soft even studio light, slight three-quarter angle. No text, no numbers, no labels, no logos, no furnace, no molten metal, no sparks, no machinery, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T04:14:46"
+}

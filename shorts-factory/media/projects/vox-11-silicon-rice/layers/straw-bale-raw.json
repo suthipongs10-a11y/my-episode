@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a single rectangular bale of dried rice straw, tightly compressed and bound with two twine strings, pale golden-yellow dried stalks with visible cut ends and loose wisps, isolated on a plain pure white background, soft even studio light, slight three-quarter angle. No text, no numbers, no labels, no logos, no machinery, no people, no field, no sky, no ground.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-18T04:14:00"
+}
