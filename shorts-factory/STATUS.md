@@ -33,7 +33,7 @@ Voices must stay unique per channel — `channels/README.md` makes a duplicate a
 | 8 | `vox-8-urea-deep` | agri | ✅ 62 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 133 |
 | 9 | `vox-9-spec-sheet` | ev | ✅ 48 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 109 |
 | 10 | `vox-10-charge-curve` | ev | ✅ 67 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 129 |
-| 11 | `vox-11-silicon-rice` | agri | ✅ 70 | ✅ voiced **16:9** · 12 ภาพ | ✅ | ✅ 1 + upload jpg | ✅ 118 |
+| 11 | `vox-11-silicon-rice` | agri | ✅ 70 | ✅ voiced **16:9** · 24 ภาพ | ✅ | ✅ 1 + upload jpg | ✅ 118 |
 
 **vox-8, vox-9, vox-10 and vox-11 are the landscape videos.** Everything else is 1080×1920.
 That is correct — they are the four over 60s. See `PIPELINE.md` §3.
@@ -55,10 +55,12 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
    Two things this video learned that apply to the next one:
 
    - **Count the scenes with no image before rendering.** The first cut had four images
-     across twelve scenes and the operator's first note was that it looked thin. It does not
-     take a render to notice that — five scenes had nothing but a diagram and a headline.
-     The fix cost a second 15-minute render that a five-minute check would have avoided.
-     The voice was reused untouched, which is the one thing that made it cheap.
+     across twelve scenes and the operator's first note was that it looked thin; the second
+     added objects but left nine scenes on flat navy, and the next note was that the
+     background looked dull. Three renders to reach twenty-four images. **The check is two
+     lines of counting and it is worth running before every first render**: how many scenes
+     have no plate, and how many have no prop. The voice was reused untouched all three
+     times, which is the only reason this was cheap rather than expensive.
 
    - **Do the keyword research BEFORE the render, not after the script.** It found that
      silicate fertiliser is sold in Thailand, which scoped the hook — and it found it at 19%
