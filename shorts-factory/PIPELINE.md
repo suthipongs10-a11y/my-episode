@@ -491,6 +491,82 @@ the only check that catches Thai that is technically correct and practically unr
 
 ---
 
+## 12. Captions → `captions.th.srt`
+
+```bash
+python tools/gen_srt.py --all              # every project that has voice on disk
+python tools/gen_srt.py --all --check      # exit 1 if any file is stale
+./tools/test-gen-srt.py                    # the logic, driven over all 229 real lines (CI)
+```
+
+**Never write or time a caption by hand.** `--retime` already put each line's real measured
+audio window into `beats.json`, so the SRT is a pure transform of data on disk. `gen_srt.py`
+re-hashes every line the way `gen_voice_gemini.py` does, re-measures the wav, and refuses to
+write if a window has drifted — captions are only as honest as that check. Upload the `.srt`
+to YouTube as a Thai subtitle track; its auto-captions for Thai are poor.
+
+### ⬛ Thai has no word spaces — but these scripts do, and that is the whole trick
+
+A caption may never be split on width, because there is no way to know where a Thai word ends
+without a dictionary. What makes this tractable is that the *writer* put spaces in — at breath
+boundaries, which is exactly where a caption should change. So cues are built from whole
+space-separated phrases and nothing is ever cut mid-phrase. Measured over all nine videos:
+1,373 phrases, median 12 display columns, max 57 — every one fits a two-line cue.
+
+When a phrase does need wrapping, break **before a leading vowel** (เ แ โ ใ ไ). Thai writes
+those before the consonant they are pronounced after, so that position always begins a
+syllable and cannot land inside a cluster. It is the only safe break available without a
+dictionary. 8 of 744 display lines still exceed the 38-column budget (worst 46) because no
+such point exists in them — left long on purpose. **An over-wide caption is recoverable; a
+broken word is not.**
+
+### ⬛ Show `text`, but time from `say` — via the spoken length, not the written one
+
+`text` is what the viewer reads (`360 กิโลวัตต์`); `say` is what the narrator pronounced
+(`สามร้อยหกสิบ…`). Their phrase counts differ — digits sit between spaces, their spellings do
+not — so they cannot be paired phrase by phrase. Instead every display phrase is weighted by
+its *own* spoken length: expand the digits, then count. Checked against all 90 hand-written
+`say` fields in the repo:
+
+| weighting | mean error | worst |
+|---|---|---|
+| raw written text | 11.48% | 44.4% |
+| + digits expanded to Thai words | 2.18% | 24.1% |
+| + latin counted 2× (acronyms are read letter by letter) | **1.59%** | **12.8%** |
+
+The 2× is fitted over those 90 pairs and sits at the flat bottom of the curve, not on a knife
+edge. Residual error only redistributes time *inside* one line; the line's own start and end
+are measured and never move.
+
+### ⬛ Snap the boundary to the pause — do not trust the proportion
+
+Proportional splitting put cue boundaries a median **0.23s** away from where the narrator
+actually paused. Those pauses are measurable: `silencedetect=noise=-32dB:d=0.12` on the line's
+own wav. Snapping each boundary onto the nearest pause within 0.75s moved **89% of them onto a
+real silence exactly** (median error 0.000s), leaving the proportional estimate only for the
+10% of boundaries where the narrator ran phrases together and there is nothing to snap to.
+A snap is refused if it would starve either neighbouring cue.
+
+### ⬛ A synthetic fixture proves nothing — mutation-test the test
+
+`test-gen-srt.py`'s first version drove twelve copies of one 36-character phrase and **passed
+against every one of the three bugs it was written to catch**, because uniform input never
+reaches the paths that broke. It now drives all 229 committed script lines, and each fix was
+confirmed by reverting it and watching the test fail:
+
+| reverted fix | what shipped before it | caught as |
+|---|---|---|
+| grouping asks `wrap()`, not a flat char budget | 75-column display lines | `3 display lines` |
+| merge re-checks the caps | 7.1s cues, 83-column lines | same |
+| snap guards against starvation | a cue 0.26s long | `allowed to starve` |
+| break only before a leading vowel | words cut in half | `landed somewhere other than` |
+| weight by spoken length | digit-heavy cues under-timed | `latin costs more` |
+
+This is the fourth time in this project the instrument was the fix (§9, §12a and §12b of
+`CLAUDE.md`). The rule it earns: **a test that has never been seen to fail has not been run.**
+
+---
+
 ## Thai gotchas (all fixed in the kit — do not re-fix, do not regress)
 
 | Symptom | Cause |

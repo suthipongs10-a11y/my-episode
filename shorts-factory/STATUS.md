@@ -7,7 +7,7 @@
 > **Update it at the end of any session that finishes or starts a video.** A stale STATUS is
 > worse than none, because it will be believed.
 >
-> Last updated: **2026-08-09** (all four EV videos finished — vox-4, vox-5, vox-9, vox-10)
+> Last updated: **2026-08-18** (Thai captions generated for all nine voiced videos)
 
 ## Channels
 
@@ -21,18 +21,18 @@ Voices must stay unique per channel — `channels/README.md` makes a duplicate a
 
 ## Videos
 
-| # | project | channel | voice | render | publish kit | cover |
-|---|---|---|---|---|---|---|
-| 1 | `vox-1-coffee` | `_demo` | — | — | — | — |
-| 2 | `vox-2-thai-rice` | agri | ✅ 14 | ✅ voiced | ⚠️ old `publish.th.md` only | ✅ 3 |
-| 3 | `vox-3-eight-glasses` | health | ✅ 22 | ✅ voiced | ❌ | ❌ |
-| 4 | `vox-4-ev-800v` | ev | ✅ 6 | ✅ voiced | ✅ | ✅ 1 + upload jpg |
-| 5 | `vox-5-tesla-dry` | ev | ✅ 6 | ✅ voiced **58s** | ✅ | ✅ 1 + upload jpg |
-| 6 | `vox-6-sodium-ion` | ev | ✅ 14 | ✅ voiced | ✅ | ✅ 3 |
-| 7 | `vox-7-hearing-dementia` | health | ✅ 25 | ✅ voiced | ✅ | ✅ 2 |
-| 8 | `vox-8-urea-deep` | agri | ✅ 62 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg |
-| 9 | `vox-9-spec-sheet` | ev | ✅ 48 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg |
-| 10 | `vox-10-charge-curve` | ev | ✅ 67 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg |
+| # | project | channel | voice | render | publish kit | cover | captions |
+|---|---|---|---|---|---|---|---|
+| 1 | `vox-1-coffee` | `_demo` | — | — | — | — | — |
+| 2 | `vox-2-thai-rice` | agri | ✅ 14 | ✅ voiced | ⚠️ old `publish.th.md` only | ✅ 3 | ✅ 10 |
+| 3 | `vox-3-eight-glasses` | health | ✅ 22 | ✅ voiced | ❌ | ❌ | ✅ 11 |
+| 4 | `vox-4-ev-800v` | ev | ✅ 6 | ✅ voiced | ✅ | ✅ 1 + upload jpg | ✅ 10 |
+| 5 | `vox-5-tesla-dry` | ev | ✅ 6 | ✅ voiced **58s** | ✅ | ✅ 1 + upload jpg | ✅ 12 |
+| 6 | `vox-6-sodium-ion` | ev | ✅ 14 | ✅ voiced | ✅ | ✅ 3 | ✅ 25 |
+| 7 | `vox-7-hearing-dementia` | health | ✅ 25 | ✅ voiced | ✅ | ✅ 2 | ✅ 21 |
+| 8 | `vox-8-urea-deep` | agri | ✅ 62 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 133 |
+| 9 | `vox-9-spec-sheet` | ev | ✅ 48 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 109 |
+| 10 | `vox-10-charge-curve` | ev | ✅ 67 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 129 |
 
 **vox-8, vox-9 and vox-10 are the landscape videos.** Everything else is 1080×1920. That is
 correct — they are the three over 60s. See `PIPELINE.md` §3.
@@ -52,9 +52,17 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
    Still true, and still the thing to remember: **keys from the SAME project share one pool**
    and add nothing — `PIPELINE.md` §7.
 
-1. **Thai SRT captions for all nine voiced videos.** Now the biggest single win available:
-   every `beats.json` carries exact measured per-line timings, so an SRT is a pure transform
-   of data already on disk. YouTube's Thai auto-captions are poor.
+1. ~~**Thai SRT captions for all nine voiced videos.**~~ **Done 2026-08-18.**
+   `tools/gen_srt.py` builds each `captions.th.srt` from the measured line windows in
+   `beats.json`; `PIPELINE.md` §12 is the write-up. 460 cues across nine videos, and every
+   POST-KIT's YouTube form row now names its file instead of saying "not done yet".
+
+   Two things worth knowing before touching it. **89% of cue boundaries land on a silence
+   detected in the real wav**, not on a proportional guess — so regenerating captions needs
+   the `voice/` wavs present, and the tool refuses to write without them. And **the self-test
+   passed against every bug it was written to catch** until it was rewritten to drive the real
+   229 script lines; if you change the layout logic, re-run the mutation checks in §12, do not
+   just watch it go green.
 
 2. **vox-2 and vox-3 still have no publish kit** — the last two videos without one.
    vox-2 needs the least work: it has an old `publish.th.md` and three covers already.
@@ -91,10 +99,12 @@ Everything below is in git and is read by a fresh session:
 - **`PIPELINE.md`** — the runbook, and the record of every mistake that cost time: orientation
   by length (§3), band collisions (§6), measured reading rates and the sticky HTTP 400 (§7),
   the TTS quota and why extra keys rarely help (§7), proving a background job is actually
-  alive (§9), title patterns and thumbnail pairing (§10), the 2 MB cover limit (§11)
+  alive (§9), title patterns and thumbnail pairing (§10), the 2 MB cover limit (§11),
+  captions and why a synthetic test fixture proved nothing (§12)
 - **`channels/*.json`** — voice, style, editorial rules, playlists per channel
 - **per video** — `script.md` (facts + how each was sourced), `beats.json` (every timing),
-  `POST-KIT.md`, `covers.th.md` (prompts + what was measured on the result)
+  `POST-KIT.md`, `covers.th.md` (prompts + what was measured on the result),
+  `captions.th.srt` (regenerable, but committed — the wavs it is built from are not)
 - **`media/projects/<name>/`** — layers, covers, and the rejects kept as evidence
   (`sack-desert-reject.png`, `haze-sovietblocks-reject.png`, `A-minus40-english-reject.png`)
 

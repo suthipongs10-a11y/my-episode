@@ -75,6 +75,15 @@ jobs:
         # and checks what the tools report about them.
         run: ./tools/test-client-survey.py
 
+      - name: Thai captions are generated, not typed
+        # shorts-factory/tools/gen_srt.py turns each video's measured line timings into an
+        # SRT. Its own --check needs the wav files, which are gitignored, so what CI can
+        # guard is the layout logic and the committed .srt files — driven over all 229 real
+        # script lines, because an earlier synthetic fixture passed against every bug it was
+        # written to catch.
+        working-directory: shorts-factory
+        run: ./tools/test-gen-srt.py
+
       - name: Hadolint
         # Mounted rather than piped on stdin: .hadolint.yaml lives in the
         # workspace, and a container reading the Dockerfile from stdin cannot
