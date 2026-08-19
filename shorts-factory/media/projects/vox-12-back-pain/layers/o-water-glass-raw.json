@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a plain clear drinking glass half full of water, standing upright. Isolated on a plain pure white background, soft even studio light, slight three-quarter angle. No text, no logos, no labels, no condensation droplets on the table, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:21:05"
+}

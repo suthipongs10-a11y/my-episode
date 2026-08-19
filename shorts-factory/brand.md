@@ -13,6 +13,27 @@
 - **Energy:** clean and premium, not MrBeast-loud. Motion is *tasteful*, not bouncy/cartoonish.
   (No hard offset shadows, thick black borders, or sticker-pop "Memphis" looks.)
 
+## 1a. Thai narration register — **write it the way somebody would say it**
+
+**Locked 2026-08-18, on the operator's note about vox-11: the Thai was accurate but too
+clipped.** Correct is not the bar; *spoken* is. A line that reads like a caption is a line the
+narrator has to perform instead of say.
+
+- **Explain, do not compress.** If a line introduces a term, the same line says what it means.
+  Two clauses beat one clause plus the viewer's guesswork.
+- **Use the connectives people actually use** — `ทีนี้` `คือแบบนี้` `พูดง่าย ๆ ก็คือ`
+  `ลองนึกภาพ` `ที่จริงแล้ว` `แล้วมันก็` — they carry the listener from clause to clause. Written
+  Thai drops them; spoken Thai lives on them.
+- **Prefer verbs to stacked nouns.** `การลดลงของประสิทธิภาพการดูดซึม` is a document.
+  `มันดูดไปใช้ได้น้อยลง` is a person talking.
+- **Longer lines, not more lines.** Target **100–140 characters** per `say` (vox-11 averaged 96
+  and felt terse). Same length of video, fewer and fuller sentences.
+- **The test is reading it out loud.** If you would not say it to a friend over lunch, rewrite
+  it. Being unable to say a sentence in one breath is a different problem — split it.
+
+**This does not license filler.** Expanding means adding *explanation*, never adding words that
+carry nothing. The editorial rules about sources and caveats do not move.
+
 ## 2. Color palette (exact hex)
 
 | Role | Name | Hex | Use in video |
@@ -84,6 +105,43 @@ as a film. The fix is one full-frame photograph per scene, dimmed back until the
 - **Stagger:** 3–4 frames between list items / lines.
 - **Backgrounds:** slow drifting indigo/violet/teal gradient blobs + a faint dotted grid, 8–20s loops.
 - **Feel:** premium, restrained, "Linear/Anthropic." No spins, no elastic, no hard snaps.
+
+### ⬛ Spend the motion on the ENTRANCE — text must not idle-drift
+
+**Locked 2026-08-18, operator's instruction.** Three rules, in priority order:
+
+1. **Type never breathes.** `drift={0}` on every layer that carries words. The collage kit's
+   idle drift was designed for paper scraps; on a headline it reads as a wobble and it makes
+   Thai with its stacked marks look unstable. Photographs and cut-out objects may keep a small
+   drift — they are objects, and stillness there looks pasted.
+2. **The entrance is where the craft goes.** A line or an image arriving should be worth
+   watching: fade + rise + a touch of scale, ~14–18 frames, ease-out, no overshoot on text.
+   This is the moment the viewer's eye moves; everything after it should hold still and be
+   read.
+3. **Scenes need a transition, not a cut.** A hard swap between two full-frame photographs is
+   jarring at eight minutes. Cross-dissolve the plate over ~20 frames and let the incoming
+   scene's first element rise into it.
+
+   **The plate and the words are two tracks, and both have to overlap.** vox-12's first build
+   dissolved the plate correctly and still had a hole in it: the outgoing scene's content
+   finished fading ten frames *before* the next scene began, and the next scene's first line
+   then took sixteen frames to rise — about forty frames, more than a second, of a bare
+   photograph with nothing on it. It is invisible in the source and obvious on screen. The fix
+   is a positive overlap: **the outgoing content lingers past the incoming scene's first cue
+   and fades across it** (vox-12 uses +14 frames of linger and a 26-frame fade against a
+   26-frame plate dissolve), so the two are on screen together and neither one is ever alone.
+   Render a frame at the boundary and look at it — that is the only way this shows up.
+
+4. **A list that grows must not re-enter.** The obvious way to reveal list rows one at a time
+   is to swap in a new copy of the card with one more row. Don't: the card's own entrance
+   animation re-runs on every swap, so the whole figure re-rises each time a row appears, and
+   any gap between the copies flashes. Give the rows their own per-row cues inside one card
+   that mounts once (`ats={[...]}` in vox-12) — the card arrives, then the rows arrive into it.
+
+**And plates should move, slowly.** A still photograph held for 40 seconds goes dead. A Ken
+Burns drift — 1.00→1.06 zoom with a few pixels of pan across the scene — reads as life without
+ever pulling attention off the type. It costs nothing and it is the difference between a video
+and a slideshow.
 
 ## 6. Delivery specs (shorts)
 

@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of an empty office chair pulled back from a plain desk in soft daylight, a closed laptop and a glass of water on the desk. Nobody present. Muted neutral colours. No text, no logos, no brand marks, no visible screen content, no papers with writing.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:18:02"
+}

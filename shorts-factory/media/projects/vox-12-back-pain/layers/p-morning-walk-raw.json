@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of an empty paved walking path through a quiet green park in early morning, long soft light raking across from the left, trees on both sides, a light mist low to the ground. Calm and open. No people, no vehicles, no signage, no buildings, no text, no logos, no landmarks.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:16:46"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a plain elasticated lumbar support belt, neutral grey fabric with a wide velcro closure, laid flat and slightly curved. Completely unbranded with no printing anywhere. Isolated on a plain pure white background, soft even studio light. No text, no numbers, no labels, no logos, no packaging, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:19:41"
+}

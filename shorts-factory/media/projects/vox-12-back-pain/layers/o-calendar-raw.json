@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a small plain desk calendar, blank white pages with a simple wire binding, standing open on its cardboard easel. Every page is completely blank with no dates, no numbers, no text, no printing of any kind. Isolated on a plain pure white background, soft even studio light. No logos, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:20:50"
+}

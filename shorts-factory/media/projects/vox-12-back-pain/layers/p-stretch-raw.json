@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of a rolled exercise mat and a pair of plain trainers on a wooden floor beside a window, warm morning light falling across them, a folded towel nearby. Nobody present. No text, no logos, no brand marks, no screens.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:17:44"
+}

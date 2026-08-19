@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of a quiet empty hospital corridor at night, lit only by low wall lights, doors closed, floor reflecting the light, deep shadows. Calm, neutral, documentary photograph. Nobody's face visible. No text, no logos, no brand marks, no screens, no signage, no recognisable landmark.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:40:35"
+}

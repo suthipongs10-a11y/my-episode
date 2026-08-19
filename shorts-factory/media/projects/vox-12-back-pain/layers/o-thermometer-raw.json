@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a plain digital clinical thermometer, white plastic with a blank unlit display screen, lying flat. Completely unbranded, no printing, no numbers on the screen, no markings. Isolated on a plain pure white background, soft even studio light. No text, no logos, no packaging, no hands.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:20:37"
+}

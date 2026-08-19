@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a plain white plastic hospital identification wristband, unclasped and lying flat in a loose curve, completely blank with no printing. Isolated on a plain pure white background, soft even studio light, slight three-quarter angle. Completely unbranded. No text, no logos, no packaging, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:41:08"
+}

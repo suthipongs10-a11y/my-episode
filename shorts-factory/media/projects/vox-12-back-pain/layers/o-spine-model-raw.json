@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of an anatomical teaching model of the lower human spine: five stacked lumbar vertebrae in off-white resin with soft pale blue discs between them, mounted upright on a small plain stand, clearly a plastic teaching model and not a real bone. Isolated on a plain pure white background, soft even studio light, slight three-quarter angle. No text, no numbers, no labels, no logos, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:19:27"
+}

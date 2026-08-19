@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of an empty hospital corridor at night, long perspective, soft cool overhead lights reflecting on a polished floor, doors closed on both sides. Quiet and still, not frightening. No people, no signage, no text, no logos, no equipment.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:17:30"
+}

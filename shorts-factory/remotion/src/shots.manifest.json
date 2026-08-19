@@ -136,6 +136,14 @@
   "transparent": false
  },
  {
+  "id": "Vox12BackPain",
+  "durationInSeconds": 483,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "transparent": false
+ },
+ {
   "id": "Vox2ThaiRice",
   "durationInSeconds": 44,
   "fps": 30,

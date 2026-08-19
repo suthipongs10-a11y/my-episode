@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of an empty MRI scanner in a clean clinical room, the large white circular bore facing the camera, patient table extended and empty, soft cool overhead lighting, plain walls. No people, no text on the machine, no brand names, no logos, no screens with images, no signage.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:17:00"
+}

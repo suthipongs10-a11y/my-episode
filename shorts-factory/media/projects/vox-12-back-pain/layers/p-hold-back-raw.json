@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of a person standing in a plain room, seen from behind, one hand pressed flat against their own lower back, weight shifted onto one leg. Head is out of frame above the shoulders so no face is visible. Soft window light from the left, muted neutral colours, plain wall behind. Documentary photograph. No text, no logos, no furniture branding, no other people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:16:28"
+}

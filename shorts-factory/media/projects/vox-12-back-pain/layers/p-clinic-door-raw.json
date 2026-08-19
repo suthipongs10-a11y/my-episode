@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of a plain closed clinic door at the end of a short corridor, a small frosted glass panel, muted daylight, nobody present. Calm, neutral, documentary photograph. Nobody's face visible. No text, no logos, no brand marks, no screens, no signage, no recognisable landmark.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:40:35"
+}

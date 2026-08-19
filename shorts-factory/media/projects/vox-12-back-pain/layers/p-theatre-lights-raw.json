@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of an empty operating theatre: a large surgical light head switched off above a bare table, tiled walls, cool light, nobody present, no instruments visible. Calm, neutral, documentary photograph. Nobody's face visible. No text, no logos, no brand marks, no screens, no signage, no recognisable landmark.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:40:55"
+}

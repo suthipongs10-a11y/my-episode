@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of an empty medical consultation room: a simple desk, two empty chairs facing each other, a plain examination couch against the wall, soft daylight from a window. Calm and neutral. No people, no posters, no text, no charts on the wall, no logos, no screens.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:17:16"
+}

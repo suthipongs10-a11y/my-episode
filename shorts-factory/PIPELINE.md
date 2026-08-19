@@ -128,6 +128,22 @@ timelines, bar charts — get room they never had vertically.
 crop. For a landscape video ask `gen_image.py` for `--aspect 16:9` on anything that fills a
 scene, and keep 1:1 only for cutouts that sit on the board as objects.
 
+### ⬛ Write the narration as speech, not as captions
+
+`brand.md` §1a is the rule. In `beats.json` terms: **target 100–140 characters per `say`**,
+explain each term in the line that introduces it, and use the spoken connectives
+(`ทีนี้` `คือแบบนี้` `พูดง่าย ๆ ก็คือ`). vox-11 averaged 96 characters and the operator's note
+was that it was accurate but clipped. Same video length — fewer, fuller sentences.
+
+Two knock-on effects to plan for:
+
+- **Fewer lines for the same minutes.** At 14 ch/s, a 7-minute video is ~5,400 spoken
+  characters: that is ~45 lines at 120 characters, not ~60 at 90. Fewer lines means fewer TTS
+  requests, which matters against the daily quota (§7).
+- **Captions get longer per cue**, and `gen_srt.py` splits on the writer's spaces — so keep
+  putting spaces at breath boundaries. A 130-character line with no spaces cannot be captioned
+  well (PIPELINE §12).
+
 ## 4. Layers
 
 **Information is real, texture is generated. Never swap.**
@@ -237,6 +253,13 @@ Thai shot → add `fontBody={FONT_TH} fontDisplay={FONT_TH_DISPLAY} tracking="0.
 Hook cues negative so **frame 0 is fully composed** (it is the thumbnail).
 Last frame ≈ frame 0 so the loop closes. No CTA outro.
 `cd remotion && npm run gen` after adding a shot.
+
+### ⬛ Motion: entrance yes, idle no (brand.md §5)
+
+`drift={0}` on every layer carrying text. Keep drift only on photographs and cut-out objects.
+Put the effort into the entrance (fade + rise + slight scale, 14–18 frames, ease-out) and into
+a real cross-dissolve between scenes. Plates get a slow Ken Burns so a 40-second scene is not a
+frozen still. `check-scene-imagery.mjs` counts the pictures; the motion is checked by watching.
 
 ## 6. QA — not optional
 

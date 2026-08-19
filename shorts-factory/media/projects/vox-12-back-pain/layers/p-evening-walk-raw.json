@@ -1,0 +1,9 @@
+{
+  "prompt": "Wide photograph of a person walking away along a quiet tree-lined path in warm late afternoon light, seen from far behind as a small silhouetted figure, long shadows across the path. Face not visible. Peaceful. No other people, no vehicles, no signage, no text, no logos, no landmarks.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:18:34"
+}

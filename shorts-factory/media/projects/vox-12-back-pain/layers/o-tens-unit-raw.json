@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a small plain handheld electrical nerve stimulation unit: a blank grey plastic box the size of a phone with two thin wires leading to two square adhesive gel pads laid beside it. Completely unbranded, no printing, no screen content, no buttons with writing. Isolated on a plain pure white background, soft even studio light. No text, no numbers, no logos, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:19:54"
+}

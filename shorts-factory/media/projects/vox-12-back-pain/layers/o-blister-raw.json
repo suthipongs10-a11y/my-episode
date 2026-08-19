@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of one blank pharmaceutical blister strip, silver foil backing with ten empty rounded pockets holding plain white round tablets, laid flat. Completely unprinted — no text, no numbers, no letters, no logos, no scoring marks, no packaging. Isolated on a plain pure white background, soft even studio light.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T03:20:08"
+}
