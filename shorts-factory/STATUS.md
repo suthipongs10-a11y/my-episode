@@ -35,7 +35,7 @@ Voices must stay unique per channel — `channels/README.md` makes a duplicate a
 | 9 | `vox-9-spec-sheet` | ev | ✅ 48 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 109 |
 | 10 | `vox-10-charge-curve` | ev | ✅ 67 | ✅ voiced **16:9** | ✅ | ✅ 1 + upload jpg | ✅ 129 |
 | 11 | `vox-11-silicon-rice` | agri | ✅ 70 | ✅ voiced **16:9** · 24 ภาพ | ✅ | ✅ 1 + upload jpg | ✅ 118 |
-| 12 | `vox-12-back-pain` | health | ✅ 50 | ✅ voiced **16:9** · **31 ภาพ** | ✅ | ⬜ prompts only | ✅ 108 |
+| 12 | `vox-12-back-pain` | health | ✅ 50 | ✅ voiced **16:9** · **31 ภาพ** | ✅ | ✅ 1 + upload jpg | ✅ 108 |
 
 **vox-8, vox-9, vox-10, vox-11 and vox-12 are the landscape videos.** Everything else is
 1080×1920. That is correct — they are the five over 60s. See `PIPELINE.md` §3.
