@@ -46,7 +46,7 @@ const H = 1080;
 const MARGIN_L = 170;
 const A = (f: string) => staticFile(`projects/vox-12-back-pain/layers/${f}`);
 
-// ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues-vox12.mjs. Do not hand-edit.
+// ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues.mjs. Do not hand-edit.
 // Cue name === segment id in beats.json, so there is no map to keep in sync.
 // All 50 windows are measured from the real audio.
 const C = {

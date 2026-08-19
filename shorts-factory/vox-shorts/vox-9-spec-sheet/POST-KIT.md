@@ -171,6 +171,6 @@ UNECE R85, SAE J3016) ซึ่งนิ่งและตรวจง่าย 
 หลังแก้ `beats.json` ทุกครั้ง ต้องรันสองอย่างนี้ ไม่งั้นคิวเฟรมกับคำบรรยายจะค้างอยู่ที่เวลาเก่า:
 
 ```bash
-node remotion/scripts/gen-cues-vox9.mjs        # บล็อก GENERATED CUES ใน Vox9SpecSheet.tsx
+node remotion/scripts/gen-cues.mjs               # บล็อก GENERATED CUES ใน Vox9SpecSheet.tsx
 python tools/gen_srt.py --beats vox-shorts/vox-9-spec-sheet/beats.json
 ```

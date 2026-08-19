@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of a white astronomical observatory dome at night with its shutter open, dark sky and stars behind it, no people. Photographed from the ground with an ordinary camera on a tripod, the sky as a person standing there would see it. NOT a telescope image: no galaxy filling the frame, no nebula close-up, no planet close-up. Nobody's face visible. No text, no logos, no signage, no recognisable landmark.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T11:50:02"
+}

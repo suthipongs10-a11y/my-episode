@@ -23,6 +23,15 @@ vox-shorts/vox-N-<topic>/     ← one video; its beats.json says which channel i
    Put the winner in `voice`, and a `style` string that **includes a pace lever**
    (`พูดเร็วขึ้นเล็กน้อย`). Voices differ in speed by ~10% and the lever is the only handle
    on it — Gemini has no `duration` parameter.
+
+   > ⚠️ **Audition for TONE. Do not take the RATE from an audition.** `--audition` sends no
+   > `style` string, so it measures the voice without the very pace lever you are about to
+   > put in the channel file. Charon measured **10.71** Thai characters a second at audition
+   > and **12.39** in vox-13, its first real video — a 16% gap, and a script written to the
+   > audition figure came out 10:07 against a 7–8 minute brief. Write the script to a
+   > placeholder rate, generate the voice, `--retime`, and then **record the measured rate in
+   > the channel file** so the second video is planned from a real number. `cosmos` carries
+   > that figure in its `voiceNote` and in its last rule.
 3. Write `vox-shorts/IDEAS-<slug>.md` with the channel's selection criteria and topic bank.
 4. Write the channel's `rules` — the things that are true for THIS channel and not the others.
    The health channel's "every video must land an answer" is a rule; "cite your sources" is
@@ -48,6 +57,7 @@ Current locks — audition on the real hook line, never from a spec sheet:
 | เกษตรที่คนไทยควรรู้ (`agri`) | `Algieba` | 2026-08-04 |
 | สุขภาพแบบเข้าใจง่าย (`health`) | `Leda` | 2026-08-04 |
 | The EV Insight (`ev`) | `Umbriel` | 2026-08-04 |
+| ถอดรหัสจักรวาล (`cosmos`) | `Charon` | 2026-08-19 |
 
 The per-video fields still work as an escape hatch and warn when they contradict the channel.
 **An unknown slug is a hard error, not a fallback** — a typo must never quietly resolve to the
@@ -71,12 +81,18 @@ The collage kit ships two skins, and a channel picks one:
 |---|---|---|
 | `paper` (default) | aged paper, sepia, ink | documentary, history, anything with an archive |
 | `blueprint` | dark technical grid, cyan/amber, light-on-dark | technology, teardowns, systems |
+| `cosmos` | night sky: near-black indigo, starlight white, amber/teal | astronomy, physics, anything at the scale of the universe |
 
 **Sepia paper is a claim about time.** On a four-thousand-year-old rice site that is exactly
 right; on a brand-new car it reads as ironic. So the EV channel needed a different material —
 but not a different engine. Everything that makes the kit work (board camera, parallax,
 entrance choreography, chips, leader lines, projected maps, the frame-0 loop) is
 material-agnostic; only the palette and background texture carried the "old" signal.
+
+**The third skin cost twelve lines**, which is the number to remember when someone proposes
+a new track for a new channel. `COSMOS` in `collage.tsx` is ten colours and a comment; vox-13
+reuses the entire vox-12 motion language unchanged on top of it. What made a cosmology channel
+feel different was the palette and the voice, not the engine.
 
 `remotion/src/shots/_proof/SkinProofBlueprint.tsx` is the proof and renders in seconds. It uses
 the identical components as the rice and water films with `theme="blueprint"` and a grid instead

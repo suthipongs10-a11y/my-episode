@@ -55,22 +55,70 @@ const H = 1080;
 const MARGIN_L = 170;
 const A = (f: string) => staticFile(`projects/vox-9-spec-sheet/layers/${f}`);
 
-// ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues-vox9.mjs. Do not hand-edit.
-// All windows are measured from the real audio.
+// ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues.mjs. Do not hand-edit.
+// Cue name === segment id in beats.json, so there is no map to keep in sync.
+// All 48 windows are measured from the real audio.
 const C = {
-  hook: 15, spread: 295, gap: 539,
-  norank: 793, whyno: 955,
-  setup: 1250, china: 1456, uk: 1799, delta: 2110,
-  cyc: 2403, nedc: 2729, others: 3104, factors: 3575, check: 3917,
-  tbl: 4331, row1: 4483, row2: 4709, row34: 4941, tblPoint: 5308,
-  kwh: 5711, buffer: 5895, bufWhy: 6211, disclose: 6671,
-  chg: 7052, curve: 7207, mg49: 7593, mg64: 7985, window: 8494,
-  same: 8968, sameEv: 9293, sameLesson: 9695,
-  pwr: 10005, r85: 10107, pwrPoint: 10547,
-  safe: 10855, proto: 10972, years: 11367, safePoint: 11705,
-  adas: 12010, j3016: 12175, adasPoint: 12583,
-  cmpQ: 12957, cmpA: 13108, cmpEx: 13471,
-  sum: 13850, sumLead: 14096, three: 14269, close: 14677,
+  s01_hook: 15,
+  s01b_spread: 295,
+  s01c_gap: 539,
+
+  s02_norank: 793,
+  s02b_why: 955,
+
+  s03_setup: 1250,
+  s03b_china: 1456,
+  s03c_uk: 1799,
+  s03d_delta: 2110,
+
+  s04_what: 2403,
+  s04b_nedc: 2729,
+  s04c_others: 3104,
+  s04d_factors: 3575,
+  s04e_check: 3917,
+
+  s05_intro: 4331,
+  s05b_row1: 4483,
+  s05b2_row2: 4709,
+  s05c_rows34: 4941,
+  s05d_point: 5308,
+
+  s06_intro: 5711,
+  s06b_buffer: 5895,
+  s06c_why: 6211,
+  s06d_disclosure: 6671,
+
+  s07_intro: 7052,
+  s07b_curve: 7207,
+  s07c_mg49: 7593,
+  s07d_mg64: 7985,
+  s07e_window: 8494,
+
+  s07f_samename: 8968,
+  s07g_evidence: 9293,
+  s07h_lesson: 9695,
+
+  s08_intro: 10005,
+  s08b_r85: 10107,
+  s08c_point: 10547,
+
+  s09_intro: 10855,
+  s09b_protocol: 10972,
+  s09c_years: 11367,
+  s09d_point: 11705,
+
+  s10_intro: 12010,
+  s10b_j3016: 12175,
+  s10c_point: 12583,
+
+  s11_q: 12957,
+  s11b_answer: 13108,
+  s11c_example: 13471,
+
+  s12_norank: 13850,
+  s12b_lead: 14096,
+  s12c_three: 14269,
+  s12d_close: 14677,
   tail: 14865,
 } as const;
 // ---- END GENERATED CUES
@@ -776,29 +824,29 @@ export const Vox9SpecSheet: React.FC = () => {
             Starts at frame 0 with NEGATIVE entrance cues so frame 0 is already composed. The
             first QA pass had this Scene starting at frame 15 and frame 0 rendered as bare
             board — the exact defect PIPELINE §5 warns about, since frame 0 is the thumbnail. */}
-        <Scene from={0} dur={C.norank - 18}>
+        <Scene from={0} dur={C.s02_norank - 18}>
           <Hook at={-30} />
           <Layer x={960} y={640} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.4}>
-            <SpecTable at={-20} spreadAt={C.gap} />
+            <SpecTable at={-20} spreadAt={C.s01c_gap} />
           </Layer>
         </Scene>
 
         {/* s02 — the rule, stated up front */}
-        <Scene from={C.norank} dur={C.setup - C.norank - 18}>
+        <Scene from={C.s02_norank} dur={C.s03_setup - C.s02_norank - 18}>
           <SerifStatement
             x={960} y={360} w={1500} at={6} size={64} align="center"
             words={[{ t: 'คลิปนี้' }, { t: 'จะไม่บอก' }, { t: 'ว่าคันไหน' }, { t: 'ชนะ', hl: true }]}
           />
-          <RubberStamp x={960} y={620} at={C.whyno - C.norank} size={54} rotate={-7} text="ไม่ประกาศผู้ชนะ" />
-          <LabelChip x={960} y={760} at={C.whyno - C.norank + 20} size={28}
+          <RubberStamp x={960} y={620} at={C.s02b_why - C.s02_norank} size={54} rotate={-7} text="ไม่ประกาศผู้ชนะ" />
+          <LabelChip x={960} y={760} at={C.s02b_why - C.s02_norank + 20} size={28}
             text="เหตุผลเป็นเรื่องเทคนิค ไม่ใช่ความสุภาพ" />
         </Scene>
 
         {/* s03 — THE SPINE: one car, two numbers */}
-        <Scene from={C.setup} dur={C.cyc - C.setup - 18}>
+        <Scene from={C.s03_setup} dur={C.s04_what - C.s03_setup - 18}>
           <Layer x={960} y={560} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
             <OneCarTwoNumbers
-              at={C.china - C.setup}
+              at={C.s03b_china - C.s03_setup}
               showUk={true}
               showDelta={true}
             />
@@ -806,12 +854,12 @@ export const Vox9SpecSheet: React.FC = () => {
         </Scene>
 
         {/* s04 — what a test cycle actually is */}
-        <Scene from={C.cyc} dur={C.tbl - C.cyc - 18}>
+        <Scene from={C.s04_what} dur={C.s05_intro - C.s04_what - 18}>
           <Plate src={A('dyno-hall.png')} at={0} dim={0.72} />
           {/* The opening line of this scene runs 10.3s and the first pass gave it the photo and
               one small caption — "a long line with a short picture reads as a stall" (PIPELINE
               §6). It gets the statement instead, and `backing` is mandatory over a photo. */}
-          <FadeOut at={C.nedc - C.cyc - 24}>
+          <FadeOut at={C.s04b_nedc - C.s04_what - 24}>
             <SerifStatement
               x={960} y={430} w={1500} at={10} size={62} align="center" backing
               words={[{ t: 'วงจรทดสอบ' }, { t: 'คือ' }, { t: 'บทที่รถ' }, { t: 'ต้องขับตาม', hl: true }]}
@@ -819,29 +867,29 @@ export const Vox9SpecSheet: React.FC = () => {
             <LabelChip x={960} y={620} at={40} size={26}
               text="บนแท่นไดนาโมมิเตอร์ ในห้องที่คุมอุณหภูมิ · ความเร็วและเวลากำหนดไว้ล่วงหน้าทุกวินาที" />
           </FadeOut>
-          <FadeOut at={C.factors - C.cyc - 20}>
+          <FadeOut at={C.s04d_factors - C.s04_what - 20}>
             <Layer x={960} y={480} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
-              <CycleBars at={C.nedc - C.cyc} />
+              <CycleBars at={C.s04b_nedc - C.s04_what} />
             </Layer>
           </FadeOut>
-          <Layer x={960} y={800} w={W} at={C.factors - C.cyc} dur={1} enter="none" depth={0.03} drift={0.4}>
+          <Layer x={960} y={800} w={W} at={C.s04d_factors - C.s04_what} dur={1} enter="none" depth={0.03} drift={0.4}>
             <Factors at={0} showCheck={true} />
           </Layer>
         </Scene>
 
         {/* s05 — the table, now with the column that was missing */}
-        <Scene from={C.tbl} dur={C.kwh - C.tbl - 18}>
+        <Scene from={C.s05_intro} dur={C.s06_intro - C.s05_intro - 18}>
           <Layer x={960} y={420} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
             <SpecTable at={10} labels={true} flagCltc={true} />
           </Layer>
-          <Layer x={960} y={880} w={W} at={C.tblPoint - C.tbl} dur={1} enter="none" depth={0.04} drift={0.5}>
+          <Layer x={960} y={880} w={W} at={C.s05d_point - C.s05_intro} dur={1} enter="none" depth={0.04} drift={0.5}>
             <CarProfiles at={0} />
           </Layer>
         </Scene>
 
         {/* s06 — kWh is not kWh */}
-        <Scene from={C.kwh} dur={C.chg - C.kwh - 18}>
-          <Prop src={A('cells.png')} x={1560} y={790} w={520} at={C.buffer - C.kwh} rot={-2}
+        <Scene from={C.s06_intro} dur={C.s07_intro - C.s06_intro - 18}>
+          <Prop src={A('cells.png')} x={1560} y={790} w={520} at={C.s06b_buffer - C.s06_intro} rot={-2}
             caption="โมดูลแบตเตอรี่ · ภาพประกอบ" />
           <Layer x={960} y={420} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
             <PackBar at={10} showBuffer={true} showId4={true} />
@@ -849,31 +897,31 @@ export const Vox9SpecSheet: React.FC = () => {
         </Scene>
 
         {/* s07 — peak kW is not charging time */}
-        <Scene from={C.chg} dur={C.same - C.chg - 18}>
-          <Prop src={A('ccs-plug.png')} x={330} y={905} w={230} at={C.curve - C.chg} rot={3}
+        <Scene from={C.s07_intro} dur={C.s07f_samename - C.s07_intro - 18}>
+          <Prop src={A('ccs-plug.png')} x={330} y={905} w={230} at={C.s07b_curve - C.s07_intro} rot={3}
             caption="หัวชาร์จ DC · ภาพประกอบ" />
-          <FadeOut at={C.window - C.chg - 20}>
+          <FadeOut at={C.s07e_window - C.s07_intro - 20}>
             <Layer x={960} y={470} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
-              <ChargeCurve at={C.curve - C.chg} show49={true} show64={true} />
+              <ChargeCurve at={C.s07b_curve - C.s07_intro} show49={true} show64={true} />
             </Layer>
           </FadeOut>
-          <Layer x={960} y={470} w={W} at={C.window - C.chg} dur={1} enter="none" depth={0.02} drift={0.3}>
+          <Layer x={960} y={470} w={W} at={C.s07e_window - C.s07_intro} dur={1} enter="none" depth={0.02} drift={0.3}>
             <ChargeCurve at={0} showWindow={true} />
           </Layer>
         </Scene>
 
         {/* s07f — same nameplate, different car */}
-        <Scene from={C.same} dur={C.pwr - C.same - 18}>
+        <Scene from={C.s07f_samename} dur={C.s08_intro - C.s07f_samename - 18}>
           <Layer x={960} y={520} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
             <SameName at={10} showNums={true} />
           </Layer>
-          <LabelChip x={MARGIN_L} y={880} at={C.sameLesson - C.same} size={28} anchor="left" accent={BLUEPRINT.teal}
+          <LabelChip x={MARGIN_L} y={880} at={C.s07h_lesson - C.s07f_samename} size={28} anchor="left" accent={BLUEPRINT.teal}
             text="ก่อนเทียบสองคัน ต้องรู้ว่ารุ่นย่อยไหน ตลาดไหน ปีไหน" />
         </Scene>
 
         {/* s08 — power, and for how many minutes */}
-        <Scene from={C.pwr} dur={C.safe - C.pwr - 18}>
-          <Prop src={A('stator.png')} x={360} y={890} w={280} at={C.r85 - C.pwr} rot={-3}
+        <Scene from={C.s08_intro} dur={C.s09_intro - C.s08_intro - 18}>
+          <Prop src={A('stator.png')} x={360} y={890} w={280} at={C.s08b_r85 - C.s08_intro} rot={-3}
             caption="สเตเตอร์มอเตอร์ · ภาพประกอบ" />
           <Layer x={960} y={430} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
             <PowerTime at={10} showCont={true} />
@@ -881,8 +929,8 @@ export const Vox9SpecSheet: React.FC = () => {
         </Scene>
 
         {/* s09 — five stars is not a unit */}
-        <Scene from={C.safe} dur={C.adas - C.safe - 18}>
-          <Prop src={A('barrier.png')} x={1690} y={840} w={380} at={C.proto - C.safe} rot={2}
+        <Scene from={C.s09_intro} dur={C.s10_intro - C.s09_intro - 18}>
+          <Prop src={A('barrier.png')} x={1690} y={840} w={380} at={C.s09b_protocol - C.s09_intro} rot={2}
             caption="แผงรังผึ้งทดสอบชน · ภาพประกอบ" />
           <Layer x={960} y={440} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
             <StarsPanel at={10} showYears={true} />
@@ -890,8 +938,8 @@ export const Vox9SpecSheet: React.FC = () => {
         </Scene>
 
         {/* s10 — what "Level 2" is defined to mean */}
-        <Scene from={C.adas} dur={C.cmpQ - C.adas - 18}>
-          <Prop src={A('wheel.png')} x={1640} y={830} w={440} at={C.j3016 - C.adas} rot={-2}
+        <Scene from={C.s10_intro} dur={C.s11_q - C.s10_intro - 18}>
+          <Prop src={A('wheel.png')} x={1640} y={830} w={440} at={C.s10b_j3016 - C.s10_intro} rot={-2}
             caption="พวงมาลัย · ภาพประกอบ" />
           <Layer x={960} y={420} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
             <LevelLadder at={10} showSplit={true} />
@@ -899,24 +947,24 @@ export const Vox9SpecSheet: React.FC = () => {
         </Scene>
 
         {/* s11 — the one column that survives */}
-        <Scene from={C.cmpQ} dur={C.sum - C.cmpQ - 18}>
-          <Prop src={A('meter.png')} x={1660} y={840} w={420} at={C.cmpA - C.cmpQ} rot={2}
+        <Scene from={C.s11_q} dur={C.s12_norank - C.s11_q - 18}>
+          <Prop src={A('meter.png')} x={1660} y={840} w={420} at={C.s11b_answer - C.s11_q} rot={2}
             caption="เครื่องวิเคราะห์กำลังไฟฟ้า" />
           <Layer x={960} y={430} w={W} at={0} dur={1} enter="none" depth={0.02} drift={0.3}>
-            <EffCard at={C.cmpA - C.cmpQ} showEx={true} />
+            <EffCard at={C.s11b_answer - C.s11_q} showEx={true} />
           </Layer>
         </Scene>
 
         {/* s12 — the three questions, then back to frame 0 so the loop closes */}
-        <Scene from={C.sum} dur={C.tail - C.sum + 200}>
+        <Scene from={C.s12_norank} dur={C.tail - C.s12_norank + 200}>
           <SerifStatement
             x={960} y={130} w={1560} at={6} size={58} align="center"
             words={[{ t: 'ตารางที่ยัง' }, { t: 'ไม่ติดป้าย' }, { t: 'เงื่อนไขการวัด' }, { t: 'ประกาศผู้ชนะไม่ได้', hl: true }]}
           />
-          <Layer x={960} y={470} w={W} at={C.three - C.sum} dur={1} enter="none" depth={0.03} drift={0.4}>
+          <Layer x={960} y={470} w={W} at={C.s12c_three - C.s12_norank} dur={1} enter="none" depth={0.03} drift={0.4}>
             <ThreeQuestions at={0} />
           </Layer>
-          <Layer x={960} y={840} w={W} at={C.close - C.sum} dur={1} enter="none" depth={0.02} drift={0.3}>
+          <Layer x={960} y={840} w={W} at={C.s12d_close - C.s12_norank} dur={1} enter="none" depth={0.02} drift={0.3}>
             <SpecTable at={0} labels={true} flagCltc={true} />
           </Layer>
         </Scene>

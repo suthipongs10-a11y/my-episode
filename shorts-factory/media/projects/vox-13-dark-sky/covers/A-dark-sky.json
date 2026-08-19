@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold horizontal YouTube thumbnail, 1920x1080 landscape.\n\nTHE ENTIRE IMAGE, EDGE TO EDGE, is one flat very deep indigo almost black (#07060f). It is a\nfull-bleed background, NOT a card or panel sitting on another colour. There is no border, no\nframe, no outline, no margin band, no second background colour anywhere in the image. The\nindigo touches all four edges of the picture.\n\nScattered across it are small white dots of varying size, like stars seen by the naked eye.\nNo nebula, no galaxy, no telescope imagery of any kind.\n\nLEFT HALF: large Thai headline in warm starlight white, heavy geometric sans-serif, stacked\non exactly two lines, perfectly spelled, reading exactly:\nฟ้ากลางคืน\nควรสว่างเท่าดวงอาทิตย์\nDirectly below the headline, one short line of muted violet-grey Thai text on ONE line,\nperfectly spelled, much smaller: ถ้าจักรวาลไม่มีที่สิ้นสุด\n\nRIGHT HALF: almost entirely empty deep indigo with only the faint scattered star dots. In the\nlower right, one short line of bright amber Thai text on ONE line, perfectly spelled, small,\nreading exactly: แล้วทำไมมันมืด\n\nFlat solid colours only: very deep indigo, warm starlight white, bright amber, muted violet-grey.\nNo gradient, no glow, no lens flare, no 3D, no planets, no spacecraft, no people, no logos,\nno other numbers or letters anywhere except the specified Thai text.\nKeep 8% clear margin left and right, 6% top and bottom.\n",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T12:13:17"
+}

@@ -57,7 +57,27 @@ export const BLUEPRINT: Theme = {
   landHi: '#265069',
 };
 
-export const THEMES = { paper: VOX, blueprint: BLUEPRINT } as const;
+// The third skin: night sky. A cosmology channel needs a material that is DARK BECAUSE OF
+// DISTANCE rather than dark because of ink — no grid, no drafting-table blue, just the colour
+// the sky actually is between the stars, with starlight-white type on it.
+//
+// It is a palette swap and nothing else, which is the whole point of this object existing:
+// the board camera, parallax, entrance choreography, cards and leader lines are all
+// material-agnostic. Only the ten values below carry the "space" signal.
+export const COSMOS: Theme = {
+  paper: '#07060f', //     the space between the stars, not black — very deep indigo
+  paperDeep: '#100c1f',
+  ink: '#f2eefc', //       starlight white
+  inkSoft: '#9d95c4', //   dust-lane violet-grey
+  red: '#ff6b5e', //       the wrong answer / the thing that fails
+  yellow: '#ffcf5c', //    the number that carries the video
+  teal: '#5ee0d8', //      the correct mechanism
+  cream: '#140f26', //     card fill: a panel of slightly warmer night
+  land: '#1a1330',
+  landHi: '#2e2352',
+};
+
+export const THEMES = { paper: VOX, blueprint: BLUEPRINT, cosmos: COSMOS } as const;
 export type ThemeName = keyof typeof THEMES;
 
 // Components read the theme from here, defaulting to paper so every existing shot is untouched.
@@ -90,7 +110,7 @@ export const CollageBoard: React.FC<{
   fontBody?: string;
   fontDisplay?: string;
   tracking?: string; // kicker letter-spacing; Thai wants far less of it than latin small-caps
-  theme?: ThemeName; // 'paper' (default) | 'blueprint' — see THEMES
+  theme?: ThemeName; // 'paper' (default) | 'blueprint' | 'cosmos' — see THEMES
   children: React.ReactNode;
 }> = ({ cam, fontBody, fontDisplay, tracking, theme = 'paper', children }) => {
   const frame = useCurrentFrame();

@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of a sheet of aged yellowed paper lying flat, edges worn, completely blank with no writing or marks on it at all, warm low light. Calm, quiet, documentary photograph, dark and low-lit. Nobody's face visible. No text, no logos, no signage, no screens.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T11:50:21"
+}

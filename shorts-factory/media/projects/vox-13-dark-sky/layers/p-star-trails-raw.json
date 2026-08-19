@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph of circular star trails around the pole star, a very long exposure at night, with a low black silhouette of hills along the bottom edge. Taken from the ground with an ordinary camera on a tripod. NOT a telescope image. Nobody present. No text, no logos, no signage, no recognisable landmark.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-19T11:57:16"
+}
