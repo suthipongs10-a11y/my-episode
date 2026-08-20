@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { getJob, listActivity, listExpenses, listPayments } from "@/lib/queries";
+import { getJob, listActivity, listExpenses, listNotes, listPayments, listTasks } from "@/lib/queries";
 import { EXPENSE_KINDS, JOB_STATUS, PAYMENT_KINDS } from "@/lib/status";
 import { daysSince, daysUntil, dateInputValue, fmtDate, fmtDateTime, stallLabel, thb, todayInputValue } from "@/lib/format";
 import {
@@ -15,6 +15,8 @@ import { Shell } from "@/components/shell";
 import { Chip, Empty, Field, Panel, Row } from "@/components/ui";
 import { StatusSelect } from "@/components/status-select";
 import { Submit } from "@/components/submit";
+import { Checklist } from "@/components/checklist";
+import { Notes } from "@/components/notes";
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +29,12 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
   const job = await getJob(jobId);
   if (!job) notFound();
 
-  const [payments, expenses, activity] = await Promise.all([
+  const [payments, expenses, activity, tasks, notes] = await Promise.all([
     listPayments(jobId),
     listExpenses(jobId),
     listActivity("job", jobId),
+    listTasks(jobId),
+    listNotes(jobId),
   ]);
 
   const left = daysUntil(job.due_on);
@@ -77,6 +81,8 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="flex flex-col gap-4">
+          <Checklist jobId={job.id} packageName={job.package} tasks={tasks} />
+
           {/* ---------------------------------------------------- money */}
           <Panel title="การเงินของงานนี้">
             <dl className="grid grid-cols-2 gap-px bg-line-soft sm:grid-cols-3">
@@ -289,6 +295,8 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
             </form>
           </Panel>
 
+          <Notes jobId={job.id} notes={notes} />
+
           <Panel title="ไทม์ไลน์" meta={<span className="num">{activity.length}</span>}>
             {activity.length === 0 ? (
               <Empty>ยังไม่มีความเคลื่อนไหว</Empty>
@@ -340,6 +348,9 @@ const LABELS: Record<string, string> = {
   payment_removed: "ลบรายการเงินเข้า",
   expense_added: "บันทึกต้นทุน",
   expense_removed: "ลบรายการต้นทุน",
+  note_added: "เพิ่มบันทึก",
+  note_removed: "ลบบันทึก",
+  checklist_added: "ใส่เช็กลิสต์",
 };
 
 function describe(action: string, from: string | null, to: string | null): string {
@@ -351,5 +362,7 @@ function describe(action: string, from: string | null, to: string | null): strin
   if ((action === "payment_added" || action === "expense_added") && to) {
     return `${LABELS[action]} ฿${thb(Number(to))}`;
   }
+  if (action === "checklist_added" && to) return `${LABELS[action]} ${to} ข้อ`;
+  if (action === "note_added" && to) return `${LABELS[action]} (${to})`;
   return LABELS[action] ?? action;
 }

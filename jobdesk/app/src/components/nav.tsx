@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/", label: "วันนี้" },
   { href: "/board", label: "บอร์ดงาน" },
   { href: "/customers", label: "ลูกค้า" },
+  { href: "/money", label: "การเงิน" },
 ];
 
 export function Nav() {

@@ -100,7 +100,24 @@ function Card({ job }: { job: JobRow }) {
             <dd className="num text-accent">฿{thb(job.price)}</dd>
           </div>
         )}
+        {job.task_total > 0 ? (
+          <div className="flex gap-1">
+            <dt className="text-muted">เช็กลิสต์</dt>
+            <dd className="num">
+              {job.task_done}/{job.task_total}
+            </dd>
+          </div>
+        ) : null}
       </dl>
+
+      {job.task_total > 0 ? (
+        <div className="mt-2 h-1 rounded-full bg-surface-2">
+          <div
+            className="h-full rounded-full bg-accent"
+            style={{ width: `${Math.round((job.task_done / job.task_total) * 100)}%` }}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-2 flex flex-col gap-2">
         <div>

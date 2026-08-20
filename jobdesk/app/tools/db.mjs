@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * jobdesk db helper — ใช้ schema.sql เดียวกับที่ Supabase จะใช้
- *   node tools/db.mjs init    สร้างตารางทั้งหมด
- *   node tools/db.mjs seed    ใส่ข้อมูลตัวอย่างไว้ลองใช้
- *   node tools/db.mjs reset   ล้างแล้วสร้างใหม่ (ข้อมูลหายหมด)
+ *   node tools/db.mjs init      สร้างตารางทั้งหมด แล้วมาร์ค migration ว่ารันแล้ว
+ *   node tools/db.mjs migrate   รันเฉพาะ migration ที่ยังไม่เคยรัน
+ *   node tools/db.mjs seed      ใส่ข้อมูลตัวอย่างไว้ลองใช้
+ *   node tools/db.mjs reset     ล้างแล้วสร้างใหม่ (ข้อมูลหายหมด)
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import postgres from "postgres";
@@ -25,9 +26,30 @@ if (!url) {
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
-const schemaPath = join(here, "..", "..", "schema.sql");
+const root = join(here, "..", "..");
+const schemaPath = join(root, "schema.sql");
+const migrationsDir = join(root, "migrations");
 const command = process.argv[2] ?? "init";
-const sql = postgres(url, { max: 1 });
+const sql = postgres(url, { max: 1, onnotice: () => {} });
+
+function migrationFiles() {
+  if (!existsSync(migrationsDir)) return [];
+  return readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
+}
+
+async function ensureMigrationTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      filename   text PRIMARY KEY,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+}
+
+async function applied() {
+  const rows = await sql`SELECT filename FROM schema_migrations`;
+  return new Set(rows.map((r) => r.filename));
+}
 
 const SEED = `
 INSERT INTO customers (display_name, business_name, phone, line_id) VALUES
@@ -71,6 +93,16 @@ SELECT j.id, 'transaction_fee', 'ค่าธรรมเนียมโอน',
 INSERT INTO expenses (kind, description, amount_thb, spent_on)
 VALUES ('ads', 'ค่าโฆษณาเพจ', 3000, date_trunc('month', CURRENT_DATE)::date);
 
+-- เดือนก่อน ๆ ไว้ให้กราฟในหน้าการเงินมีอะไรให้ดู
+INSERT INTO payments (customer_id, kind, amount_thb, method, paid_on, status)
+SELECT (SELECT id FROM customers WHERE display_name = 'คุณนก'), 'full', v.amount, 'promptpay',
+       (date_trunc('month', CURRENT_DATE) - (v.months || ' months')::interval)::date + 12, 'received'
+  FROM (VALUES (1, 4470), (2, 2980), (3, 5460), (4, 1980), (5, 3970)) AS v(months, amount);
+INSERT INTO expenses (kind, description, amount_thb, spent_on)
+SELECT 'ads', 'ค่าโฆษณาเพจ', v.amount,
+       (date_trunc('month', CURRENT_DATE) - (v.months || ' months')::interval)::date
+  FROM (VALUES (1, 2400), (2, 1800), (3, 2600), (4, 1500), (5, 2100)) AS v(months, amount);
+
 INSERT INTO activity_log (entity_type, entity_id, action, to_value, actor)
 SELECT 'job', id, 'created', 'awaiting_brief', 'seed' FROM jobs;
 `;
@@ -80,16 +112,38 @@ try {
     await sql.unsafe("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
     console.log("ล้างฐานข้อมูลแล้ว");
   }
+
   if (command === "init" || command === "reset") {
     await sql.unsafe(readFileSync(schemaPath, "utf8"));
+    await ensureMigrationTable();
+    // schema.sql มีทุกอย่างที่ migration ทำไปแล้ว จึงมาร์คว่ารันแล้วเลย
+    for (const f of migrationFiles()) {
+      await sql`INSERT INTO schema_migrations (filename) VALUES (${f}) ON CONFLICT DO NOTHING`;
+    }
     console.log("สร้างตารางจาก schema.sql แล้ว");
   }
+
+  if (command === "migrate") {
+    await ensureMigrationTable();
+    const done = await applied();
+    const pending = migrationFiles().filter((f) => !done.has(f));
+    if (pending.length === 0) {
+      console.log("ไม่มี migration ค้าง");
+    }
+    for (const f of pending) {
+      await sql.unsafe(readFileSync(join(migrationsDir, f), "utf8"));
+      await sql`INSERT INTO schema_migrations (filename) VALUES (${f})`;
+      console.log(`รัน ${f} แล้ว`);
+    }
+  }
+
   if (command === "seed") {
     await sql.unsafe(SEED);
     console.log("ใส่ข้อมูลตัวอย่างแล้ว");
   }
-  if (!["init", "reset", "seed"].includes(command)) {
-    console.error(`ไม่รู้จักคำสั่ง "${command}" — ใช้ init | seed | reset`);
+
+  if (!["init", "reset", "seed", "migrate"].includes(command)) {
+    console.error(`ไม่รู้จักคำสั่ง "${command}" — ใช้ init | migrate | seed | reset`);
     process.exitCode = 1;
   }
 } finally {

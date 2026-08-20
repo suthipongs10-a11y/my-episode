@@ -64,14 +64,63 @@ try {
     const row = (await q.getJob(jobId))!;
     check(`${meta.label} → รอ${meta.waiting}`, row.waiting_on, meta.waiting);
   }
+  // ลูปข้างบนจบที่ 'cancelled' — คืนสถานะก่อน มิฉะนั้นการตรวจข้างล่างจะเห็นงานที่ถูกยกเลิก
+  await sql`UPDATE jobs SET status = 'awaiting_brief', waiting_on = 'client' WHERE id = ${jobId}`;
 
   console.log("\nรายชื่อลูกค้ารวมยอดที่จ่ายมาแล้ว");
   const found = (await q.listCustomers(tag)).find((c) => c.id === customerId);
   check("ค้นหาเจอ", found?.display_name, tag);
   check("จ่ายมาแล้ว 500", found?.paid_total, 500);
   check("มี 1 งาน", found?.job_count, 1);
+
+  console.log("\nเช็กลิสต์");
+  await sql`INSERT INTO job_tasks (job_id, title, position) VALUES
+    (${jobId}, 'ข้อหนึ่ง', 0), (${jobId}, 'ข้อสอง', 1), (${jobId}, 'ข้อสาม', 2)`;
+  let tasks = await q.listTasks(jobId);
+  check("มี 3 ข้อ เรียงตาม position", tasks.map((t) => t.title).join(","), "ข้อหนึ่ง,ข้อสอง,ข้อสาม");
+  await sql`UPDATE job_tasks SET done_at = now() WHERE job_id = ${jobId} AND position < 2`;
+  job = (await q.getJob(jobId))!;
+  check("ความคืบหน้าติดมากับงาน 2/3", `${job.task_done}/${job.task_total}`, "2/3");
+
+  console.log("\nบันทึกและไฟล์แนบ");
+  const [note] = await sql<{ id: number }[]>`
+    INSERT INTO notes (job_id, body) VALUES (${jobId}, 'ลูกค้าขอเปลี่ยนสี') RETURNING id::int`;
+  const bytes = Buffer.from("ไฟล์ทดสอบ", "utf8");
+  await sql`INSERT INTO attachments (note_id, filename, mime_type, byte_size, data)
+            VALUES (${note.id}, 'slip.png', 'image/png', ${bytes.byteLength}, ${bytes})`;
+  const notes = await q.listNotes(jobId);
+  check("มี 1 บันทึก", notes.length, 1);
+  check("บันทึกพกไฟล์แนบมาด้วย", notes[0]?.files.length, 1);
+  check("ชื่อไฟล์ถูกต้อง", notes[0]?.files[0]?.filename, "slip.png");
+  const fetched = await q.getAttachment(notes[0].files[0].id);
+  check("อ่านไฟล์กลับมาได้ตรงกับที่เก็บ", fetched?.data.toString("utf8"), "ไฟล์ทดสอบ");
+  await sql`DELETE FROM notes WHERE id = ${note.id}`;
+  const [{ orphans }] = await sql<{ orphans: number }[]>`
+    SELECT count(*)::int AS orphans FROM attachments WHERE note_id = ${note.id}`;
+  check("ลบบันทึกแล้วไฟล์แนบหายตามไปด้วย", orphans, 0);
+
+  console.log("\nหน้าการเงิน");
+  const series = await q.monthlySeries(12);
+  check("ได้ครบ 12 เดือน", series.length, 12);
+  const thisMonth = series[series.length - 1];
+  check("กำไร = รายรับ − รายจ่าย", Math.round(thisMonth.profit),
+        Math.round(thisMonth.revenue - thisMonth.cost));
+  const owed = await q.listOutstanding();
+  const mine = owed.find((r) => r.job_id === jobId);
+  check("งานนี้อยู่ในรายการค้างรับ 490", mine?.outstanding, 490);
+  await sql`UPDATE jobs SET status = 'cancelled' WHERE id = ${jobId}`;
+  check("ยกเลิกแล้วหลุดจากรายการค้างรับ",
+        (await q.listOutstanding()).some((r) => r.job_id === jobId), false);
+  await sql`UPDATE jobs SET status = 'awaiting_brief' WHERE id = ${jobId}`;
+
+  const rows = await q.ledger("1900-01-01", "2999-12-31");
+  check("ledger มีทั้งรายรับและรายจ่าย",
+        new Set(rows.map((r) => r.direction)).size, 2);
+  check("รายจ่ายใน ledger ติดลบ", rows.every((r) => r.direction !== "รายจ่าย" || r.amount < 0), true);
 } finally {
   if (jobId) {
+    await sql`DELETE FROM job_tasks WHERE job_id = ${jobId}`;
+    await sql`DELETE FROM notes WHERE job_id = ${jobId}`;
     await sql`DELETE FROM payments WHERE job_id = ${jobId}`;
     await sql`DELETE FROM expenses WHERE job_id = ${jobId}`;
     await sql`DELETE FROM jobs WHERE id = ${jobId}`;

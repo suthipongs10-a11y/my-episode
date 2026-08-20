@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { sql } from "./db";
 import { signIn, signOut, requireSession } from "./auth";
 import { JOB_STATUS, isJobStatus, type JobStatus } from "./status";
+import { templateFor } from "./templates";
 
 /* ------------------------------------------------------------------ utils */
 
@@ -156,6 +157,7 @@ export async function createJobAction(fd: FormData): Promise<void> {
     )
     RETURNING id::int
   `;
+  await insertTemplateTasks(job.id, text(fd, "package"));
   await log("job", job.id, "created", null, "awaiting_brief");
   refreshJobViews(job.id);
   redirect(`/jobs/${job.id}`);
@@ -271,6 +273,126 @@ export async function deleteExpenseAction(fd: FormData): Promise<void> {
   const jobId = id(fd, "job_id");
   await sql`DELETE FROM expenses WHERE id = ${id(fd, "expense_id")} AND job_id = ${jobId}`;
   await log("job", jobId, "expense_removed");
+  refreshJobViews(jobId);
+  redirect(`/jobs/${jobId}`);
+}
+
+/* ------------------------------------------------------------- เช็กลิสต์ */
+
+async function insertTemplateTasks(jobId: number, packageName: string | null): Promise<number> {
+  const titles = templateFor(packageName);
+  if (titles.length === 0) return 0;
+  await sql`
+    INSERT INTO job_tasks ${sql(
+      titles.map((title, i) => ({ job_id: jobId, title, position: i })),
+      "job_id",
+      "title",
+      "position",
+    )}
+  `;
+  return titles.length;
+}
+
+export async function applyTemplateAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const jobId = id(fd, "job_id");
+  const [job] = await sql<{ package: string | null }[]>`
+    SELECT package FROM jobs WHERE id = ${jobId}
+  `;
+  if (!job) throw new Error("ไม่พบงานนี้");
+
+  const [{ count }] = await sql<{ count: number }[]>`
+    SELECT count(*)::int FROM job_tasks WHERE job_id = ${jobId}
+  `;
+  if (count > 0) throw new Error("งานนี้มีเช็กลิสต์อยู่แล้ว");
+
+  const added = await insertTemplateTasks(jobId, job.package);
+  if (added > 0) await log("job", jobId, "checklist_added", null, String(added));
+  refreshJobViews(jobId);
+  redirect(`/jobs/${jobId}`);
+}
+
+export async function toggleTaskAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const jobId = id(fd, "job_id");
+  const taskId = id(fd, "task_id");
+  await sql`
+    UPDATE job_tasks
+       SET done_at = CASE WHEN done_at IS NULL THEN now() ELSE NULL END
+     WHERE id = ${taskId} AND job_id = ${jobId}
+  `;
+  refreshJobViews(jobId);
+}
+
+export async function addTaskAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const jobId = id(fd, "job_id");
+  await sql`
+    INSERT INTO job_tasks (job_id, title, position)
+    SELECT ${jobId}, ${required(fd, "title", "ชื่อรายการ")},
+           COALESCE(max(position) + 1, 0)
+      FROM job_tasks WHERE job_id = ${jobId}
+  `;
+  refreshJobViews(jobId);
+  redirect(`/jobs/${jobId}`);
+}
+
+export async function deleteTaskAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const jobId = id(fd, "job_id");
+  await sql`DELETE FROM job_tasks WHERE id = ${id(fd, "task_id")} AND job_id = ${jobId}`;
+  refreshJobViews(jobId);
+}
+
+/* -------------------------------------------------------- บันทึกและไฟล์ */
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+const ALLOWED_UPLOAD_TYPES = [
+  "image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "application/pdf",
+];
+
+export async function addNoteAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const jobId = id(fd, "job_id");
+  const body = text(fd, "body");
+  const files = fd.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
+
+  if (!body && files.length === 0) throw new Error("ใส่ข้อความหรือแนบไฟล์อย่างน้อยหนึ่งอย่าง");
+
+  for (const file of files) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      throw new Error(`ไฟล์ "${file.name}" ใหญ่เกิน 5MB`);
+    }
+    if (!ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+      throw new Error(`ไฟล์ "${file.name}" เป็นชนิดที่ยังไม่รองรับ — รับเฉพาะรูปภาพและ PDF`);
+    }
+  }
+
+  const [note] = await sql<{ id: number }[]>`
+    INSERT INTO notes (job_id, body, file_url)
+    VALUES (${jobId}, ${body}, ${text(fd, "file_url")})
+    RETURNING id::int
+  `;
+
+  for (const file of files) {
+    const data = Buffer.from(await file.arrayBuffer());
+    await sql`
+      INSERT INTO attachments (note_id, filename, mime_type, byte_size, data)
+      VALUES (${note.id}, ${file.name}, ${file.type}, ${data.byteLength}, ${data})
+    `;
+  }
+
+  await log("job", jobId, "note_added", null, files.length ? `${files.length} ไฟล์` : null);
+  refreshJobViews(jobId);
+  redirect(`/jobs/${jobId}`);
+}
+
+export async function deleteNoteAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const jobId = id(fd, "job_id");
+  // ไฟล์แนบถูกลบตาม note ไปเองด้วย ON DELETE CASCADE
+  await sql`DELETE FROM notes WHERE id = ${id(fd, "note_id")} AND job_id = ${jobId}`;
+  await log("job", jobId, "note_removed");
   refreshJobViews(jobId);
   redirect(`/jobs/${jobId}`);
 }

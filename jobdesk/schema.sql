@@ -251,6 +251,20 @@ CREATE TABLE notes (
 
 CREATE INDEX ON notes (job_id);
 
+-- ไฟล์ที่อัปโหลดเข้ามาในระบบ เก็บเป็น bytea เพื่อให้ Postgres ที่รันเองกับ
+-- Supabase ทำงานเหมือนกันโดยไม่ต้องตั้งค่า object storage เพิ่ม (migrations/001)
+CREATE TABLE attachments (
+    id          bigserial PRIMARY KEY,
+    note_id     bigint NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    filename    text NOT NULL,
+    mime_type   text NOT NULL,
+    byte_size   integer NOT NULL CHECK (byte_size > 0),
+    data        bytea NOT NULL,
+    created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX ON attachments (note_id);
+
 CREATE TABLE activity_log (
     id              bigserial PRIMARY KEY,
     entity_type     text NOT NULL,              -- 'job', 'lead', 'website'

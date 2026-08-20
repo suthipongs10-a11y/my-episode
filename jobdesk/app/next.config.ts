@@ -12,6 +12,10 @@ const devOrigins = (process.env.DEV_ORIGINS ?? "")
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["localhost", "127.0.0.1", ...devOrigins],
+  experimental: {
+    // ไฟล์แนบจำกัดที่ 5MB ต่อไฟล์ เผื่อส่วนหัวของ multipart ไว้อีกหน่อย
+    serverActions: { bodySizeLimit: "6mb" },
+  },
 };
 
 export default nextConfig;
