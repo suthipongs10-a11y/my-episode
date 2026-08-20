@@ -1,0 +1,918 @@
+<title>JobDesk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:      #F4F6F2;
+    --surface:     #FFFFFF;
+    --surface-2:   #EDF0EA;
+    --border:      #DFE4DB;
+    --border-soft: #EAEEE6;
+    --ink:         #141A16;
+    --ink-2:       #3D4841;
+    --muted:       #63706A;
+    --accent:      #006B54;
+    --accent-tint: #E1EFEA;
+    --on-accent:   #FFFFFF;
+    --crit:        #B03A28;
+    --crit-tint:   #F7E6E2;
+    --on-crit:     #FFFFFF;
+    --warn:        #8F6008;
+    --warn-tint:   #F6EDDC;
+    --info:        #1C5FA0;
+    --info-tint:   #E2ECF6;
+    --neutral-fill:#C6CEC6;
+
+    --f-display: "Anuphan", "IBM Plex Sans Thai", system-ui, sans-serif;
+    --f-body:    "IBM Plex Sans Thai", "Anuphan", system-ui, sans-serif;
+    --f-mono:    "IBM Plex Mono", ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0D1210;
+      --surface:     #151C19;
+      --surface-2:   #1C2521;
+      --border:      #29332E;
+      --border-soft: #212B27;
+      --ink:         #E9EFEA;
+      --ink-2:       #C3CEC7;
+      --muted:       #92A099;
+      --accent:      #35BE99;
+      --accent-tint: #122A24;
+      --on-accent:   #06231C;
+      --crit:        #EE7461;
+      --crit-tint:   #2E1D19;
+      --on-crit:     #2B100A;
+      --warn:        #D89C3C;
+      --warn-tint:   #2B2317;
+      --info:        #68A9DE;
+      --info-tint:   #17232E;
+      --neutral-fill:#42504A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #0D1210;
+    --surface:     #151C19;
+    --surface-2:   #1C2521;
+    --border:      #29332E;
+    --border-soft: #212B27;
+    --ink:         #E9EFEA;
+    --ink-2:       #C3CEC7;
+    --muted:       #92A099;
+    --accent:      #35BE99;
+    --accent-tint: #122A24;
+    --on-accent:   #06231C;
+    --crit:        #EE7461;
+    --crit-tint:   #2E1D19;
+    --on-crit:     #2B100A;
+    --warn:        #D89C3C;
+    --warn-tint:   #2B2317;
+    --info:        #68A9DE;
+    --info-tint:   #17232E;
+    --neutral-fill:#42504A;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.72;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  .wrap {
+    display: grid;
+    grid-template-columns:
+      [full-start] minmax(1.25rem, 1fr)
+      [main-start] minmax(0, 68ch) [main-end]
+      minmax(1.25rem, 1fr) [full-end];
+    row-gap: 1.1rem;
+    padding: clamp(2.5rem, 7vw, 5rem) 0 6rem;
+  }
+  .wrap > * { grid-column: main; margin: 0; }
+  .wrap > .wide { grid-column: full; width: 100%; max-width: 1160px; justify-self: center; }
+
+  h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.28; }
+  h1 { font-size: clamp(2.3rem, 6vw, 3.4rem); font-weight: 700; letter-spacing: -0.015em; margin-bottom: .2rem; }
+  h2 { font-size: clamp(1.4rem, 3.2vw, 1.75rem); font-weight: 600; }
+  h3 { font-size: 1.08rem; font-weight: 600; color: var(--ink); }
+  p { color: var(--ink-2); }
+  strong { color: var(--ink); font-weight: 600; }
+  code, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  code { font-size: .88em; background: var(--surface-2); padding: .1em .35em; border-radius: 3px; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+
+  .eyebrow {
+    font-family: var(--f-mono); font-size: .72rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .lede { font-size: 1.12rem; color: var(--ink-2); }
+  .rule { border: 0; border-top: 1px solid var(--border); margin: 2.4rem 0 .4rem; }
+
+  section > .eyebrow { margin-bottom: -.75rem; }
+  .sec { margin-top: 2.6rem; }
+  .sec:first-of-type { margin-top: 1rem; }
+
+  /* --- head ------------------------------------------------------------ */
+  .masthead { padding-bottom: .6rem; }
+  .kicker {
+    display: inline-flex; gap: .55rem; align-items: center;
+    font-family: var(--f-mono); font-size: .72rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+    border: 1px solid var(--border); background: var(--surface);
+    padding: .3rem .7rem; border-radius: 999px; margin-bottom: 1.2rem;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .answers { list-style: none; padding: 0; display: grid; gap: .5rem; counter-reset: q; }
+  .answers li {
+    position: relative; padding-left: 2.3rem; color: var(--ink-2);
+  }
+  .answers li::before {
+    counter-increment: q; content: counter(q);
+    position: absolute; left: 0; top: .38rem;
+    font-family: var(--f-mono); font-size: .7rem; color: var(--accent);
+    width: 1.5rem; height: 1.5rem; display: grid; place-items: center;
+    border: 1px solid var(--border); border-radius: 50%; background: var(--surface);
+    line-height: 1;
+  }
+
+  /* --- cards / tables --------------------------------------------------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.15rem 1.3rem;
+  }
+  .grid2 { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .grid3 { display: grid; gap: .9rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .card h3 { margin: 0 0 .35rem; }
+  .card p  { margin: 0; font-size: .93rem; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 520px; }
+  th, td { text-align: left; padding: .62rem .85rem; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--f-mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.n, th.n { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  .tot td { font-weight: 600; color: var(--ink); background: var(--accent-tint); }
+
+  /* --- chips ------------------------------------------------------------ */
+  .chip {
+    display: inline-flex; align-items: center; gap: .35em;
+    font-size: .76rem; font-weight: 500; line-height: 1.5;
+    padding: .1em .6em; border-radius: 999px; border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .chip--us     { color: var(--accent); background: var(--accent-tint); border-color: var(--accent); }
+  .chip--client { color: var(--warn);   background: var(--warn-tint);   border-color: var(--warn); }
+  .chip--late   { color: var(--crit);   background: var(--crit-tint);   border-color: var(--crit); }
+  .chip--done   { color: var(--muted);  background: var(--surface-2);   border-color: var(--border); }
+
+  /* --- callout ---------------------------------------------------------- */
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-tint);
+    padding: .9rem 1.15rem; border-radius: 0 8px 8px 0;
+  }
+  .callout p { margin: 0; color: var(--ink); }
+  .callout--warn { border-left-color: var(--crit); background: var(--crit-tint); }
+
+  /* --- figures ---------------------------------------------------------- */
+  figure { margin: 0; }
+  .figbox { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.1rem; overflow-x: auto; }
+  .figbox svg { display: block; width: 100%; min-width: 620px; height: auto; color: var(--ink-2); }
+  figcaption { font-size: .86rem; color: var(--muted); margin-top: .6rem; }
+  .lgd { display: flex; flex-wrap: wrap; gap: 1rem; font-size: .82rem; color: var(--muted); margin-top: .7rem; }
+  .lgd span { display: inline-flex; align-items: center; gap: .4rem; }
+  .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+
+  /* --- the mockup ------------------------------------------------------- */
+  .mock {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .mock__bar {
+    display: flex; align-items: center; gap: .7rem;
+    padding: .6rem .95rem; background: var(--surface-2); border-bottom: 1px solid var(--border);
+    font-size: .8rem; color: var(--muted);
+  }
+  .mock__on { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); padding-bottom: .15rem; }
+  .mock__brand { font-family: var(--f-display); font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+  .mock__body { padding: 1rem; display: grid; gap: 1rem; }
+  .kpis { display: grid; gap: .55rem; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .kpi { border: 1px solid var(--border); border-radius: 8px; padding: .6rem .7rem; background: var(--surface); }
+  .kpi__l { font-size: .72rem; color: var(--muted); letter-spacing: .02em; }
+  .kpi__v { font-family: var(--f-mono); font-size: 1.4rem; font-weight: 500; font-variant-numeric: tabular-nums; line-height: 1.3; }
+  .kpi__v small { font-size: .62em; color: var(--muted); }
+  .kpi--alert .kpi__v { color: var(--crit); }
+  .kpi--good  .kpi__v { color: var(--accent); }
+  .panels { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .panel { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .panel__h {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .5rem .75rem; background: var(--surface-2); border-bottom: 1px solid var(--border);
+    font-size: .8rem; font-weight: 600;
+  }
+  .panel__h .n { font-family: var(--f-mono); color: var(--muted); font-weight: 400; }
+  .row {
+    display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+    padding: .5rem .75rem; border-bottom: 1px solid var(--border-soft); font-size: .87rem;
+  }
+  .row:last-child { border-bottom: 0; }
+  .row__m { color: var(--muted); font-size: .78rem; }
+  .row__r { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: .82rem; white-space: nowrap; }
+  .stack { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+  .stack strong { font-weight: 500; }
+
+  ul.plain { padding-left: 1.15rem; color: var(--ink-2); }
+  ul.plain li { margin: .3rem 0; }
+  ol.phases { list-style: none; padding: 0; counter-reset: ph; display: grid; gap: .7rem; }
+  ol.phases li {
+    counter-increment: ph; position: relative; padding-left: 3.1rem;
+    border-left: 1px solid var(--border); margin-left: 1.1rem; padding-bottom: .35rem;
+  }
+  ol.phases li::before {
+    content: "P" counter(ph);
+    position: absolute; left: -1.15rem; top: .1rem;
+    font-family: var(--f-mono); font-size: .68rem; color: var(--accent);
+    background: var(--surface); border: 1px solid var(--border);
+    width: 2.3rem; height: 1.5rem; display: grid; place-items: center; border-radius: 999px;
+  }
+  ol.phases b { font-family: var(--f-display); font-size: 1rem; }
+  .gate { display: block; font-size: .86rem; color: var(--muted); }
+  .gate b { font-family: var(--f-body); font-size: .86rem; color: var(--ink-2); }
+
+  footer.end { color: var(--muted); font-size: .88rem; }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="kicker"><span class="dot"></span>เอกสารออกแบบ · 20 ส.ค. 2026</div>
+    <h1>JobDesk</h1>
+    <p class="lede">ระบบเดียวสำหรับงานรับทำเว็บ 990 บาท — สถานะงาน ลูกค้า ต้นทุน กำไร
+    และค่าโฆษณาจากเพจ อยู่ในที่เดียวกันและคุยกันได้</p>
+  </header>
+
+  <p>ตอนมี 3 งานพร้อมกัน ความจำเอาอยู่ ตอนมี 15 งานพร้อมกัน ไม่มีใครเอาอยู่
+  เอกสารนี้คือ<strong>สิ่งที่ระบบต้องมี</strong> ไม่ใช่โค้ด — 8 หน้าจอ ฐานข้อมูล 11 ตาราง
+  และแผนสร้าง 6 เฟส โดยเฟสแรกใช้เวลา 2–3 วันแล้วใช้งานได้จริงเลย</p>
+
+  <p>สิ่งที่ระบบต้องตอบได้ ซึ่งตอนนี้ตอบไม่ได้:</p>
+
+  <ol class="answers">
+    <li>งานทั้งหมดอยู่สถานะไหน และงานไหน<strong>ค้างเพราะเรา</strong> งานไหน<strong>ค้างเพราะลูกค้า</strong></li>
+    <li>งานนี้<strong>กำไรจริงเท่าไหร่</strong> หลังหักค่าโฆษณาที่ปันส่วนลงไปแล้ว</li>
+    <li>เดือนนี้ยิงโฆษณาเท่าไหร่ ได้คนทักกี่คน ปิดได้กี่งาน <strong>ต้นทุนต่อ 1 งาน</strong>เท่าไหร่</li>
+    <li>โดเมน/โฮสติ้งของใคร<strong>ใกล้หมดอายุ</strong>ใน 30 วันข้างหน้า</li>
+    <li>ตอนนี้<strong>ค้างรับ</strong>อยู่กี่บาท จากใครบ้าง</li>
+  </ol>
+
+  <p>ข้อ 2 กับ 3 คือเหตุผลที่ต้องเป็นระบบ ไม่ใช่ Excel — มันต้องเอาข้อมูลจาก 3 ที่
+  (งาน + ค่าใช้จ่าย + ค่าโฆษณาจากเพจ) มาชนกันเองทุกวัน</p>
+
+  <!-- ============================ MOCKUP ============================ -->
+  <div class="wide" style="margin-top:1.8rem">
+    <div class="mock">
+      <div class="mock__bar">
+        <span class="mock__brand">JobDesk</span>
+        <span class="mock__on">วันนี้</span><span>บอร์ดงาน</span><span>ลูกค้า</span><span>การเงิน</span>
+        <span>โฆษณา</span><span>ต่ออายุ</span>
+        <span style="margin-left:auto" class="num">พฤ. 20 ส.ค. 2026</span>
+      </div>
+      <div class="mock__body">
+
+        <div class="kpis">
+          <div class="kpi"><div class="kpi__l">ต้องทำ</div><div class="kpi__v">4 <small>งาน</small></div></div>
+          <div class="kpi"><div class="kpi__l">ต้องทวง</div><div class="kpi__v">3 <small>งาน</small></div></div>
+          <div class="kpi kpi--alert"><div class="kpi__l">เลยกำหนดส่ง</div><div class="kpi__v">1 <small>งาน</small></div></div>
+          <div class="kpi kpi--alert"><div class="kpi__l">ค้างรับ</div><div class="kpi__v">4,470 <small>฿</small></div></div>
+          <div class="kpi kpi--good"><div class="kpi__l">กำไรสุทธิ เดือนนี้</div><div class="kpi__v">12,840 <small>฿</small></div></div>
+          <div class="kpi"><div class="kpi__l">ค่าโฆษณา เดือนนี้</div><div class="kpi__v">3,000 <small>฿</small></div></div>
+        </div>
+
+        <div class="panels">
+          <div class="panel">
+            <div class="panel__h"><span>ต้องทำวันนี้</span><span class="n">4</span></div>
+            <div class="row">
+              <div class="stack"><strong>เว็บอู่ช่างเอก</strong><span class="row__m">ส่ง 21 ส.ค. · แก้รอบ 2/2</span></div>
+              <span class="chip chip--us">กำลังทำ</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>เว็บคลินิกใจดี</strong><span class="row__m">ส่ง 22 ส.ค.</span></div>
+              <span class="chip chip--us">กำลังทำ</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>เว็บสวนยางพี่หนุ่ม</strong><span class="row__m">เลยกำหนด 2 วัน</span></div>
+              <span class="chip chip--late">แก้ไข</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>ร้านดอกไม้บุปผา</strong><span class="row__m">ส่ง 25 ส.ค.</span></div>
+              <span class="chip chip--us">กำลังทำ</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__h"><span>ต้องทวง</span><span class="n">3</span></div>
+            <div class="row">
+              <div class="stack"><strong>คุณนก · ร้านกาแฟบ้านสวน</strong><span class="row__m">ค้างรับ 12 วัน</span></div>
+              <span class="row__r" style="color:var(--crit)">฿490</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>เฮียตี๋ · ร้านอะไหล่</strong><span class="row__m">รอส่งรูปสินค้า 9 วัน</span></div>
+              <span class="chip chip--client">รอข้อมูล</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>คุณแอม · สปาบ้านทุ่ง</strong><span class="row__m">รอตรวจงาน 6 วัน</span></div>
+              <span class="chip chip--client">รอตรวจ</span>
+            </div>
+            <div class="row">
+              <div class="stack"><span class="row__m">รวมค้างรับทั้งหมด</span></div>
+              <span class="row__r">฿4,470</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panels">
+          <div class="panel">
+            <div class="panel__h"><span>ใกล้หมดอายุ</span><span class="n">30 วันข้างหน้า</span></div>
+            <div class="row">
+              <div class="stack"><strong>baansuancoffee.com</strong><span class="row__m">คุณนก · โดเมน + โฮสต์</span></div>
+              <span class="row__r" style="color:var(--crit)">อีก 6 วัน</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>changek-garage.com</strong><span class="row__m">ช่างเอก · โดเมน</span></div>
+              <span class="row__r" style="color:var(--warn)">อีก 19 วัน</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>jaidee-dental.com</strong><span class="row__m">หมอฟ้า · โฮสต์</span></div>
+              <span class="row__r">อีก 28 วัน</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__h"><span>โฆษณาเดือนนี้</span><span class="n">1–20 ส.ค.</span></div>
+            <div class="row">
+              <div class="stack"><strong>เว็บ 990 — ร้านค้า</strong><span class="row__m">฿1,800 · ทัก 68 · ปิด 14</span></div>
+              <span class="row__r" style="color:var(--accent)">CAC ฿129</span>
+            </div>
+            <div class="row">
+              <div class="stack"><strong>เว็บ 990 — บริการ</strong><span class="row__m">฿1,200 · ทัก 22 · ปิด 2</span></div>
+              <span class="row__r" style="color:var(--crit)">CAC ฿600</span>
+            </div>
+            <div class="row">
+              <div class="stack"><span class="row__m">แคมเปญ “บริการ” ทะลุเพดาน ฿300 — กำลังขายขาดทุน</span></div>
+              <span class="chip chip--late">เตือน</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <p style="font-size:.86rem;color:var(--muted);margin-top:.6rem">
+      หน้าแรก — หน้าเดียวที่ต้องเปิดตอนเช้า ตัวเลขในภาพเป็นตัวอย่าง</p>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ============================ §1 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§1</div>
+    <h2>ปัญหาจริง เรียงตามเงินที่เสียถ้าไม่แก้</h2>
+  </section>
+
+  <div class="wide grid2">
+    <div class="card">
+      <h3>1 · ไม่รู้กำไรจริง</h3>
+      <p>990 บาทเป็นราคาที่ไม่มีที่ว่างให้พลาด ค่าโฆษณาต่องานเพิ่ม 200 บาท
+      กำไรหายไปหนึ่งในสี่ทันที ถ้าไม่ผูกต้นทุนกับงานเป็นราย ๆ จะไม่มีวันรู้ว่า
+      เดือนที่ยิงโฆษณาหนักคือเดือนที่ได้งานเยอะ หรือเดือนที่ทำฟรี</p>
+    </div>
+    <div class="card">
+      <h3>2 · งานค้างโดยไม่มีใครตาม</h3>
+      <p>งานเว็บราคาถูกค้างที่จุดเดียวเสมอ: รอลูกค้าส่งข้อมูล งานแบบนี้ไม่ตาย
+      แต่ไม่จบ และไม่มีใครเห็นเพราะมันไม่ส่งเสียง ระบบต้องนับอายุของสถานะ
+      แล้วดันงานที่ค้างเกิน 7 วันขึ้นมาเอง</p>
+    </div>
+    <div class="card">
+      <h3>3 · ลืมต่ออายุโดเมน</h3>
+      <p>เว็บลูกค้าดับ = เสียชื่อ + เสียงานบอกต่อ + เสียรายได้ต่ออายุ
+      ซึ่งเป็นกำไรที่ดีที่สุดในโมเดลนี้ เพราะเก็บเงินได้โดยไม่ต้องจ่ายค่าโฆษณา
+      เพื่อให้ได้มา</p>
+    </div>
+    <div class="card">
+      <h3>4 · ตอบลูกค้าเก่าไม่ได้</h3>
+      <p>“พี่ครับ เว็บผมล็อกอินยังไงนะ” — ถ้าคำตอบอยู่ในแชท LINE เมื่อ 8 เดือนก่อน
+      นั่นคือเวลาที่หายไปฟรีทุกครั้งที่ถูกถาม</p>
+    </div>
+  </div>
+
+  <!-- ============================ §2 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§2</div>
+    <h2>หลักคิด — ทุกอย่างผูกกับ “งาน”</h2>
+  </section>
+
+  <p><strong>Job คือหน่วยเดียวที่มีครบทั้งลูกค้า สถานะ เงินเข้า เงินออก และเว็บที่ส่งมอบ</strong>
+  ทุกตารางในระบบมีไว้อธิบายงานใดงานหนึ่ง หรืออธิบายว่างานนั้นมาจากไหน</p>
+
+  <div class="wide">
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 980 292" role="img" aria-label="แผนภาพทางเดินของข้อมูล: ค่าโฆษณารายวันเชื่อมกับแคมเปญ แคมเปญเชื่อมกับคนที่ทักเข้ามา คนที่ปิดการขายกลายเป็นงาน และงานผูกกับเงินเข้า เงินออก ลูกค้า และเว็บที่ส่งมอบ">
+          <defs>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="currentColor"></path>
+            </marker>
+            <marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="var(--accent)"></path>
+            </marker>
+          </defs>
+
+          <g fill="none" stroke="var(--accent)" stroke-width="1.6">
+            <rect x="8"   y="118" width="120" height="46" rx="6"></rect>
+            <rect x="228" y="118" width="120" height="46" rx="6"></rect>
+            <rect x="448" y="118" width="120" height="46" rx="6"></rect>
+            <rect x="668" y="118" width="120" height="46" rx="6"></rect>
+          </g>
+          <g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".7">
+            <rect x="848" y="62"  width="120" height="42" rx="6"></rect>
+            <rect x="848" y="178" width="120" height="42" rx="6"></rect>
+            <rect x="448" y="232" width="120" height="42" rx="6"></rect>
+            <rect x="668" y="232" width="120" height="42" rx="6"></rect>
+          </g>
+
+          <g stroke="var(--accent)" stroke-width="1.6" fill="none" marker-end="url(#ara)">
+            <line x1="132" y1="141" x2="222" y2="141"></line>
+            <line x1="352" y1="141" x2="442" y2="141"></line>
+            <line x1="572" y1="141" x2="662" y2="141"></line>
+            <path d="M788,141 H818 V83 H842"></path>
+            <path d="M788,141 H818 V199 H842"></path>
+          </g>
+          <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar)" opacity=".65">
+            <path d="M508,232 V206 H700 V172"></path>
+            <path d="M740,164 V226"></path>
+          </g>
+
+          <g font-family="IBM Plex Mono, monospace" font-size="11.5" text-anchor="middle">
+            <g fill="var(--accent)">
+              <text x="68"  y="146">ad_spend_daily</text>
+              <text x="288" y="146">ad_campaigns</text>
+              <text x="508" y="146">leads</text>
+              <text x="728" y="146">jobs</text>
+            </g>
+            <g fill="currentColor">
+              <text x="908" y="88">payments</text>
+              <text x="908" y="204">expenses</text>
+              <text x="508" y="258">customers</text>
+              <text x="728" y="258">websites</text>
+            </g>
+          </g>
+
+          <g font-family="IBM Plex Sans Thai, sans-serif" font-size="11.5" fill="var(--muted)">
+            <g text-anchor="middle">
+              <text x="178" y="130">แยกตามแคมเปญ</text>
+              <text x="398" y="130">ref บอกที่มา</text>
+              <text x="618" y="130">ปิดการขาย</text>
+            </g>
+            <text x="908" y="54"  text-anchor="middle">เงินเข้า</text>
+            <text x="908" y="238" text-anchor="middle">เงินออก</text>
+            <text x="560" y="198">เจ้าของงาน</text>
+            <text x="748" y="200">ส่งมอบ</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>ทางเดินของค่าโฆษณา 1 บาท จนกลายเป็นตัวเลขกำไรของงาน — เส้นสีเขียวคือเส้นทางที่ต้องต่อให้ครบ
+      ถ้าขาดตอนไหนตอนหนึ่ง ตัวเลข CAC ใน §6 จะคำนวณไม่ได้</figcaption>
+    </figure>
+  </div>
+
+  <h3 style="margin-top:1.6rem">กฎเหล็ก 3 ข้อ</h3>
+  <ul class="plain">
+    <li><strong>ค่าใช้จ่ายทุกบาทต้องตอบได้ว่าเป็นของงานไหน</strong> ถ้าตอบไม่ได้ให้ลงเป็นค่าใช้จ่ายรวม
+    แล้วระบบปันส่วนให้เอง — แต่ต้องถูกบันทึก</li>
+    <li><strong>คนที่ทักมาต้องบันทึกทุกคน แม้จะไม่ซื้อ</strong> ถ้าบันทึกเฉพาะคนที่ซื้อ
+    ตัวหารของอัตราปิดการขายจะหายไป และค่าโฆษณาจะดูถูกกว่าความจริง</li>
+    <li><strong>ค่าโฆษณาเป็นต้นทุนของงาน ไม่ใช่ค่าใช้จ่ายลอย ๆ</strong> งานที่ปิดได้ต้องแบก
+    ค่าโฆษณาของคนที่ทักมาแล้วไม่ซื้อด้วย นั่นคือต้นทุนจริงของการได้ลูกค้า 1 คน</li>
+  </ul>
+
+  <!-- ============================ §3 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§3</div>
+    <h2>ฐานข้อมูล 11 ตาราง</h2>
+  </section>
+
+  <div class="wide">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>ตาราง</th><th>เก็บอะไร</th><th>ทำไมต้องมี</th></tr></thead>
+        <tbody>
+          <tr><td><code>customers</code></td><td>ชื่อ ชื่อร้าน เบอร์ LINE ลิงก์ FB ที่อยู่ เลขผู้เสียภาษี</td><td>ลูกค้า 1 คนมีได้หลายงาน แยกไว้เพื่อดูมูลค่ารวมต่อคน</td></tr>
+          <tr><td><code>leads</code></td><td>คนที่ทักมา ช่องทาง แคมเปญที่พามา สถานะ เหตุผลที่ไม่ซื้อ</td><td>ตัวหารของอัตราปิดการขาย และสะพานเดียวที่เชื่อมค่าโฆษณาเข้ากับรายได้</td></tr>
+          <tr><td><code>jobs</code></td><td>งาน 1 ชิ้น: แพ็กเกจ ราคาขาย สถานะ กำหนดส่ง รอบแก้</td><td>แกนกลางของทุกอย่าง</td></tr>
+          <tr><td><code>job_tasks</code></td><td>เช็กลิสต์ย่อย สร้างจาก template ตอนเปิดงาน</td><td>ทำให้ “เสร็จ 60%” เป็นตัวเลขจริง ไม่ใช่ความรู้สึก</td></tr>
+          <tr><td><code>websites</code></td><td>โดเมน URL ผู้ให้บริการ วันหมดอายุ ค่าต่ออายุ ที่อยู่ของรหัสผ่าน</td><td>หัวใจของหน้าต่ออายุ และของการตอบลูกค้าเก่า</td></tr>
+          <tr><td><code>payments</code></td><td>เงินเข้า: มัดจำ / งวด / เต็มจำนวน / ค่าต่ออายุ + สลิป</td><td>ยอดค้างรับ = ราคาขาย − ที่รับมาแล้ว</td></tr>
+          <tr><td><code>expenses</code></td><td>เงินออก: โดเมน โฮสต์ ธีม ปลั๊กอิน จ้างช่วง ค่าธรรมเนียม</td><td>ผูกกับงานได้ หรือเป็นค่าใช้จ่ายรวมก็ได้</td></tr>
+          <tr><td><code>ad_campaigns</code></td><td>แคมเปญบนเพจ + รหัสอ้างอิงสำหรับติดตาม</td><td>ตอบได้ว่าแคมเปญไหนได้ลูกค้าจริง ไม่ใช่แค่ได้ยอดวิว</td></tr>
+          <tr><td><code>ad_spend_daily</code></td><td>ค่าโฆษณาต่อวันต่อแคมเปญ + ยอดคนทัก</td><td>หน้าตาเหมือนกันหมดไม่ว่าจะกรอกมือหรือดึงจาก API</td></tr>
+          <tr><td><code>notes</code></td><td>บันทึก + ไฟล์แนบ ผูกกับลูกค้าหรืองาน</td><td>ที่เก็บ “ลูกค้าขอเปลี่ยนสีเป็นเขียว” ที่ไม่ใช่แชท</td></tr>
+          <tr><td><code>activity_log</code></td><td>ใครเปลี่ยนอะไรเมื่อไหร่</td><td>ย้อนดูได้ว่างานนี้ค้างมาตั้งแต่เมื่อไหร่</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <h3 style="margin-top:1.6rem">จุดที่ต้องระวัง</h3>
+  <ul class="plain">
+    <li><code>leads</code> แยกจาก <code>jobs</code> โดยตั้งใจ — ทักมา 5 ปิดได้ 1
+    ถ้ายุบเป็นตารางเดียวจะเหลือ 1 แถว และ 4 แถวที่หายไปคือข้อมูลที่แพงที่สุดที่มี</li>
+    <li><code>websites</code> แยกจาก <code>jobs</code> — เว็บ 1 เว็บอยู่ได้หลายปีและมีหลายงานตามมา
+    (ทำครั้งแรก 990 → แก้เพิ่ม 500 → ต่ออายุปีละ 990) ทั้งหมดผูกกับเว็บเดิม</li>
+    <li><code>job_tasks</code> สร้างจาก template เสมอ — งาน 990 ต้องเปิดงานได้ใน 30 วินาที</li>
+    <li><strong>ห้ามเก็บรหัสผ่านลูกค้าเป็นข้อความธรรมดา</strong> — เก็บแค่ว่าอยู่ที่ไหน ดู §11</li>
+  </ul>
+
+  <!-- ============================ §4 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§4</div>
+    <h2>สถานะ — และกติกาที่ทำให้มันมีประโยชน์</h2>
+  </section>
+
+  <div class="wide">
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 1000 156" role="img" aria-label="เส้นทางสถานะของงาน 7 ขั้น โดยสามขั้นคือรอลูกค้าและต้องทวง อีกสองขั้นคือรอเราและต้องลงมือทำ">
+          <defs>
+            <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="currentColor"></path>
+            </marker>
+          </defs>
+          <g font-family="IBM Plex Sans Thai, sans-serif">
+            <g font-size="12">
+              <g>
+                <rect x="5"   y="42" width="120" height="52" rx="6" fill="var(--warn-tint)"  stroke="var(--warn)"   stroke-width="1.3"></rect>
+                <rect x="150" y="42" width="120" height="52" rx="6" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.3"></rect>
+                <rect x="295" y="42" width="120" height="52" rx="6" fill="var(--warn-tint)"  stroke="var(--warn)"   stroke-width="1.3"></rect>
+                <rect x="440" y="42" width="120" height="52" rx="6" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.3"></rect>
+                <rect x="585" y="42" width="120" height="52" rx="6" fill="var(--warn-tint)"  stroke="var(--warn)"   stroke-width="1.3"></rect>
+                <rect x="730" y="42" width="120" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".55"></rect>
+                <rect x="875" y="42" width="120" height="52" rx="6" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".55"></rect>
+              </g>
+              <g text-anchor="middle" fill="var(--ink)">
+                <text x="65"  y="64">รอข้อมูล</text><text x="65"  y="81">ลูกค้า</text>
+                <text x="210" y="73">กำลังทำ</text>
+                <text x="355" y="64">รอลูกค้า</text><text x="355" y="81">ตรวจ</text>
+                <text x="500" y="73">แก้ไข</text>
+                <text x="645" y="64">รอชำระ</text><text x="645" y="81">ส่วนที่เหลือ</text>
+                <text x="790" y="73">ส่งมอบแล้ว</text>
+                <text x="935" y="73">ดูแลอยู่</text>
+              </g>
+            </g>
+            <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#ar2)" opacity=".6">
+              <line x1="125" y1="68" x2="144" y2="68"></line>
+              <line x1="270" y1="68" x2="289" y2="68"></line>
+              <line x1="415" y1="68" x2="434" y2="68"></line>
+              <line x1="560" y1="68" x2="579" y2="68"></line>
+              <line x1="705" y1="68" x2="724" y2="68"></line>
+              <line x1="850" y1="68" x2="869" y2="68"></line>
+            </g>
+            <g font-size="11.5" text-anchor="middle">
+              <g fill="var(--warn)">
+                <text x="65"  y="116">→ ต้องทวง</text>
+                <text x="355" y="116">→ ต้องทวง</text>
+                <text x="645" y="116">→ ต้องทวง</text>
+              </g>
+              <g fill="var(--accent)">
+                <text x="210" y="116">→ ต้องทำ</text>
+                <text x="500" y="116">→ ต้องทำ</text>
+              </g>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="lgd">
+        <span><i class="sw" style="background:var(--warn-tint);border:1px solid var(--warn)"></i>รอลูกค้า — ต้องทวง</span>
+        <span><i class="sw" style="background:var(--accent-tint);border:1px solid var(--accent)"></i>รอเรา — ต้องทำ</span>
+        <span><i class="sw" style="background:transparent;border:1px solid var(--border)"></i>ไม่รอใคร</span>
+      </div>
+      <figcaption>สถานะที่รอลูกค้ากับสถานะที่รอเรา คือคนละงานกันคนละอารมณ์ — สามในเจ็ดขั้นเป็นการทวง ไม่ใช่การทำ</figcaption>
+    </figure>
+  </div>
+
+  <div class="callout" style="margin-top:1.4rem">
+    <p><strong>กติกาที่สำคัญที่สุดในเอกสารนี้:</strong> ทุกสถานะต้องติดธงว่ารออยู่ที่ฝั่งไหน
+    และหน้าแรกต้องมีสองกล่องแยกกันเสมอ — “ต้องทำ” กับ “ต้องทวง”
+    ถ้ารวมกันเป็นกองเดียว จะไม่มีอันไหนถูกทำ</p>
+  </div>
+
+  <div class="wide" style="margin-top:1.1rem">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>สถานะ</th><th>รออยู่ที่</th><th>ถ้าค้างนาน แปลว่า</th></tr></thead>
+        <tbody>
+          <tr><td>รอข้อมูลลูกค้า</td><td><span class="chip chip--client">ลูกค้า</span></td><td>ต้องทวง ไม่ใช่ต้องทำ</td></tr>
+          <tr><td>กำลังทำ</td><td><span class="chip chip--us">เรา</span></td><td>เรารับงานเกินตัว</td></tr>
+          <tr><td>รอลูกค้าตรวจ</td><td><span class="chip chip--client">ลูกค้า</span></td><td>ต้องทวง</td></tr>
+          <tr><td>แก้ไข</td><td><span class="chip chip--us">เรา</span></td><td>อาจกำลังโดนแก้ไม่จบ</td></tr>
+          <tr><td>รอชำระส่วนที่เหลือ</td><td><span class="chip chip--client">ลูกค้า</span></td><td>ต้องทวงเงิน — เร่งด่วนที่สุด</td></tr>
+          <tr><td>ส่งมอบแล้ว / ดูแลอยู่</td><td><span class="chip chip--done">ไม่รอใคร</span></td><td>เข้าคิวต่ออายุปีหน้า</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p style="margin-top:1.1rem">กติกาอื่นที่ต้องบังคับในระบบ: เปลี่ยนสถานะทุกครั้งต้องบันทึกเวลาเพื่อคำนวณอายุ ·
+  เข้าสถานะ “ปิดการขาย” ต้องสร้างงานให้อัตโนมัติ ไม่ต้องกรอกซ้ำ ·
+  เข้าสถานะ “ส่งมอบแล้ว” ต้องมีเว็บผูกอยู่ก่อน มิฉะนั้นเว็บนั้นจะหลุดจากระบบต่ออายุตลอดไป</p>
+
+  <!-- ============================ §5 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§5</div>
+    <h2>แปดหน้าจอ</h2>
+  </section>
+
+  <div class="wide grid3">
+    <div class="card"><h3>1 · วันนี้</h3><p>บอกว่าวันนี้ต้องทำอะไร ไม่ใช่โชว์กราฟสวย ๆ
+      หกตัวเลขบนสุด · รายการต้องทำ · รายการต้องทวง · แถบใกล้หมดอายุ</p></div>
+    <div class="card"><h3>2 · บอร์ดงาน</h3><p>คอลัมน์ตามสถานะ ลากเปลี่ยนได้ การ์ดเห็นชื่อลูกค้า
+      แพ็ก กำหนดส่ง ยอดค้างรับ และจำนวนวันที่ค้างในสถานะนั้น</p></div>
+    <div class="card"><h3>3 · รายละเอียดงาน</h3><p>หน้าที่ใช้บ่อยที่สุด ทุกอย่างของงานนี้ในหน้าเดียว
+      รวมกล่องการเงินที่คิดกำไรของงานนั้นให้เห็นตรงนั้นเลย</p></div>
+    <div class="card"><h3>4 · ลูกค้า</h3><p>ประวัติงานทั้งหมด มูลค่ารวมที่จ่ายมาแล้ว
+      เว็บที่ถืออยู่ และวันครบกำหนดต่ออายุครั้งถัดไป</p></div>
+    <div class="card"><h3>5 · การเงิน</h3><p>รายรับ/รายจ่าย/กำไรรายเดือน · ค้างรับ ·
+      ค่าใช้จ่ายแยกประเภท · ปุ่มส่งออก CSV สำหรับยื่นภาษี</p></div>
+    <div class="card"><h3>6 · โฆษณา</h3><p>ค่าโฆษณา คนทัก และงานที่ปิดได้ในกราฟเดียวกัน
+      ตารางรายแคมเปญพร้อม CPL / CAC / ROAS และเตือนเมื่อ CAC ทะลุเพดาน</p></div>
+    <div class="card"><h3>7 · ต่ออายุ</h3><p>โดเมนและโฮสต์ทั้งหมดเรียงตามวันหมดอายุ พร้อมต้นทุน
+      ราคาที่จะเก็บ และกำไร — หน้าที่สร้างรายได้มากที่สุดต่อเวลาที่ใช้</p></div>
+    <div class="card"><h3>8 · รายงาน</h3><p>สรุปรายเดือน/ไตรมาส: จำนวนงาน รายรับ ต้นทุน กำไรสุทธิ
+      อัตราปิดการขาย CAC เฉลี่ย และกำไรต่อชั่วโมง</p></div>
+  </div>
+
+  <!-- ============================ §6 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§6</div>
+    <h2>ตัวเลขที่ระบบต้องคิดให้</h2>
+  </section>
+
+  <p>สมมติ: ค่าโฆษณา 3,000 บาท/เดือน มีคนทัก 100 คน ปิดได้ 20 งาน
+  ใส่ตัวเลขจริงของคุณแทนได้ทั้งหมด</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>ต่อ 1 งาน</th><th class="n">บาท</th></tr></thead>
+      <tbody>
+        <tr><td>ราคาขาย</td><td class="n">990</td></tr>
+        <tr><td>− ธีม / ปลั๊กอิน / รูป เฉลี่ย</td><td class="n">−60</td></tr>
+        <tr><td>− ค่าธรรมเนียมรับเงิน</td><td class="n">−10</td></tr>
+        <tr><td>− ค่าโฆษณาปันส่วน <span style="color:var(--muted)">(3,000 ÷ 20)</span></td><td class="n">−150</td></tr>
+        <tr class="tot"><td>กำไรสุทธิ</td><td class="n">770</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:1rem"><span class="num">CPL = 30 ฿</span> ·
+  <span class="num">CAC = 150 ฿</span> ·
+  <span class="num">อัตราปิด = 20%</span> ·
+  ถ้าใช้เวลา 5 ชม./งาน = <span class="num">154 ฿/ชม.</span></p>
+
+  <div class="wide" style="margin-top:1.4rem">
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 760 196" role="img" aria-label="เปรียบเทียบว่าเงิน 990 บาทถูกแบ่งอย่างไร เมื่อต้นทุนโฆษณาต่องานเท่ากับ 150 บาท เหลือกำไร 770 บาท และเมื่อขึ้นเป็น 600 บาท เหลือกำไร 320 บาท">
+          <g font-family="IBM Plex Sans Thai, sans-serif">
+            <text x="8" y="26" font-size="12.5" fill="var(--muted)">ค่าโฆษณาปกติ · CAC ฿150</text>
+            <rect x="8"     y="36" width="575.6" height="34" rx="4" fill="var(--accent)"></rect>
+            <rect x="585.6" y="36" width="112.1" height="34" rx="4" fill="var(--crit)"></rect>
+            <rect x="699.7" y="36" width="52.3"  height="34" rx="4" fill="var(--neutral-fill)"></rect>
+            <text x="22"  y="58" font-size="13" fill="var(--on-accent)">กำไรสุทธิ ฿770</text>
+            <text x="641" y="58" font-size="12" fill="var(--on-crit)" text-anchor="middle">฿150</text>
+
+            <text x="8" y="106" font-size="12.5" fill="var(--muted)">โฆษณาแพงขึ้น · CAC ฿600</text>
+            <rect x="8"     y="116" width="239.2" height="34" rx="4" fill="var(--accent)"></rect>
+            <rect x="249.2" y="116" width="448.5" height="34" rx="4" fill="var(--crit)"></rect>
+            <rect x="699.7" y="116" width="52.3"  height="34" rx="4" fill="var(--neutral-fill)"></rect>
+            <text x="22"  y="138" font-size="13" fill="var(--on-accent)">กำไรสุทธิ ฿320</text>
+            <text x="473" y="138" font-size="13" fill="var(--on-crit)" text-anchor="middle">ค่าโฆษณาปันส่วน ฿600</text>
+
+            <g font-size="11.5" fill="var(--muted)">
+              <text x="752" y="182" text-anchor="end">แท่งทั้งสองยาวเท่ากัน = ราคาขาย ฿990</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <div class="lgd">
+        <span><i class="sw" style="background:var(--accent)"></i>กำไรสุทธิ</span>
+        <span><i class="sw" style="background:var(--crit)"></i>ค่าโฆษณาปันส่วน</span>
+        <span><i class="sw" style="background:var(--neutral-fill)"></i>ต้นทุนตรง ฿70</span>
+      </div>
+      <figcaption>ราคา 990 เท่าเดิมทั้งสองแท่ง — สิ่งเดียวที่เปลี่ยนคือต้นทุนโฆษณาต่องาน
+      และมันกินกำไรไปเกินครึ่ง</figcaption>
+    </figure>
+  </div>
+
+  <div class="callout callout--warn" style="margin-top:1.4rem">
+    <p><strong>เส้นตายที่ระบบต้องเฝ้าให้:</strong> ถ้า CPL ขึ้นจาก 30 เป็น 60 บาท
+    (เกิดขึ้นง่ายมากเวลามีคนยิงแข่ง) และอัตราปิดตกจาก 20% เหลือ 10% พร้อมกัน
+    CAC จะกลายเป็น 600 และเหลือกำไร 320 บาท คือ <span class="num">64 ฿/ชม.</span>
+    <br><br>ให้ตั้งเพดาน CAC ไว้ที่ <span class="num">300 บาท</span> (ประมาณหนึ่งในสามของกำไรขั้นต้น)
+    แล้วเตือนทันทีที่ทะลุ นี่คือฟีเจอร์ที่คุ้มที่สุดในระบบทั้งหมด</p>
+  </div>
+
+  <h3 style="margin-top:1.8rem">ตัวเลขที่จะเปลี่ยนธุรกิจนี้จริง ๆ: รายได้ต่ออายุ</h3>
+  <p>งานใหม่ 1 งาน = กำไร ~770 บาท และต้องจ่ายค่าโฆษณาเพื่อให้ได้มา
+  ค่าต่ออายุ 1 เว็บ = <strong>กำไรเกือบเต็ม และไม่ต้องจ่ายค่าโฆษณาเลย</strong></p>
+  <p>ถ้าเก็บปีละ 590 บาทโดยมีต้นทุนโดเมนจริง 450 บาท เหลือกำไร 140 บาท — ยังน้อยเกินไป
+  <strong>ราคาต่ออายุคือสิ่งที่ควรพิจารณาขึ้นก่อนราคางานใหม่</strong> เช่น 990 บาท/ปี
+  (ดูแล + ต่ออายุ + แก้ข้อความให้ปีละ 2 ครั้ง) จะได้กำไรราว 540 บาท/เว็บ/ปี
+  ที่ 50 เว็บคือ <span class="num">27,000 บาท/ปี ที่ไม่ต้องยิงโฆษณาเพื่อให้ได้มา</span>
+  ระบบต้องทำให้ตัวเลขนี้เห็นบนหน้าแรก มิฉะนั้นมันจะถูกลืมทุกปี</p>
+
+  <!-- ============================ §7 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§7</div>
+    <h2>เชื่อมกับเพจที่ยิงโฆษณา</h2>
+  </section>
+
+  <p>เป้าหมายมีสองอย่าง: <strong>ดึงค่าโฆษณาเข้ามาเป็นต้นทุนอัตโนมัติ</strong> และ
+  <strong>รู้ว่าลูกค้าคนนี้มาจากแคมเปญไหน</strong> — ทำเป็นสองระดับ และออกแบบให้เปลี่ยนระดับได้
+  โดยไม่ต้องแก้หน้าจอ เพราะตาราง <code>ad_spend_daily</code> มีหน้าตาเดียว ต่างกันแค่คอลัมน์
+  <code>source</code></p>
+
+  <div class="wide grid2">
+    <div class="card">
+      <h3>ระดับ 1 — นำเข้าเอง <span class="chip chip--us" style="vertical-align:middle">เริ่มด้วยอันนี้</span></h3>
+      <p>ที่ Meta Ads Manager กดส่งออกรายงานเป็น CSV แล้วอัปโหลดสัปดาห์ละครั้ง
+      ใช้เวลาจริงราว 5 นาที ได้ตัวเลขครบทุกตัวใน §6 ทันที
+      <strong>โดยไม่ต้องรออนุมัติอะไรจาก Meta เลย</strong></p>
+    </div>
+    <div class="card">
+      <h3>ระดับ 2 — ต่อ API</h3>
+      <p>Meta Marketing API ที่ <code>act_&lt;id&gt;/insights</code> ดึง spend, impressions,
+      clicks, actions รายวันรายแคมเปญ ต้องมี Meta app, System User token, สิทธิ์
+      <code>ads_read</code> และบัญชีธุรกิจที่ผ่าน Business verification —
+      งานเขียนไม่ยาก แต่<strong>ขั้นตอนอนุมัติกินเวลาเป็นสัปดาห์</strong> จึงไม่ควรเอามาขวางการเริ่มใช้</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:1.6rem">รู้ว่าลูกค้ามาจากแคมเปญไหน</h3>
+  <ul class="plain">
+    <li><strong>ใส่รหัสอ้างอิงในลิงก์โฆษณา</strong> — ใช้ <code>m.me/&lt;เพจ&gt;?ref=camp_a1</code>
+    เป็นปลายทางของโฆษณาแต่ละตัว เมื่อคนกดทัก Messenger จะส่งค่า <code>ref</code> มาด้วย
+    ผูกคนทักกับแคมเปญได้ตรง ๆ (ต้องต่อ webhook ของเพจ ซึ่งต้องขอสิทธิ์
+    <code>pages_messaging</code> และผ่าน App Review)</li>
+    <li><strong>วิธีที่ใช้ได้ตั้งแต่วันแรก</strong> — ตอนบันทึกคนทัก ให้เลือกแคมเปญจาก dropdown เอง 1 คลิก
+    ตอนมี 5–10 คนทักต่อวัน นี่เร็วกว่ารอ App Review หลายสัปดาห์ และได้ข้อมูลคุณภาพเท่ากัน</li>
+    <li><strong>ถ้าใช้ Lead Ads</strong> จะง่ายกว่ามาก — ดาวน์โหลด CSV ที่มี campaign id ติดมาแล้ว
+    หรือต่อ webhook <code>leadgen</code> (ต้องสิทธิ์ <code>leads_retrieval</code>)</li>
+  </ul>
+
+  <p style="margin-top:1rem;font-size:.93rem;color:var(--muted)">ข้อควรรู้: ตัวเลข “ผลลัพธ์” ใน Ads Manager
+  กับจำนวนคนที่ทักจริงมักไม่ตรงกัน — ให้ยึดตัวเลขที่บันทึกในระบบเราเป็นหลัก ·
+  ค่าโฆษณาที่ Meta รายงานยังไม่รวม VAT ในบางบัญชี ให้ตรวจกับใบเสร็จจริงเดือนละครั้ง ·
+  อย่าเก็บ access token ไว้ในโค้ด ใช้ตัวแปรสภาพแวดล้อมเท่านั้น</p>
+
+  <!-- ============================ §8 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§8</div>
+    <h2>แจ้งเตือน</h2>
+  </section>
+
+  <p>เตือนน้อย ๆ แต่ตรงจุด ถ้าเตือนบ่อยเกินจะถูกปิดภายในสัปดาห์เดียว</p>
+
+  <div class="wide">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>เตือนเมื่อ</th><th>เวลา</th><th>ความสำคัญ</th></tr></thead>
+        <tbody>
+          <tr><td>โดเมน/โฮสต์เหลือ 30 / 14 / 7 / 1 วัน</td><td>09:00 ทุกวัน</td><td><span class="chip chip--late">สูงสุด</span></td></tr>
+          <tr><td>งานเลยกำหนดส่ง</td><td>09:00 ทุกวัน</td><td><span class="chip chip--late">สูง</span></td></tr>
+          <tr><td>ยอดค้างรับเกิน 14 วัน</td><td>จันทร์ 09:00</td><td><span class="chip chip--late">สูง</span></td></tr>
+          <tr><td>CAC ทะลุเพดาน</td><td>ตอนคำนวณรายวัน</td><td><span class="chip chip--late">สูง</span></td></tr>
+          <tr><td>งานค้างที่ลูกค้าเกิน 7 วัน</td><td>จันทร์ 09:00</td><td><span class="chip chip--client">กลาง</span></td></tr>
+          <tr><td>สรุปสัปดาห์ (งาน / เงิน / โฆษณา)</td><td>อาทิตย์ 20:00</td><td><span class="chip chip--done">ต่ำ</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p style="margin-top:1rem"><strong>ช่องทาง:</strong> ใช้ LINE Messaging API ผ่าน LINE Official Account
+  ส่งข้อความหาตัวเอง — <strong>LINE Notify ปิดบริการไปแล้วเมื่อ มี.ค. 2025 อย่าออกแบบโดยอิงมัน</strong>
+  ถ้าอยากได้เร็วกว่านั้น Telegram Bot ตั้งค่าเสร็จใน 10 นาทีและฟรี เหมาะกับเฟสแรกมาก
+  แล้วค่อยย้ายไป LINE ทีหลัง</p>
+
+  <!-- ============================ §9 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§9</div>
+    <h2>ใช้อะไรสร้าง</h2>
+  </section>
+
+  <p><strong>คำแนะนำตรง ๆ: Next.js + Supabase + Vercel</strong> — ค่าใช้จ่ายจริง
+  <span class="num">0 บาท/เดือน</span> จนกว่าจะมีข้อมูลหลายพันรายการ ซึ่งจะไม่ถึงในเร็ว ๆ นี้</p>
+
+  <div class="wide">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>ส่วน</th><th>ใช้อะไร</th><th>เหตุผล</th></tr></thead>
+        <tbody>
+          <tr><td>หน้าเว็บ</td><td>Next.js (App Router) + TypeScript</td><td>เปิดบนมือถือได้ดี ทำเป็น PWA เพิ่มลงจอโฮมได้</td></tr>
+          <tr><td>หน้าตา</td><td>Tailwind CSS + shadcn/ui</td><td>ตารางกับฟอร์มสำเร็จรูป ไม่ต้องเขียนเอง</td></tr>
+          <tr><td>กราฟ</td><td>Recharts</td><td>พอสำหรับทุกกราฟใน §5</td></tr>
+          <tr><td>ฐานข้อมูล</td><td>Supabase (PostgreSQL)</td><td>ฟรีจนกว่าจะโตจริง มี Auth และที่เก็บไฟล์มาให้ในตัว</td></tr>
+          <tr><td>ล็อกอิน</td><td>Supabase Auth</td><td>คนเดียวก็ต้องมี ห้ามเปิดระบบทิ้งไว้ให้ใครก็เข้าได้</td></tr>
+          <tr><td>ไฟล์แนบ / สลิป</td><td>Supabase Storage</td><td>ผูกสิทธิ์กับ Auth ได้เลย</td></tr>
+          <tr><td>งานตามเวลา</td><td>Vercel Cron</td><td>ใช้ยิงแจ้งเตือนใน §8</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p style="margin-top:1.1rem"><strong>ทางเลือกที่เร็วกว่าถ้าไม่อยากเขียนโค้ดเลย:</strong>
+  Google Sheets + Looker Studio ทำได้ราว 70% ของเอกสารนี้ภายในวันเดียว
+  แต่จะติดที่เดิมเสมอ — การปันส่วนค่าโฆษณาลงรายงาน การแจ้งเตือนต่ออายุ และการแนบไฟล์
+  ทำได้ยากและพังง่ายเมื่อข้อมูลโต ถ้าตั้งใจทำต่อเนื่องเกิน 6 เดือน ให้เขียนเป็นระบบจริงตั้งแต่แรก</p>
+
+  <!-- ============================ §10 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§10</div>
+    <h2>แผนสร้าง — เฟสต่อเฟส</h2>
+  </section>
+
+  <p>แต่ละเฟสจบแล้วต้องใช้งานได้จริง ไม่ใช่รอจนครบทุกอย่างแล้วค่อยเปิดใช้</p>
+
+  <ol class="phases">
+    <li><b>เลิกใช้ความจำ</b> <span style="color:var(--muted)">· 2–3 วัน</span><br>
+      ลูกค้า · งาน · สถานะ · เงินเข้า · เงินออก · บอร์ด Kanban · หน้ารายละเอียดงาน
+      <span class="gate"><b>ผ่านเมื่อ:</b> ย้ายงานที่ค้างอยู่ตอนนี้เข้าระบบครบ และปิดแชทที่เคยใช้จดได้</span></li>
+    <li><b>เห็นเงิน</b> <span style="color:var(--muted)">· 2 วัน</span><br>
+      เช็กลิสต์จาก template · ไฟล์แนบ · ยอดค้างรับ · หน้าการเงิน + กราฟรายเดือน
+      <span class="gate"><b>ผ่านเมื่อ:</b> ตอบได้ว่าเดือนที่แล้วกำไรเท่าไหร่ โดยไม่ต้องเปิด Excel</span></li>
+    <li><b>ไม่ลืมต่ออายุ</b> <span style="color:var(--muted)">· 1 วัน</span><br>
+      ตารางเว็บ · หน้าต่ออายุ · แจ้งเตือน 30/14/7/1 วัน
+      <span class="gate"><b>ผ่านเมื่อ:</b> มีเว็บสักตัวถูกเตือนล่วงหน้าและต่อทันจากการเตือนนั้น</span></li>
+    <li><b>รู้ต้นทุนโฆษณา</b> <span style="color:var(--muted)">· 2 วัน</span><br>
+      คนที่ทักมา · แคมเปญ · นำเข้า CSV ค่าโฆษณา · CPL / CAC / ROAS · เตือนเมื่อทะลุเพดาน
+      <span class="gate"><b>ผ่านเมื่อ:</b> บอกได้ว่าแคมเปญไหนกำไร แคมเปญไหนขาดทุน</span></li>
+    <li><b>อัตโนมัติ</b> <span style="color:var(--muted)">· เมื่อ Meta อนุมัติ</span><br>
+      ดึงค่าโฆษณาผ่าน Marketing API · webhook รับคนทักจากเพจ</li>
+    <li><b>ดูเป็นมืออาชีพ</b><br>
+      ใบเสนอราคา/ใบเสร็จ PDF · ลิงก์ให้ลูกค้าเปิดดูสถานะงานตัวเอง · สรุปรายไตรมาสสำหรับยื่นภาษี</li>
+  </ol>
+
+  <div class="callout" style="margin-top:1.2rem">
+    <p>ทำเฟส 1–4 ให้จบก่อนเฟส 5 — ประโยชน์ 90% อยู่ในสี่เฟสแรก และไม่ต้องรอใครอนุมัติ</p>
+  </div>
+
+  <!-- ============================ §11 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§11</div>
+    <h2>ความปลอดภัยและข้อมูลส่วนบุคคล</h2>
+  </section>
+
+  <ul class="plain">
+    <li><strong>รหัสผ่านของลูกค้า</strong> (WordPress admin, cPanel, ผู้ให้บริการโดเมน) —
+    ทางที่ดีที่สุดคือ<strong>ไม่เก็บเลย</strong> เก็บแค่ว่า “อยู่ใน Bitwarden ชื่อรายการ X”
+    ปลอดภัยที่สุดและฟรี ถ้าจำเป็นต้องเก็บจริง ใช้ <code>pgcrypto</code> เข้ารหัสด้วยคีย์ที่อยู่ใน
+    environment variable ไม่ใช่ในฐานข้อมูล</li>
+    <li><strong>PDPA</strong> — ชื่อ เบอร์ ที่อยู่ ลิงก์เฟซบุ๊กของลูกค้าคือข้อมูลส่วนบุคคลตามกฎหมาย
+    เก็บเท่าที่จำเป็น มีปุ่มลบได้จริง และอย่าส่งออกไปบริการภายนอกโดยไม่จำเป็น</li>
+    <li><strong>สำรองข้อมูล</strong> — Supabase สำรองให้อยู่แล้ว แต่ให้ตั้ง export ออกมาเก็บนอกระบบ
+    เดือนละครั้งด้วย ระบบนี้จะกลายเป็นที่เดียวที่มีข้อมูลลูกค้าทั้งหมด</li>
+    <li><strong>ภาษี</strong> — บันทึกรายรับให้ครบตั้งแต่วันแรก การมีข้อมูลครบทำให้เลือกหักค่าใช้จ่าย
+    ตามจริงได้ ซึ่งมักได้เปรียบกว่าหักเหมาเมื่อมีค่าโฆษณาสูง</li>
+  </ul>
+
+  <!-- ============================ §12 ============================ -->
+  <section class="sec">
+    <div class="eyebrow">§12</div>
+    <h2>สิ่งที่คนมักลืม</h2>
+  </section>
+
+  <div class="wide grid3">
+    <div class="card"><h3>ไม่ปันส่วนค่าโฆษณา</h3><p>เห็นกำไรเกินจริงทุกเดือน จนวันที่เงินไม่พอถึงรู้ตัว</p></div>
+    <div class="card"><h3>ไม่บันทึกคนที่ไม่ซื้อ</h3><p>ไม่มีอัตราปิดการขาย ปรับโฆษณาแบบเดา ๆ ตลอดไป</p></div>
+    <div class="card"><h3>ไม่จำกัดรอบแก้</h3><p>งาน 990 ที่แก้ 8 รอบคืองานที่ขาดทุน ให้มีช่อง “รอบแก้ที่ใช้ไป / ที่รวมในแพ็ก” บนการ์ดงาน</p></div>
+    <div class="card"><h3>ไม่บันทึกเวลาที่ใช้</h3><p>ไม่รู้ว่าควรขึ้นราคาเมื่อไหร่ ไม่ต้องจับละเอียด แค่ประมาณเป็นชั่วโมงตอนปิดงานก็พอ</p></div>
+    <div class="card"><h3>ลืมว่าโดเมนเป็นภาระผูกพัน</h3><p>เว็บดับพร้อมกัน 5 เว็บในเดือนเดียวเกิดขึ้นได้จริง</p></div>
+    <div class="card"><h3>ทำระบบใหญ่เกินก่อนใช้จริง</h3><p>เฟส 1 ต้องเสร็จใน 3 วัน ถ้าเกินกว่านั้นแปลว่ากำลังสร้างของที่ไม่ได้ใช้</p></div>
+  </div>
+
+  <hr class="rule">
+  <footer class="end">
+    <p>เอกสารฉบับเต็มและโครงฐานข้อมูลที่รันได้อยู่ในโฟลเดอร์ <code>jobdesk/</code> ของ repo —
+    <code>README.md</code> (เอกสารนี้ในรูปแบบข้อความ) และ <code>schema.sql</code>
+    (PostgreSQL ทดสอบรันแล้ว)</p>
+  </footer>
+
+</div>
