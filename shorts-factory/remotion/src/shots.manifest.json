@@ -152,6 +152,14 @@
   "transparent": false
  },
  {
+  "id": "Vox14Trichoderma",
+  "durationInSeconds": 465,
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "transparent": false
+ },
+ {
   "id": "Vox2ThaiRice",
   "durationInSeconds": 44,
   "fps": 30,

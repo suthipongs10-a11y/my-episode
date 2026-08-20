@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold horizontal YouTube thumbnail, 1920x1080 landscape, very dark navy blue background\n(#0e1a24) filling the whole frame edge to edge with a faint thin blueprint grid. Flat\ntechnical drawing style. No border, no frame, no second background colour.\n\nLEFT HALF: large Thai headline in warm off-white, heavy geometric sans-serif, stacked on\nexactly two lines, perfectly spelled, reading exactly:\nขยายเชื้อเอง\nถุงไหนใช้ได้ ถุงไหนทิ้ง\nDirectly below the headline, one short line of muted grey-blue Thai text on ONE line,\nperfectly spelled, much smaller: ไตรโคเดอร์มา 5 ขั้น\n\nRIGHT HALF: exactly two large plain flat-colour rounded squares side by side, each about a\nthird of the image height, with a clear gap between them. The LEFT square is a flat olive\ngreen (#7d9440). The RIGHT square is a flat near-black charcoal (#26241f) with a thin grey\noutline so it is visible against the navy. They are plain solid colour swatches — NOT\nphotographs, NOT textured, NOT petri dishes, NOT microscope images, nothing growing on them.\nUnder the green square, one short Thai word in bright green, perfectly spelled: ใช้ได้\nUnder the dark square, one short Thai word in warm red, perfectly spelled: ทิ้ง\n\nFlat solid colours only: very dark navy, warm off-white, olive green, charcoal, warm red,\nmuted grey-blue. No gradient, no glow, no drop shadow, no 3D, no photographic texture, no\nplants, no bags, no people, no logos, no other numbers or letters anywhere except the\nspecified Thai text.\nKeep 8% clear margin left and right, 6% top and bottom.\n",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-20T07:58:06"
+}

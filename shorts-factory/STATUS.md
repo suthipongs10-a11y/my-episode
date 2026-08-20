@@ -7,14 +7,14 @@
 > **Update it at the end of any session that finishes or starts a video.** A stale STATUS is
 > worse than none, because it will be believed.
 >
-> Last updated: **2026-08-19** (vox-13 built — the dark night sky; **new channel**
-> ถอดรหัสจักรวาล with the `cosmos` skin, its own voice, and 31 images)
+> Last updated: **2026-08-19** (vox-14 built — growing your own Trichoderma; the agri
+> channel's **first hands-on video**, and a new series with it)
 
 ## Channels
 
 | slug | name | voice | videos |
 |---|---|---|---|
-| `agri` | เกษตรที่คนไทยควรรู้ | Algieba | vox-2, vox-8, vox-11 |
+| `agri` | เกษตรที่คนไทยควรรู้ | Algieba | vox-2, vox-8, vox-11, vox-14 |
 | `health` | (สุขภาพแบบเข้าใจง่าย) | Leda | vox-3, vox-7, vox-12 |
 | `ev` | The EV Insight | Umbriel | vox-4, vox-5, vox-6, vox-9, vox-10 |
 | `cosmos` | ถอดรหัสจักรวาล | Charon | vox-13 |
@@ -38,19 +38,41 @@ Voices must stay unique per channel — `channels/README.md` makes a duplicate a
 | 11 | `vox-11-silicon-rice` | agri | ✅ 70 | ✅ voiced **16:9** · 24 ภาพ | ✅ | ✅ 1 + upload jpg | ✅ 118 |
 | 12 | `vox-12-back-pain` | health | ✅ 50 | ✅ voiced **16:9** · **31 ภาพ** | ✅ | ✅ 1 + upload jpg | ✅ 108 |
 | 13 | `vox-13-dark-sky` | **cosmos** | ✅ 44 | ✅ voiced **16:9** · 31 ภาพ + 5 แผนภาพโค้ด | ✅ | ✅ 1 + upload jpg | ✅ 93 |
+| 14 | `vox-14-trichoderma` | agri | ✅ 51 | ✅ voiced **16:9** · 28 ภาพ + 6 แผนภาพโค้ด | ✅ | ✅ 1 + upload jpg | ✅ 114 |
 
-**vox-8 onward are the landscape videos** (8, 9, 10, 11, 12, 13). Everything else is
-1080×1920. That is correct — they are the ones over 60s. See `PIPELINE.md` §3.
+**vox-8 onward are the landscape videos** (8 through 14). Everything else is 1080×1920.
+That is correct — they are the ones over 60s. See `PIPELINE.md` §3.
 
 **`POST-KIT.md` supersedes `publish.th.md`.** vox-6 and vox-7 still carry both; the POST-KIT is
 the current one (it is the form-filling checklist, not just copy). vox-2 has only the old file.
 
 ## Open work, in the order it is worth doing
 
-0. **Everything produced so far is finished.** Thirteen videos, eleven of them voiced and
+0. **Everything produced so far is finished.** Fourteen videos, twelve of them voiced and
    rendered, all with captions. What remains on each is fact-checking, not production.
 
-1. **vox-13's blocking fact-checks** — `vox-shorts/vox-13-dark-sky/POST-KIT.md` §7. The one
+1. **vox-14's blocking fact-checks — and this one is the strictest in the repo.**
+   `vox-shorts/vox-14-trichoderma/POST-KIT.md` §7. It is the channel's first **hands-on**
+   video, and that changes the stakes rather than the style: an explainer that is wrong
+   leaves somebody misinformed, a how-to that is wrong leaves somebody with a week gone and
+   possibly an unidentified organism on their field. Three official Thai domains were
+   blocked by the egress proxy (`esc.doae.go.th`, `kas.siamkubota.co.th`,
+   `gardenandfarm.baanlaesuan.com`), so every step number is assembled from search results.
+   **Check §7 item 2 first** — sources disagree on whether the finished culture is white or
+   green, the video teaches "white = not done yet, green = ready", and getting that backwards
+   sends people out with cultures that have not sporulated.
+
+   What this video established, now in `channels/agri.json` as two new rules:
+
+   - **Teach how to tell it FAILED, at greater length than how to do it.** If the viewer can
+     read the result, our day count being a day out does not hurt them. The read-the-bag
+     chapter is the longest in the film and the summary card exists because of it.
+   - **An image doing the job of a test result may not be generated.** The colour of a
+     culture, a diseased leaf, a nutrient-deficient soil — a viewer holds the real thing up
+     against it. vox-14 draws its white/green/black states as a labelled colour key on a
+     neutral pale card, and says on screen that it is a reference key rather than a photo.
+
+2. **vox-13's blocking fact-checks** — `vox-shorts/vox-13-dark-sky/POST-KIT.md` §7. The one
    that matters is not a number, it is an **ordering**: the video says twice that the finite
    age is the main resolution and that the expansion is a contributing factor, and that claim
    is the spine of two whole chapters. Check it against the mainstream sources before
@@ -74,7 +96,7 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
      consolidation also surfaced that vox-9 still carried a hand-written segment→cue map; its
      frames were identical, so the rename was mechanical and `tsc` proved it.
 
-2. **vox-12's blocking fact-checks** — `vox-shorts/vox-12-back-pain/POST-KIT.md` §9, and this
+3. **vox-12's blocking fact-checks** — `vox-shorts/vox-12-back-pain/POST-KIT.md` §9, and this
    one matters more than the others because the subject is medical. Three rows, in order:
    Brinjikji's **37% → 96%** (it is the whole video and it is on screen as a graph), NICE
    NG59's **do-not-offer wording** (the video says "แนวทางระบุว่าไม่ควรให้" — that is a quote,
@@ -96,7 +118,7 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
      needed three renders to get there; vox-12 was built at 31 images (18 plates, 13 props)
      on the first one, from the same count.
 
-3. **vox-11's blocking fact-checks** — `vox-shorts/vox-11-silicon-rice/POST-KIT.md` §9. The
+4. **vox-11's blocking fact-checks** — `vox-shorts/vox-11-silicon-rice/POST-KIT.md` §9. The
    newest video and the one with the most load on a single figure: **silicon uptake of
    150–300 kg/ha**, because the whole second beat ("1.5–3× more than nitrogen") is arithmetic
    on top of it. Then the ~850°C crystallisation point, because the recommended title rests
@@ -121,22 +143,22 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
      measured 3.19× by asking for a bigger number in the prompt. Both earlier prompts had
      asked for the same thing as each other; nobody varied it.
 
-4. **vox-2 and vox-3 still have no publish kit** — the last two videos without one.
+5. **vox-2 and vox-3 still have no publish kit** — the last two videos without one.
    vox-2 needs the least work: it has an old `publish.th.md` and three covers already.
    vox-3 needs a cover too.
-5. **vox-10's blocking fact-check** — `vox-shorts/vox-10-charge-curve/POST-KIT.md` §9. The
+6. **vox-10's blocking fact-check** — `vox-shorts/vox-10-charge-curve/POST-KIT.md` §9. The
    hook number (10→80% takes 18–35 min; 80→100% takes another 25–45) is only grade **C**, and
    it is carrying the title, the cover AND the main graph. If it is wrong, all three change
    together. Check it before anything else on that video.
-6. **vox-9's blocking fact-checks** — `vox-shorts/vox-9-spec-sheet/POST-KIT.md` §9. Fetching is
+7. **vox-9's blocking fact-checks** — `vox-shorts/vox-9-spec-sheet/POST-KIT.md` §9. Fetching is
    blocked for EVERY domain now, not just the medical hosts in `PIPELINE.md` §0, so every spec
    figure is triangulated from search results and graded A/B/C in its `script.md`. The weak rows
    are Deepal S05's Thai availability, whether its CLTC figure is 610 or 620 (**the cover says
    620**), and which charging power the Thai MG S5 EV trim actually has.
-7. **vox-8's blocking fact-checks** — `vox-shorts/vox-8-urea-deep/POST-KIT.md` §9. The Thai
+8. **vox-8's blocking fact-checks** — `vox-shorts/vox-8-urea-deep/POST-KIT.md` §9. The Thai
    context figures (37% of cost, 41% of national fertiliser) and "millions of farmers" in
    Bangladesh are the weak rows. Do not publish before those.
-8. **vox-7 has the same class of open checks**, for the same reason (§0: sources unreachable).
+9. **vox-7 has the same class of open checks**, for the same reason (§0: sources unreachable).
 
 ## What is NOT in git, and dies with the container
 

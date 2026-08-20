@@ -1,0 +1,9 @@
+{
+  "prompt": "Photograph looking straight down at dark moist crumbly garden soil filling the frame, a few fine roots visible, soft daylight. Calm documentary photograph, natural light. Nobody's face visible. No text, no logos, no brand marks, no signage, no packaging labels.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-20T07:38:48"
+}

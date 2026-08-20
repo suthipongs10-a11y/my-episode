@@ -60,7 +60,16 @@ for (const shot of shots.sort()) {
 
     // Only the composition body counts. `Scene` and `Chapter` are also DEFINED in these files,
     // and a definition's own `<Scene from={from}` would otherwise be counted as a scene.
-    const bodyAt = all.findIndex((l) => /:\s*React\.FC\s*=\s*\(\)\s*=>/.test(l));
+    //
+    // Two authoring styles are in use and both are ordinary React, so both are matched here:
+    //   const Vox12BackPain: React.FC = () => (        vox-9..13
+    //   export default function Vox14Trichoderma() {   vox-14
+    // vox-14 arrived in the second style, the detector missed it, and the file fell back to a
+    // whole-file scan that parsed the whole composition as one scene. The guard below caught
+    // that — which is the third time this checker has been wrong about a file and the first
+    // time it said so instead of printing a confident number.
+    const BODY = /(:\s*React\.FC\s*=\s*\(\)\s*=>)|(^export\s+default\s+function\s+\w+\s*\()/;
+    const bodyAt = all.findIndex((l) => BODY.test(l));
     const lines = bodyAt === -1 ? all : all.slice(bodyAt);
 
     const depths = lines.filter((l) => SCENE_TAG.test(l)).map((l) => l.match(/^\s*/)[0].length);
