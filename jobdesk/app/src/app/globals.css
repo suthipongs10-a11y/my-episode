@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+/* โทนสีเดียวกับเอกสารออกแบบ jobdesk/design.html */
+:root {
+  --ground: #f4f6f2;
+  --surface: #ffffff;
+  --surface-2: #edf0ea;
+  --border: #dfe4db;
+  --border-soft: #eaeee6;
+  --ink: #141a16;
+  --ink-2: #3d4841;
+  --muted: #63706a;
+  --accent: #006b54;
+  --accent-tint: #e1efea;
+  --on-accent: #ffffff;
+  --crit: #b03a28;
+  --crit-tint: #f7e6e2;
+  --warn: #8f6008;
+  --warn-tint: #f6eddc;
+  --info: #1c5fa0;
+  --info-tint: #e2ecf6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #0d1210;
+    --surface: #151c19;
+    --surface-2: #1c2521;
+    --border: #29332e;
+    --border-soft: #212b27;
+    --ink: #e9efea;
+    --ink-2: #c3cec7;
+    --muted: #92a099;
+    --accent: #35be99;
+    --accent-tint: #122a24;
+    --on-accent: #06231c;
+    --crit: #ee7461;
+    --crit-tint: #2e1d19;
+    --warn: #d89c3c;
+    --warn-tint: #2b2317;
+    --info: #68a9de;
+    --info-tint: #17232e;
+  }
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-line-soft: var(--border-soft);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-tint: var(--accent-tint);
+  --color-on-accent: var(--on-accent);
+  --color-crit: var(--crit);
+  --color-crit-tint: var(--crit-tint);
+  --color-warn: var(--warn);
+  --color-warn-tint: var(--warn-tint);
+  --color-info: var(--info);
+  --color-info-tint: var(--info-tint);
+
+  /* ถ้าโหลด Google Fonts ไม่ได้ ให้ตกไปที่ฟอนต์ไทยของระบบ ไม่ใช่ sans-serif เปล่า ๆ */
+  --font-display: "Anuphan", "IBM Plex Sans Thai", "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans Thai", "Anuphan", "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Noto Sans Thai Looped", ui-monospace, monospace;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  line-height: 1.65;
+}
+
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; }
+
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ฟอร์มทั้งแอปหน้าตาเดียวกัน โดยไม่ต้องแปะ class ซ้ำทุกช่อง */
+.field {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  font: inherit;
+  color: var(--ink);
+}
+.field:disabled { opacity: 0.55; }
+.label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface-2); }
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-quiet { border-color: transparent; background: transparent; color: var(--muted); }
+.btn-quiet:hover { background: var(--surface-2); color: var(--ink); }
