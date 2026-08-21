@@ -31,7 +31,73 @@ const H = 1080;
 const MARGIN_L = 170;
 const A = (f: string) => staticFile(`projects/vox-15-reev/layers/${f}`);
 
-// ---- GENERATED CUES
+// ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues.mjs. Do not hand-edit.
+// Cue name === segment id in beats.json, so there is no map to keep in sync.
+// !! 51 of 51 lines are NOT measured audio.
+// Run the voice tool with --retime, then re-run this script, BEFORE the final render.
+const C = {
+  s01_arrive: 15,
+  s02_wrong: 349,
+  s03_onequestion: 553,
+  s04_promise: 831,
+
+  s05_axle: 1000,
+  s05b_feel: 1253,
+  s06_setup: 1525,
+
+  s07_phev: 1718,
+  s08_both: 1988,
+  s09_modes: 2299,
+
+  s10_reev: 2630,
+  s11_nolink: 2927,
+  s12_generator: 3136,
+  s13_always: 3374,
+  s14_feel: 3650,
+
+  s15_sweet: 3887,
+  s16_band: 4163,
+  s17_forced: 4441,
+  s18_cut: 4758,
+  s19_hold: 4985,
+
+  s20_but: 5272,
+  s21_chain: 5506,
+  s22_double: 5821,
+  s23_loss: 6099,
+  s24_scope: 6411,
+
+  s25_city: 6758,
+  s26_citywin: 7025,
+  s27_highway: 7321,
+  s28_shrink: 7601,
+
+  s29_thai: 7937,
+  s30_batt: 8207,
+  s31_range: 8536,
+  s32_standard: 8888,
+  s33_engine: 9215,
+  s33b_again: 9447,
+  s34_motor: 9624,
+  s34b_howq: 9926,
+  s34c_buffer: 10190,
+  s34d_peak: 10487,
+  s34d2_avg: 10719,
+  s34e_why: 10940,
+
+  s35_epower: 11231,
+  s36_same: 11518,
+  s37_diff: 11726,
+  s38_meaning: 11988,
+
+  s39_sum: 12260,
+  s40_q: 12350,
+  s41_mech: 12582,
+  s42_choose: 12911,
+  s43_ev: 13141,
+  s44_close: 13475,
+  tail: 13813,
+} as const;
 // ---- END GENERATED CUES
 
 const CAM = [
