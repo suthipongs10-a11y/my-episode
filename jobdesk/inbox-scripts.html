@@ -1,0 +1,874 @@
+<title>Inbox 1990</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:#F4F3F7; --surface:#FFFFFF; --surface-2:#EBE9F1;
+    --border:#DEDBE6; --border-soft:#E9E7F0;
+    --ink:#17151F; --ink-2:#3C3850; --muted:#6A657C;
+    --accent:#4A3E8C; --accent-tint:#E9E6F6; --on-accent:#FFFFFF;
+    --crit:#A8382F; --crit-tint:#F7E7E4;
+    --warn:#8A5D0C; --warn-tint:#F6EEDC;
+    --f-display:"Anuphan","IBM Plex Sans Thai",system-ui,sans-serif;
+    --f-body:"IBM Plex Sans Thai","Anuphan","Noto Sans Thai",system-ui,sans-serif;
+    --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#111019; --surface:#1A1826; --surface-2:#232032;
+      --border:#332F45; --border-soft:#2A2739;
+      --ink:#EBE9F2; --ink-2:#C6C2D6; --muted:#948FA8;
+      --accent:#A79AF0; --accent-tint:#241F3D; --on-accent:#12102A;
+      --crit:#EE7E6E; --crit-tint:#2D1C19;
+      --warn:#D6A044; --warn-tint:#2A2216;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#111019; --surface:#1A1826; --surface-2:#232032;
+    --border:#332F45; --border-soft:#2A2739;
+    --ink:#EBE9F2; --ink-2:#C6C2D6; --muted:#948FA8;
+    --accent:#A79AF0; --accent-tint:#241F3D; --on-accent:#12102A;
+    --crit:#EE7E6E; --crit-tint:#2D1C19;
+    --warn:#D6A044; --warn-tint:#2A2216;
+  }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink);
+         font-family:var(--f-body); font-size:16px; line-height:1.72;
+         -webkit-font-smoothing:antialiased; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+
+  .wrap { display:grid;
+    grid-template-columns:[full-start] minmax(1.15rem,1fr) [main-start] minmax(0,66ch) [main-end] minmax(1.15rem,1fr) [full-end];
+    row-gap:1.05rem; padding:clamp(2.5rem,7vw,5rem) 0 6rem; }
+  .wrap > * { grid-column:main; margin:0; }
+  .wrap > .wide { grid-column:full; width:100%; max-width:1080px; justify-self:center; }
+
+  h1,h2,h3 { font-family:var(--f-display); text-wrap:balance; line-height:1.28; }
+  h1 { font-size:clamp(2.3rem,6vw,3.3rem); font-weight:700; letter-spacing:-.015em; margin-bottom:.2rem; }
+  h2 { font-size:clamp(1.38rem,3.2vw,1.7rem); font-weight:600; }
+  h3 { font-size:1.06rem; font-weight:600; }
+  p { color:var(--ink-2); }
+  strong { color:var(--ink); font-weight:600; }
+  code,.num { font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+  code { font-size:.87em; background:var(--surface-2); padding:.1em .35em; border-radius:3px; }
+
+  .eyebrow { font-family:var(--f-mono); font-size:.72rem; letter-spacing:.14em;
+             text-transform:uppercase; color:var(--muted); }
+  .lede { font-size:1.11rem; color:var(--ink-2); }
+  .kicker { display:inline-flex; gap:.55rem; align-items:center; font-family:var(--f-mono);
+            font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent);
+            border:1px solid var(--border); background:var(--surface);
+            padding:.3rem .7rem; border-radius:999px; margin-bottom:1.2rem; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .rule { border:0; border-top:1px solid var(--border); margin:2.4rem 0 .4rem; }
+  .sec { margin-top:2.6rem; }
+  section > .eyebrow { margin-bottom:-.7rem; }
+
+  /* ---- the conversation rail: what these messages will actually look like ---- */
+  .rail { display:flex; flex-direction:column; gap:.7rem; margin:.4rem 0 .2rem; }
+  .msg { max-width:88%; border-radius:14px; padding:.85rem 1rem .6rem;
+         border:1px solid var(--border); position:relative; }
+  .msg--send { align-self:flex-end; background:var(--accent-tint);
+               border-color:color-mix(in srgb, var(--accent) 30%, transparent);
+               border-bottom-right-radius:5px; }
+  .msg--them { align-self:flex-start; background:var(--surface-2);
+               border-bottom-left-radius:5px; max-width:76%; }
+  .msg__t { white-space:pre-wrap; color:var(--ink); font-size:.95rem; line-height:1.62; }
+  .msg--them .msg__t { color:var(--ink-2); }
+  .msg__f { display:flex; justify-content:space-between; align-items:center;
+            gap:.8rem; margin-top:.55rem; }
+  .who { font-family:var(--f-mono); font-size:.65rem; letter-spacing:.1em;
+         text-transform:uppercase; color:var(--muted); }
+  .copy { font-family:var(--f-mono); font-size:.68rem; letter-spacing:.06em;
+          color:var(--accent); background:var(--surface); cursor:pointer;
+          border:1px solid var(--border); border-radius:999px; padding:.2rem .6rem;
+          transition:background .15s ease; }
+  .copy:hover { background:var(--accent-tint); }
+  .msg--them .copy { display:none; }
+  .blank { font-family:var(--f-mono); font-size:.9em; color:var(--accent);
+           background:color-mix(in srgb, var(--accent) 12%, transparent);
+           padding:0 .2em; border-radius:3px; }
+
+  .why { border-left:2px solid var(--border); padding-left:.9rem; font-size:.93rem;
+         color:var(--muted); }
+  .why strong { color:var(--ink-2); }
+
+  .card { background:var(--surface); border:1px solid var(--border);
+          border-radius:10px; padding:1.1rem 1.25rem; }
+  .grid2 { display:grid; gap:.85rem; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
+  .grid3 { display:grid; gap:.85rem; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); }
+  .card h3 { margin:0 0 .3rem; }
+  .card p { margin:0; font-size:.93rem; }
+
+  .tablewrap { overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+  table { border-collapse:collapse; width:100%; font-size:.91rem; min-width:460px; }
+  th,td { text-align:left; padding:.6rem .85rem; border-bottom:1px solid var(--border-soft); vertical-align:top; }
+  thead th { font-family:var(--f-mono); font-size:.67rem; letter-spacing:.1em; text-transform:uppercase;
+             color:var(--muted); font-weight:500; background:var(--surface-2); border-bottom:1px solid var(--border); }
+  tbody tr:last-child td { border-bottom:0; }
+  td.n, th.n { text-align:right; font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+  .hi td { background:var(--accent-tint); font-weight:600; color:var(--ink); }
+
+  .callout { border-left:3px solid var(--accent); background:var(--accent-tint);
+             padding:.85rem 1.1rem; border-radius:0 8px 8px 0; }
+  .callout p { margin:0; color:var(--ink); }
+  .callout--warn { border-left-color:var(--crit); background:var(--crit-tint); }
+  .callout--amber { border-left-color:var(--warn); background:var(--warn-tint); }
+
+  figure { margin:0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:10px;
+            padding:1.1rem; overflow-x:auto; }
+  .figbox svg { display:block; width:100%; min-width:600px; height:auto; color:var(--ink-2); }
+  figcaption { font-size:.85rem; color:var(--muted); margin-top:.6rem; }
+
+  ul.plain { padding-left:1.15rem; color:var(--ink-2); }
+  ul.plain li { margin:.3rem 0; }
+  ol.steps { list-style:none; padding:0; counter-reset:st; display:grid; gap:.55rem; }
+  ol.steps li { counter-increment:st; position:relative; padding-left:2.35rem; color:var(--ink-2); }
+  ol.steps li::before { content:counter(st); position:absolute; left:0; top:.35rem;
+    font-family:var(--f-mono); font-size:.7rem; color:var(--accent);
+    width:1.6rem; height:1.6rem; display:grid; place-items:center;
+    border:1px solid var(--border); border-radius:50%; background:var(--surface); line-height:1; }
+
+  .stage { display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap;
+           margin-top:1.9rem; padding-bottom:.5rem; border-bottom:1px solid var(--border); }
+  .stage__n { font-family:var(--f-mono); font-size:.7rem; letter-spacing:.1em;
+              text-transform:uppercase; color:var(--on-accent); background:var(--accent);
+              border-radius:999px; padding:.16rem .6rem; }
+  .stage h3 { margin:0; }
+  .stage__g { font-size:.86rem; color:var(--muted); }
+
+  footer.end { color:var(--muted); font-size:.88rem; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="kicker"><span class="dot"></span>เอกสารใช้งาน · 21 ส.ค. 2026</div>
+    <h1>Inbox 1990</h1>
+    <p class="lede">ชุดข้อความตอบแชทสำหรับงานเว็บไซต์ธุรกิจสองภาษา 1,990 บาท
+    ถามทีละข้อ ให้เขาตอบง่าย และไม่ปล่อยให้บทสนทนาตายกลางทาง</p>
+  </header>
+
+  <div class="callout">
+    <p>เอกสาร <strong>Ads 1990</strong> พิสูจน์ไว้ว่า<strong>อัตราปิดการขายเป็นตัวคูณที่แรงที่สุด
+    ในทุกสมการ</strong> และมันถูกตัดสินในข้อความแรก ไม่ใช่ในโฆษณา<br><br>
+    เอกสารนี้คือข้อความจริง ทุกข้อความในนี้มีหน้าที่สองอย่างเท่านั้น —
+    <strong>รู้ให้ได้ว่าเขาทำธุรกิจอะไรและอยากได้อะไร</strong> กับ
+    <strong>อย่าให้เขาหายไปกลางทาง</strong></p>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ================= §0 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§0</div>
+    <h2>เติมช่องว่าง 7 ช่องนี้ก่อน</h2>
+  </section>
+
+  <p>ทุกข้อความข้างล่างมีวงเล็บเหลี่ยมอยู่ เติมครั้งเดียวแล้วใช้ได้ทั้งเอกสาร
+  ใช้เวลา 10 นาที และทุกอย่างที่เหลือขึ้นกับข้อนี้</p>
+
+  <div class="wide">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>ช่อง</th><th>ใส่อะไร</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td><span class="blank">[n หน้า]</span></td><td>เว็บ 1,990 ได้กี่หน้า</td><td>ถ้าไม่เคยกำหนด ให้กำหนดวันนี้</td></tr>
+          <tr class="hi"><td><span class="blank">[รวมอะไร]</span></td><td>โดเมนรวมไหม · โฮสต์รวมกี่ปี</td><td>ช่องที่ทำให้ทะเลาะกันบ่อยที่สุดถ้าไม่พูดตั้งแต่แรก</td></tr>
+          <tr><td><span class="blank">[X วัน]</span></td><td>เสร็จภายในกี่วัน</td><td>นับจากวันที่ได้ข้อมูลครบ ไม่ใช่วันโอนมัดจำ</td></tr>
+          <tr><td><span class="blank">[Y รอบ]</span></td><td>แก้ได้กี่รอบ</td><td>ค่าตั้งต้นในระบบคือ 2</td></tr>
+          <tr><td><span class="blank">[ค่าต่ออายุ]</span></td><td>ปีต่อไปจ่ายเท่าไหร่</td><td>เอกสารระบบแนะนำ 990/ปี</td></tr>
+          <tr><td><span class="blank">[มัดจำ]</span></td><td>มัดจำเท่าไหร่ จ่ายยังไง</td><td></td></tr>
+          <tr><td><span class="blank">[ตัวอย่าง 1-3]</span></td><td>ลิงก์ผลงาน 3 อัน</td><td>ให้เป็นคนละประเภทธุรกิจ จะได้เลือกส่งให้ตรง</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout--warn" style="margin-top:1.2rem">
+    <p><strong>ห้ามส่งข้อความที่ยังมีวงเล็บเหลี่ยมค้างอยู่</strong>
+    อ่านทวนหนึ่งรอบก่อนกดส่งเสมอ</p>
+  </div>
+
+  <!-- ================= §1 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§1</div>
+    <h2>ข้อความไหนไปอยู่ตรงไหน</h2>
+  </section>
+
+  <p>Meta Business Suite ทำอัตโนมัติได้น้อยกว่าที่คนคิดมาก รู้ขอบเขตก่อนจะได้ไม่เสียเวลา
+  เขียนสคริปต์ที่ระบบรันไม่ได้</p>
+
+  <div class="wide">
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 920 250" role="img" aria-label="แผนภาพแสดงสามชั้นของการตอบแชท ชั้นที่หนึ่งตอบกลับทันทีได้หนึ่งข้อความ ชั้นที่สองคำถามที่พบบ่อยได้ราวสี่ปุ่ม ทั้งสองชั้นนี้เป็นอัตโนมัติ ส่วนชั้นที่สามข้อความที่บันทึกไว้ไม่จำกัดจำนวนแต่ต้องกดส่งเอง และเป็นชั้นที่ปิดการขายจริง">
+          <g font-family="IBM Plex Sans Thai, sans-serif">
+            <text x="14" y="24" font-size="12" fill="var(--muted)">ระบบทำให้ได้</text>
+            <text x="906" y="24" font-size="12" fill="var(--accent)" text-anchor="end" font-weight="600">คนทำเท่านั้น</text>
+
+            <rect x="14" y="40" width="176" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"></rect>
+            <rect x="206" y="40" width="176" height="72" rx="8" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".6"></rect>
+            <rect x="440" y="40" width="466" height="72" rx="8" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.8"></rect>
+
+            <g font-size="13" text-anchor="middle" fill="currentColor">
+              <text x="102" y="68">ตอบกลับทันที</text>
+              <text x="294" y="68">คำถามที่พบบ่อย</text>
+            </g>
+            <text x="673" y="68" font-size="13" text-anchor="middle" fill="var(--accent)" font-weight="600">ข้อความที่บันทึกไว้</text>
+
+            <g font-size="11.5" text-anchor="middle" fill="var(--muted)" font-family="IBM Plex Mono, monospace">
+              <text x="102" y="92">1 ข้อความ</text>
+              <text x="294" y="92">~4 ปุ่ม</text>
+              <text x="673" y="92">ไม่จำกัด · กดส่งเอง</text>
+            </g>
+
+            <line x1="411" y1="30" x2="411" y2="176" stroke="var(--crit)" stroke-width="2" stroke-dasharray="5 4"></line>
+
+            <g font-size="12" fill="var(--muted)">
+              <text x="102" y="140" text-anchor="middle">§2</text>
+              <text x="294" y="140" text-anchor="middle">§5</text>
+              <text x="673" y="140" text-anchor="middle" fill="var(--accent)">§3 · §6 · §7</text>
+            </g>
+
+            <text x="14" y="176" font-size="12" fill="var(--crit)">← เส้นนี้คือเพดานของระบบอัตโนมัติ</text>
+
+            <path d="M102,196 V212 H673 V196" fill="none" stroke="var(--accent)" stroke-width="1.4"></path>
+            <text x="388" y="236" font-size="12.5" fill="var(--ink-2)" text-anchor="middle">
+              ระบบซื้อเวลาให้ 5 นาที · สิ่งที่ปิดการขายคือคนตอบ ไม่ใช่ระบบตอบ
+            </text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>จำนวนปุ่มคำถามที่พบบ่อยเปลี่ยนตามเวอร์ชันของ Business Suite
+      เปิดดูของจริงในเพจตัวเองก่อนจัดลำดับ</figcaption>
+    </figure>
+  </div>
+
+  <!-- ================= §2 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§2</div>
+    <h2>ข้อความแรก — ตัวเดียวที่เป็นอัตโนมัติ</h2>
+  </section>
+
+  <p>ทำสามอย่างพร้อมกัน: <strong>ซื้อเวลา · บอกราคา · เปิดคำถามแรก</strong></p>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">สวัสดีครับ ขอบคุณที่ทักมานะครับ 🙏
+
+ผมรับทำเว็บไซต์ธุรกิจ 2 ภาษา ไทย–อังกฤษ ราคา 1,990 บาท
+[รวมอะไร] เสร็จภายใน [X วัน]
+
+ขอถามก่อนนะครับ ทำธุรกิจอะไรอยู่ครับ
+เดี๋ยวผมส่งตัวอย่างเว็บของธุรกิจแบบเดียวกันให้ดูเลยครับ</div>
+      <div class="msg__f"><span class="who">ตอบกลับทันที · อัตโนมัติ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="wide grid2" style="margin-top:1.2rem">
+    <div class="card">
+      <h3>ทำไมบอกราคาตั้งแต่บรรทัดแรก</h3>
+      <p>คนที่รับราคาไม่ได้จะหายไปตั้งแต่นาทีแรก ซึ่งเป็นเรื่องดี — ข้อจำกัดจริงของธุรกิจนี้คือ
+      <strong>เวลา ไม่ใช่เงิน</strong> เวลาที่ไม่ต้องคุยกับคนที่ไม่ซื้อคือกำไรโดยตรง</p>
+    </div>
+    <div class="card">
+      <h3>ทำไมต้องมีคำว่า “2 ภาษา”</h3>
+      <p>ถ้าไม่พูด เขาจะเอา 1,990 ไปเทียบกับเว็บภาษาเดียวราคา 990 แล้วรู้สึกว่าแพง
+      ทั้งที่เรา<strong>ขายคนละของ</strong></p>
+    </div>
+  </div>
+
+  <!-- ================= §3 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§3</div>
+    <h2>บันไดคำถาม 4 ขั้น</h2>
+  </section>
+
+  <p>ขั้นละหนึ่งคำถาม ห้ามลัด ห้ามถามสองข้อในข้อความเดียว</p>
+
+  <div class="wide">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>ขั้น</th><th>ถามอะไร</th><th>ได้อะไรกลับมา</th><th>ลงที่ไหนใน JobDesk</th></tr></thead>
+        <tbody>
+          <tr><td class="n">1</td><td>ทำธุรกิจอะไร</td><td>ประเภทธุรกิจ + รู้ว่าจะส่งตัวอย่างไหน</td><td>ลูกค้า → กิจการ</td></tr>
+          <tr><td class="n">2</td><td>ตอนนี้มีอะไรอยู่แล้ว</td><td>เนื้อหามีแค่ไหน งานจะหนักแค่ไหน</td><td>งาน → รายละเอียด</td></tr>
+          <tr class="hi"><td class="n">3</td><td>อยากให้เว็บเน้นอะไร</td><td>โครงหน้าเว็บทั้งหมด</td><td>งาน → เช็กลิสต์</td></tr>
+          <tr><td class="n">4</td><td>เริ่มเลยไหม</td><td>ปิดการขาย</td><td>งาน → เปิดงาน</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="stage">
+    <span class="stage__n">ขั้น 1</span>
+    <h3>เขาบอกว่าทำธุรกิจอะไร</h3>
+    <span class="stage__g">ทวนกลับ → ส่งตัวอย่าง → ถามข้อต่อไป</span>
+  </div>
+
+  <p class="why"><strong>ทวนสิ่งที่เขาบอกกลับไปก่อนเสมอ</strong>
+  เป็นวิธีที่ถูกที่สุดที่ทำให้เขารู้ว่ากำลังคุยกับคน ไม่ใช่ระบบ
+  และเป็นจุดที่คนหายไปมากที่สุดถ้าไม่ทำ เลือกใช้แบบที่ตรงกับที่เขาตอบ</p>
+
+  <div class="rail">
+    <div class="msg msg--them"><div class="msg__t">ร้านอาหารครับ อยู่ป่าตอง</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ร้านอาหารนี่เว็บสองภาษาช่วยได้เยอะเลยครับ
+ลูกค้าต่างชาติเขาหาอยู่สองอย่าง คือเมนูกับราคา และที่ตั้งกับเวลาเปิด
+ถ้าหาไม่เจอ เขาไปร้านถัดไปเลยครับ
+
+ตัวอย่างที่ผมทำให้ร้านแบบเดียวกันครับ 👉 [ตัวอย่าง 1]
+
+ตอนนี้ร้านมีอะไรอยู่แล้วบ้างครับ
+1) มีแค่เพจเฟซบุ๊ก
+2) มีเพจ + IG
+3) เคยมีเว็บ แต่ไม่ได้ใช้แล้ว
+4) ยังไม่มีอะไรเลย</div>
+      <div class="msg__f"><span class="who">แบบ ก · ร้านอาหาร คาเฟ่</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+    <div class="msg msg--send">
+      <div class="msg__t">งานสายท่องเที่ยวนี่ภาษาอังกฤษคือคนละตลาดเลยครับ
+ลูกค้าต่างชาติหาข้อมูลก่อนบินมา ถ้าเจอแต่เพจภาษาไทยเขาข้ามไปเลย
+
+ตัวอย่างที่ผมทำให้ธุรกิจแบบเดียวกันครับ 👉 [ตัวอย่าง 2]
+
+ตอนนี้มีอะไรอยู่แล้วบ้างครับ
+1) มีแค่เพจเฟซบุ๊ก
+2) มีเพจ + IG
+3) เคยมีเว็บ แต่ไม่ได้ใช้แล้ว
+4) ยังไม่มีอะไรเลย</div>
+      <div class="msg__f"><span class="who">แบบ ข · ที่พัก ทัวร์ สปา คลินิก</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+    <div class="msg msg--send">
+      <div class="msg__t">เข้าใจแล้วครับ
+
+เว็บช่วยสองจังหวะครับ ตอนลูกค้าเสิร์ชหาเอง กับตอนเราส่งลิงก์ให้ใครดู
+ส่งลิงก์เว็บกับส่งลิงก์เพจ ความน่าเชื่อถือคนละเรื่องเลยครับ
+
+ตัวอย่างงานที่ผมเคยทำครับ 👉 [ตัวอย่าง 3]
+
+ตอนนี้มีอะไรอยู่แล้วบ้างครับ
+1) มีแค่เพจเฟซบุ๊ก
+2) มีเพจ + IG
+3) เคยมีเว็บ แต่ไม่ได้ใช้แล้ว
+4) ยังไม่มีอะไรเลย</div>
+      <div class="msg__f"><span class="who">แบบ ค · ร้านค้า บริการทั่วไป</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <span class="stage__n">ขั้น 2</span>
+    <h3>คำถามที่สำคัญที่สุดในทั้งเอกสาร</h3>
+    <span class="stage__g">เน้นอะไร</span>
+  </div>
+
+  <p class="why">คำถามนี้ทำสองอย่าง — ได้โครงหน้าเว็บทั้งหมด และ<strong>ทำให้เขาเริ่มนึกภาพ
+  เว็บของตัวเองออก</strong> คนที่นึกภาพออกแล้วจะไม่ค่อยหายไป</p>
+
+  <div class="rail">
+    <div class="msg msg--them"><div class="msg__t">ข้อ 1 ครับ มีแค่เพจ</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">โอเคครับ 👍
+
+อยากให้เว็บช่วยเรื่องไหนมากที่สุดครับ เลือกได้มากกว่า 1 ข้อครับ
+1) ให้ลูกค้าโทร หรือทักไลน์ได้ง่าย ๆ
+2) ให้ดูสินค้า–บริการ–ราคา ได้ครบ
+3) ให้จองหรือสั่งล่วงหน้าได้
+4) ให้ดูผลงาน รีวิว รูปจริง
+5) ให้ดูน่าเชื่อถือ เวลาส่งลิงก์ให้ลูกค้าหรือคู่ค้า
+
+ผมจะได้วางหน้าเว็บให้ตรงกับที่ร้านใช้จริงครับ ไม่ใช่ทำเป็นแบบสำเร็จรูป</div>
+      <div class="msg__f"><span class="who">ขั้น 2</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <span class="stage__n">ขั้น 3</span>
+    <h3>สรุปให้เห็นภาพ แล้วค่อยปิด</h3>
+    <span class="stage__g">อย่ากระโดดไปที่ “สนใจไหม”</span>
+  </div>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">ได้เลยครับ แบบนี้ผมวางเป็น [n หน้า] ครับ
+
+· หน้าแรก — [สิ่งที่เขาเลือกในขั้น 2] เห็นตั้งแต่จอแรก
+· หน้า [สินค้า / บริการ / เมนู] พร้อมราคา
+· หน้าติดต่อ + แผนที่ + ปุ่มโทรและไลน์
+
+ทุกหน้ามีทั้งไทยและอังกฤษ กดสลับภาษาได้ทุกหน้าครับ
+
+ราคา 1,990 บาท เสร็จภายใน [X วัน] แก้ได้ [Y รอบ]
+[รวมอะไร]
+
+สนใจให้เริ่มเลยไหมครับ ผมขอข้อมูลนิดหน่อยแล้วเริ่มได้เลย</div>
+      <div class="msg__f"><span class="who">ขั้น 3</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <span class="stage__n">ขั้น 4</span>
+    <h3>เขาตกลง — ขอข้อมูลชุดเดียวจบ</h3>
+    <span class="stage__g">ตรงกับเช็กลิสต์ข้อแรกใน JobDesk</span>
+  </div>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">ขอบคุณครับ 🙏 ขอข้อมูลชุดนี้ครับ พิมพ์มาในแชทได้เลย
+
+1) ชื่อร้าน/ธุรกิจ ทั้งภาษาไทยและอังกฤษ (ถ้ามี)
+2) ที่อยู่ และลิงก์ Google Maps
+3) เบอร์โทร / ไลน์ / เพจ
+4) เวลาทำการ
+5) โลโก้ ถ้ามี และรูปสินค้า–รูปร้าน สัก 10–15 รูป
+
+ส่งเท่าที่มีก่อนได้ครับ ที่เหลือทยอยส่งได้
+[มัดจำ]
+
+พอได้ข้อมูลครบ ผมจะส่งหน้าแรกให้ดูภายใน [X วัน] ครับ</div>
+      <div class="msg__f"><span class="who">ขั้น 4</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="callout callout--amber" style="margin-top:1.2rem">
+    <p><strong>นับ [X วัน] จากวันที่ได้ข้อมูลครบ ไม่ใช่วันที่โอนมัดจำ</strong>
+    และต้องพูดตรงนี้ ไม่ใช่ไปพูดตอนงานเลยกำหนดแล้ว</p>
+  </div>
+
+  <!-- ================= §4 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§4</div>
+    <h2>กฎ 6 ข้อที่ทำให้บทสนทนาไม่ตาย</h2>
+  </section>
+
+  <ol class="steps">
+    <li><strong>ถามครั้งละหนึ่งข้อ</strong> — ถามสองข้อพร้อมกัน เขาจะตอบข้อเดียว หรือไม่ตอบเลย</li>
+    <li><strong>ทุกข้อความจบด้วยคำถาม</strong> — ข้อความที่จบด้วยจุด คือจุดที่บทสนทนาตาย</li>
+    <li><strong>ให้เลือกเป็นตัวเลข</strong> — พิมพ์ “2” ง่ายกว่าพิมพ์ประโยค คนตอบเยอะขึ้นชัดเจน</li>
+    <li><strong>ทวนสิ่งที่เขาบอกก่อนตอบทุกครั้ง</strong> — “ร้านอาหารนี่…” ทำให้รู้ว่าเราอ่านจริง</li>
+    <li><strong>บอกราคาตั้งแต่ข้อความแรก</strong> — ไม่ต้องรอให้ถาม</li>
+    <li><strong>ตอบภายใน 5 นาที</strong> — ระบบอัตโนมัติซื้อเวลาให้ ไม่ได้ทำงานแทน</li>
+  </ol>
+
+  <h3 style="margin-top:1.8rem">ห้ามทำ</h3>
+  <ul class="plain">
+    <li>ส่งข้อความยาวเป็นพืด — บนมือถือมันคือกำแพง ไม่ใช่ข้อมูล</li>
+    <li>ถาม 3 ข้อในข้อความเดียว</li>
+    <li>ส่งแค่ลิงก์เปล่า ๆ ไม่มีข้อความ</li>
+    <li>ลดราคาเองก่อนเขาต่อ</li>
+    <li>สัญญาว่า “ติดหน้าแรก Google”</li>
+    <li>ตอบว่า “ได้ครับ” เฉย ๆ แล้วรอให้เขาถามต่อ</li>
+  </ul>
+
+  <!-- ================= §5 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§5</div>
+    <h2>คำถามที่พบบ่อย</h2>
+  </section>
+
+  <h3>4 ข้อที่ควรได้ปุ่ม</h3>
+  <p>เลือกจากคำถามที่ <strong>ถ้าไม่ตอบแล้วเขาหายไปเลย</strong> ไม่ใช่คำถามที่ถามบ่อยที่สุด</p>
+
+  <div class="rail">
+    <div class="msg msg--them"><div class="msg__t">ราคาเท่าไหร่ รวมอะไรบ้าง</div>
+      <div class="msg__f"><span class="who">ปุ่ม 1</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">เว็บไซต์ธุรกิจ 2 ภาษา ไทย–อังกฤษ ราคา 1,990 บาทครับ
+ได้ [n หน้า] · [รวมอะไร] · เสร็จภายใน [X วัน] · แก้ได้ [Y รอบ]
+
+ทำธุรกิจอะไรอยู่ครับ เดี๋ยวผมส่งตัวอย่างที่ใกล้เคียงให้ดูครับ</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">ใช้เวลากี่วัน</div>
+      <div class="msg__f"><span class="who">ปุ่ม 2</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">[X วัน] ครับ นับจากวันที่ได้ข้อมูลร้านครบ
+(ชื่อ ที่อยู่ เบอร์ เวลาทำการ รูปสินค้า)
+
+ส่วนใหญ่ที่ช้าไม่ใช่ที่ผมทำ แต่รอรูปกับเนื้อหาจากทางร้านครับ
+ถ้ามีรูปพร้อมอยู่แล้วจะเร็วกว่านี้
+
+ตอนนี้มีรูปสินค้าหรือรูปร้านอยู่แล้วไหมครับ</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">ขอดูตัวอย่างผลงาน</div>
+      <div class="msg__f"><span class="who">ปุ่ม 3</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ได้เลยครับ 👇
+[ตัวอย่าง 1]
+[ตัวอย่าง 2]
+[ตัวอย่าง 3]
+
+ลองกดปุ่มสลับภาษามุมบนขวาดูได้ครับ จะเห็นว่าเปลี่ยนทั้งหน้า
+ไม่ใช่แค่แปลเมนู
+
+ทำธุรกิจอะไรอยู่ครับ ผมมีตัวอย่างที่ใกล้เคียงกว่านี้อีก</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">ปีต่อไปต้องจ่ายอะไรอีกไหม</div>
+      <div class="msg__f"><span class="who">ปุ่ม 4</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">มีครับ และผมบอกตั้งแต่ตอนนี้เลยดีกว่าไปเซอร์ไพรส์ทีหลัง
+
+ปีแรก [รวมอะไร]
+ปีถัดไป [ค่าต่ออายุ] ครับ (ต่อโดเมน + โฮสต์ + ดูแลให้)
+ถ้าไม่ต่อ เว็บจะปิดตัวเอง แต่ผมจะแจ้งล่วงหน้าก่อนหมดอายุครับ
+
+มีคำถามอื่นอีกไหมครับ</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:1.2rem">
+    <p><strong>ทำไมเรื่องค่าต่ออายุถึงได้ปุ่มไปหนึ่งช่อง</strong> — เพราะถ้าไม่พูดตอนนี้
+    มันจะกลายเป็นเรื่องทะเลาะกันในปีหน้า และค่าต่ออายุคือรายได้ที่กำไรดีที่สุดที่มี
+    การพูดตรง ๆ ตั้งแต่แรกคือสิ่งที่ทำให้เก็บได้จริงในปีหน้า</p>
+  </div>
+
+  <h3 style="margin-top:2rem">คำถามอื่นที่เจอบ่อย</h3>
+  <p>เก็บเป็น <strong>ข้อความที่บันทึกไว้</strong> ตั้งชื่อให้หาเจอเร็ว</p>
+
+  <div class="rail">
+    <div class="msg msg--them"><div class="msg__t">โดเมนเป็นชื่อของใคร</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ของคุณครับ จดในชื่อร้าน/ชื่อคุณ ไม่ใช่ชื่อผม
+ถ้าวันหนึ่งอยากย้ายไปให้คนอื่นดูแล ย้ายได้เลยครับ ผมส่งรหัสให้</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">ใครแปลเป็นภาษาอังกฤษ</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ผมแปลให้ครับ รวมอยู่ในราคาแล้ว
+ถ้าเป็นคำเฉพาะทาง เช่น ชื่อเมนู ชื่อบริการ ผมจะส่งกลับให้ตรวจก่อนขึ้นจริง
+
+ตอนนี้มีเนื้อหาภาษาไทยพร้อมอยู่แล้วไหมครับ</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">มีแต่เนื้อหาภาษาไทย ไม่มีอังกฤษเลย</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ไม่เป็นไรครับ ส่วนใหญ่เป็นแบบนี้กันหมด
+ส่งภาษาไทยมาอย่างเดียวพอครับ ผมแปลและจัดหน้าให้ทั้งสองภาษา
+แล้วส่งให้ตรวจก่อนขึ้นจริง
+
+มีข้อความแนะนำร้านอยู่แล้วไหมครับ หรือให้ผมช่วยร่างให้</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">แก้เนื้อหาเองได้ไหมทีหลัง</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ได้ครับ ผมทำเป็นระบบที่เข้าไปแก้ข้อความและเปลี่ยนรูปเองได้
+ส่งวิธีใช้ให้ตอนส่งมอบ
+
+แต่ถ้าไม่อยากยุ่ง ทักมาบอกผมก็ได้ครับ แก้เล็ก ๆ น้อย ๆ ผมทำให้</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">แก้ได้กี่รอบ ทำไมจำกัด</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">[Y รอบ] ครับ
+
+เหตุผลที่จำกัดคืองานสองภาษา แก้หนึ่งรอบเท่ากับแก้สองภาษา
+ถ้าไม่จำกัดเลย ราคานี้จะทำไม่ไหวจริง ๆ ครับ
+
+แต่ในทางปฏิบัติ ถ้าแก้นิดหน่อยผมไม่นับครับ ที่นับคือรื้อโครงใหม่</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">ขายของบนเว็บ ตัดบัตรได้ไหม</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ราคา 1,990 ยังไม่รวมระบบตะกร้าและตัดบัตรครับ
+
+แต่ที่ทำได้และร้านส่วนใหญ่ใช้จริงกว่าคือ ให้ลูกค้าดูสินค้าและราคาบนเว็บ
+แล้วกดปุ่มสั่งผ่านไลน์หรือแชทเลย ปิดการขายได้เหมือนกันและไม่มีค่าธรรมเนียม
+
+แบบนี้พอไหวไหมครับ ถ้าอยากได้ระบบเต็มผมประเมินให้แยกได้</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">ทำให้ติดหน้าแรก Google ได้ไหม</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ผมไม่สัญญาว่าติดหน้าแรกครับ ใครสัญญาแปลว่าเดาให้ฟัง
+
+ที่ผมทำให้ได้จริงคือ ตั้งชื่อหน้าและคำอธิบายให้ครบทั้งสองภาษา
+ส่งเว็บเข้า Google ให้ และเชื่อมกับ Google Maps
+แปลว่าถ้ามีคนเสิร์ชชื่อร้านคุณ จะเจอเว็บครับ
+
+ส่วนคำกว้าง ๆ เช่น “ร้านอาหารภูเก็ต” อันนั้นต้องลงทุนอีกแบบ
+ซึ่งผมจะบอกตรง ๆ ว่าไม่รวมในราคานี้</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+
+    <div class="msg msg--them"><div class="msg__t">อยู่ต่างจังหวัด ทำได้ไหม</div>
+      <div class="msg__f"><span class="who">ลูกค้า</span></div></div>
+    <div class="msg msg--send">
+      <div class="msg__t">ได้ครับ ทำผ่านแชทกับไลน์ทั้งหมด ไม่ต้องเจอกัน
+ลูกค้าส่วนใหญ่ของผมก็คนละจังหวัดครับ
+
+ส่งข้อมูลกับรูปมาทางแชทได้เลย</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <!-- ================= §6 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§6</div>
+    <h2>เจอข้อโต้แย้ง ตอบยังไง</h2>
+  </section>
+
+  <div class="stage">
+    <span class="stage__n">โต้แย้ง 1</span>
+    <h3>“แพงไป” · “เจ้าอื่น 990”</h3>
+  </div>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">เข้าใจครับ ผมอธิบายส่วนต่างให้นะครับ
+
+เว็บ 990 ส่วนใหญ่คือภาษาเดียว ของผมคือสองภาษา
+แปลว่าเนื้อหาทุกหน้าทำสองชุด และมีปุ่มสลับภาษาที่ใช้ได้จริงทั้งเว็บ
+
+ถ้าลูกค้าคุณมีแต่คนไทย เว็บภาษาเดียวก็พอครับ ผมบอกตรง ๆ
+แต่ถ้ามีต่างชาติแม้แต่ส่วนน้อย อันนี้คุ้มกว่าเยอะ
+
+ร้านคุณมีลูกค้าต่างชาติบ้างไหมครับ</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="callout callout--warn" style="margin-top:.9rem">
+    <p><strong>ห้ามลดราคาตรงนี้</strong> ลดจาก 1,990 เหลือ 990 ทำให้เพดานค่าโฆษณาต่องาน
+    หดจาก 880 เหลือราว 300 — ทุกอย่างยากขึ้นสามเท่า ไม่ใช่ง่ายขึ้น<br><br>
+    และสังเกตว่าคำตอบ<strong>จบด้วยคำถาม ไม่ใช่จบด้วยการป้องกันตัว</strong></p>
+  </div>
+
+  <div class="stage">
+    <span class="stage__n">โต้แย้ง 2</span>
+    <h3>“ขอคิดดูก่อน”</h3>
+  </div>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">ได้เลยครับ ไม่ต้องรีบ
+
+ระหว่างนี้ผมส่งตัวอย่างของธุรกิจแบบเดียวกับคุณไปให้ดูก่อนนะครับ 👉 [ตัวอย่าง]
+
+ถ้ามีอะไรอยากถามเพิ่ม ทักมาได้ตลอดครับ
+เดี๋ยวอีกสัก 2–3 วันผมทักมาถามอีกทีนะครับ เผื่อคิดออกแล้ว</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <p class="why" style="margin-top:.8rem"><strong>ขออนุญาตตามกลับตั้งแต่ตอนนี้</strong>
+  ประโยคสุดท้ายทำให้ข้อความตามกลับใน §7 กลายเป็นสิ่งที่ตกลงกันไว้แล้ว ไม่ใช่การรบกวน</p>
+
+  <div class="stage">
+    <span class="stage__n">โต้แย้ง 3</span>
+    <h3>“ขอปรึกษาหุ้นส่วน / ที่บ้านก่อน”</h3>
+  </div>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">ได้เลยครับ
+
+เดี๋ยวผมสรุปสั้น ๆ ให้ส่งต่อได้เลยนะครับ
+— เว็บ 2 ภาษา ไทย–อังกฤษ [n หน้า]
+— 1,990 บาท เสร็จใน [X วัน] แก้ได้ [Y รอบ]
+— ตัวอย่าง: [ตัวอย่าง]
+
+ส่งอันนี้ให้เขาดูได้เลยครับ มีอะไรถามเพิ่มทักมาได้ตลอด</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <span class="stage__n">โต้แย้ง 4</span>
+    <h3>“ตอนนี้ยังไม่พร้อม”</h3>
+  </div>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">ได้ครับ ไม่มีปัญหาเลย
+
+ขอถามข้อเดียวนะครับ ที่ยังไม่พร้อมคือเรื่องงบ หรือเรื่องยังไม่มีรูปกับเนื้อหาครับ
+
+ถ้าเป็นเรื่องรูปกับเนื้อหา ผมช่วยแนะนำได้ว่าต้องเตรียมอะไรบ้าง
+ไว้พร้อมแล้วค่อยเริ่มก็ได้ครับ</div>
+      <div class="msg__f"><span class="who">คำตอบ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <p class="why" style="margin-top:.8rem">คำตอบนี้มีค่ามาก เพราะมันแยก
+  <strong>“ไม่มีเงิน”</strong> ออกจาก <strong>“ยังไม่ได้เตรียมของ”</strong> —
+  อย่างหลังคือลูกค้าที่กลับมาจริง บันทึกไว้ใน JobDesk แล้วตามกลับเดือนหน้า</p>
+
+  <!-- ================= §7 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§7</div>
+    <h2>เขาเงียบ ตามกลับยังไง</h2>
+  </section>
+
+  <p>ตามกลับ <strong>3 ครั้งแล้วหยุด</strong> มากกว่านั้นคือรบกวน
+  และเป็นเวลาที่เอาไปหาคนใหม่ได้</p>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">เผื่อข้อความหายไปนะครับ 🙏
+ยังสนใจอยู่ไหมครับ หรือมีอะไรที่ยังไม่ชัดให้ผมอธิบายเพิ่ม</div>
+      <div class="msg__f"><span class="who">+2 ชั่วโมง</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+    <div class="msg msg--send">
+      <div class="msg__t">สวัสดีครับ 🙏
+ผมทำตัวอย่างหน้าเว็บของธุรกิจแบบเดียวกับคุณไว้ ลองดูได้ครับ 👉 [ตัวอย่าง]
+
+ถ้าอยากได้แบบไหนเพิ่มบอกได้เลยครับ</div>
+      <div class="msg__f"><span class="who">+1 วัน · ให้ของ ไม่ใช่ทวง</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+    <div class="msg msg--send">
+      <div class="msg__t">รบกวนครั้งสุดท้ายนะครับ 🙏
+
+ถ้าตอนนี้ยังไม่ใช่จังหวะ ไม่เป็นไรเลยครับ
+ผมเก็บข้อมูลไว้ให้ ถ้าวันไหนพร้อมทักมาได้เลย ราคาเดิมครับ
+
+ขอบคุณที่ทักมานะครับ</div>
+      <div class="msg__f"><span class="who">+3 วัน · ครั้งสุดท้าย</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <div class="callout callout--amber" style="margin-top:1.2rem">
+    <p><strong>ข้อจำกัดของ Messenger:</strong> ตอบกลับได้แน่นอนภายใน 24 ชั่วโมง
+    หลังจากที่เขาทักล่าสุด หลังจากนั้น Meta มีข้อจำกัดการส่ง — พิมพ์ตอบเองจากกล่องข้อความ
+    ยังส่งได้อีกระยะ แต่อย่าวางแผนตามกลับยาวกว่าไม่กี่วัน<br><br>
+    <strong>ข้อความ +2 ชั่วโมงจึงสำคัญที่สุดในสามข้อ</strong> เพราะเป็นข้อเดียวที่ส่งได้ชัวร์</p>
+  </div>
+
+  <p style="margin-top:1.2rem">จากนั้น <strong>หยุด</strong> แล้วบันทึกลง JobDesk
+  เป็นคนทักที่ไม่ปิด พร้อมเหตุผล — ตัวหารของอัตราปิดการขายมาจากตรงนี้</p>
+
+  <!-- ================= §8 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§8</div>
+    <h2>ข้อความเมื่อไม่อยู่</h2>
+  </section>
+
+  <p>ตั้งเวลาให้ตรงกับที่ตอบได้จริง ไม่ใช่ตั้งกว้างไว้ก่อน</p>
+
+  <div class="rail">
+    <div class="msg msg--send">
+      <div class="msg__t">สวัสดีครับ ขอบคุณที่ทักมานะครับ 🙏
+ตอนนี้นอกเวลาทำงาน ผมจะตอบกลับให้ภายใน [เวลาที่ตอบได้จริง] ครับ
+
+ระหว่างนี้ทิ้งไว้ได้เลยครับว่าทำธุรกิจอะไร
+เดี๋ยวผมส่งตัวอย่างเว็บที่ใกล้เคียงไปให้ดูพร้อมกับคำตอบเลย</div>
+      <div class="msg__f"><span class="who">ข้อความเมื่อไม่อยู่ · อัตโนมัติ</span><button class="copy" type="button">คัดลอก</button></div>
+    </div>
+  </div>
+
+  <!-- ================= §9 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§9</div>
+    <h2>บันทึกทุกคน ไม่ใช่เฉพาะคนที่ซื้อ</h2>
+  </section>
+
+  <p>ทุกคนที่ทักมาต้องกลายเป็นหนึ่งแถวใน JobDesk พร้อมแคมเปญที่พามาและเหตุผลที่ไม่ซื้อ
+  <strong>เหตุผลที่ไม่ซื้อ คือข้อมูลที่แพงที่สุดที่จะได้จากแชท</strong></p>
+
+  <div class="wide">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>ถ้าเหตุผลไหนขึ้นมาเกินครึ่ง</th><th>แปลว่า</th><th>แก้ที่ไหน</th></tr></thead>
+        <tbody>
+          <tr><td>แพงไป</td><td>โฆษณาดึงคนผิดกลุ่ม ไม่ใช่ราคาผิด</td><td>ทำให้โฆษณาพูดราคาและคำว่าสองภาษาชัดขึ้น</td></tr>
+          <tr><td>ไม่ต้องการสองภาษา</td><td>ยิงกว้างเกินไป</td><td>ลองกลุ่มจังหวัดท่องเที่ยว</td></tr>
+          <tr class="hi"><td>ยังไม่มีรูป/เนื้อหา</td><td>ไม่ใช่คนไม่ซื้อ คือคนที่ยังไม่พร้อม</td><td>ตามกลับเดือนหน้า</td></tr>
+          <tr><td>เงียบหายไปเฉย ๆ</td><td>ข้อความแรกยังไม่ดีพอ หรือตอบช้า</td><td>§2 และความเร็ว 5 นาที</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= §10 ================= -->
+  <section class="sec">
+    <div class="eyebrow">§10</div>
+    <h2>ทำอะไรก่อนหลัง</h2>
+  </section>
+
+  <ol class="steps">
+    <li>เติมช่องว่าง 7 ช่องใน §0 — <strong>ทุกอย่างที่เหลือขึ้นกับข้อนี้</strong></li>
+    <li>วางข้อความ §2 เป็น <strong>ตอบกลับทันที</strong> ในเพจ</li>
+    <li>วาง 4 ข้อใน §5 เป็น <strong>คำถามที่พบบ่อย</strong></li>
+    <li>วาง §3 · §6 · §7 เป็น <strong>ข้อความที่บันทึกไว้</strong> ตั้งชื่อให้หาเจอเร็ว</li>
+    <li>ตั้ง <strong>ข้อความเมื่อไม่อยู่</strong> ตาม §8</li>
+    <li>ทดสอบเอง — ทักเข้าเพจตัวเองจากอีกบัญชี แล้วเดินตามบันไดจนจบ</li>
+  </ol>
+
+  <div class="callout callout--warn" style="margin-top:1.3rem">
+    <p><strong>ทำครบ 6 ข้อนี้แล้วค่อยเปิดโฆษณา</strong> —
+    คนที่ทักเข้ามาตอนที่ยังไม่มีข้อความรออยู่ คือเงินที่จ่ายไปแล้วเพื่อซื้อบทสนทนา
+    ที่แพ้ตั้งแต่นาทีแรก</p>
+  </div>
+
+  <hr class="rule">
+  <footer class="end">
+    <p>ฉบับข้อความอยู่ที่ <code>jobdesk/inbox-scripts.md</code> ·
+    คู่มือโฆษณาอยู่ที่ <code>jobdesk/ads-playbook.md</code> ·
+    เอกสารระบบอยู่ที่ <code>jobdesk/README.md</code></p>
+  </footer>
+
+</div>
+
+<script>
+  document.querySelectorAll('.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var node = b.closest('.msg').querySelector('.msg__t');
+      var text = node.innerText;
+      var done = false;
+      function finish() {
+        b.textContent = done ? 'คัดลอกแล้ว' : 'เลือกไว้ให้แล้ว';
+        if (!done) {
+          var r = document.createRange();
+          r.selectNodeContents(node);
+          var s = window.getSelection();
+          s.removeAllRanges();
+          s.addRange(r);
+        }
+        setTimeout(function () { b.textContent = 'คัดลอก'; }, 1800);
+      }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { done = document.execCommand('copy'); } catch (e) { done = false; }
+        ta.remove();
+        finish();
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          done = true; finish();
+        }, fallback);
+      } else {
+        fallback();
+      }
+    });
+  });
+</script>
