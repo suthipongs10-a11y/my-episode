@@ -54,7 +54,10 @@ per-video state was the one thing that had never been written down.
   needs extras: `pip install pillow rembg` (cutout.py) and `pip install playwright &&
   playwright install chromium` (capture_web.py). `ffmpeg`/`ffprobe` and `node`/`npx` on PATH.
 - **API keys** live in `.env` at the repo root (copy `.env.example`). Never commit `.env`.
-  ELEVENLABS_API_KEY = voice/SFX/music · FAL_KEY = AI clips + images · GEMINI_API_KEY = images.
+  ELEVENLABS_API_KEY = voice/SFX/music · FAL_KEY = AI clips + images · **GEMINI_API_KEY =
+  images AND Thai TTS** — one key, two very different bills. `COSTS.md` measures the split:
+  voice is ~9% of it, images are the rest, and `--size` defaults to 2K when props only need
+  1K. Read it before generating a batch of layers.
 - **Registry is generated:** after adding/renaming a shot, `cd remotion && npm run gen`
   (frames.mjs/render-all.mjs do NOT run it themselves).
 - **Media rules:** `media/library/` is for CROSS-VIDEO reusable assets only (each with a
