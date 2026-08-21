@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph of a freshly dug soil pit wall showing distinct horizontal soil layers from dark topsoil down to pale subsoil, a trowel resting at the top. Soil science documentary photography, natural colour, no people, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:24:24"
+}

@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a single bunch of dark purple grapes with two green vine leaves attached. Isolated on a plain pure white background, soft even studio light, slight three-quarter angle. No text, no logos, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:26:15"
+}

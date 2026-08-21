@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph of a nineteenth-century botany laboratory bench, brass microscope, glass specimen jars, leather-bound notebooks, dusty window light. Museum documentary photography, natural colour, no people, no readable text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:22:03"
+}

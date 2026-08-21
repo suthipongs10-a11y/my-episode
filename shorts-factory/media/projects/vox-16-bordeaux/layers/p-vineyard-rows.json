@@ -1,0 +1,9 @@
+{
+  "prompt": "A wide photograph of an old French vineyard, low gnarled vines in long parallel rows on gentle slopes, bare earth between rows, soft overcast morning light. Documentary photography, natural colour, no people, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:19:48"
+}

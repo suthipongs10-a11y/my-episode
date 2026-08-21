@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph of a dim French wine cellar, rows of oak barrels receding into darkness, stone floor, single warm lamp. Architectural documentary photography, natural colour, no people, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:22:19"
+}

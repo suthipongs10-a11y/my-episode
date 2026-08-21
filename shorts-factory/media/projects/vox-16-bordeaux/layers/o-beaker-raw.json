@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of a plain glass laboratory beaker holding pale milky blue liquid, no graduations printed. Isolated on a plain pure white background, soft even studio light, slight three-quarter angle. No text, no numbers, no logos, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:26:57"
+}

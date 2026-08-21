@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph looking along a narrow country road with a stone wall and vineyard rows running right up to the roadside, late afternoon light, empty road. Documentary photography, natural colour, no people, no vehicles, no signs, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:20:04"
+}

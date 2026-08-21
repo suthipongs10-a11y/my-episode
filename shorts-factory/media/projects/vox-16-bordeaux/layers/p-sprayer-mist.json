@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph of fine spray mist drifting through an orchard in low morning sun, backlit droplets, trees soft behind. Documentary photography, natural colour, no people, no equipment logos, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T07:24:09"
+}
