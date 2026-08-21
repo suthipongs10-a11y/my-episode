@@ -30,7 +30,7 @@
 // It is still a heuristic, not a JSX parser, so a surprising number is a reason to open the
 // file rather than to trust the tool.
 
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -98,6 +98,19 @@ for (const shot of shots.sort()) {
     }
     if (cur) scenes.push(cur);
 
+    // Every A('…') must resolve to a file that exists. A missing layer is invisible in the
+    // source and in tsc — it surfaces as a broken image partway through a render that has
+    // already cost an hour. vox-15 referenced a plate that was never generated; this is that
+    // check, and it costs a stat() per reference.
+    const proj = (src.match(/staticFile\(`projects\/([^/]+)\//) || [])[1];
+    const missing = [];
+    if (proj) {
+      const dir = resolve(HERE, '../../media/projects', proj, 'layers');
+      for (const m of src.matchAll(/\bA\('([^']+)'\)/g)) {
+        if (!existsSync(join(dir, m[1]))) missing.push(m[1]);
+      }
+    }
+
     const old = GRANDFATHERED.has(shot);
     // A track that starts at frame 0 covers every scene; otherwise each scene needs its own plate.
     const bare = trackFromZero ? 0 : scenes.filter((s) => s.plates === 0).length;
@@ -106,10 +119,12 @@ for (const shot of shots.sort()) {
 
     // A one-scene parse of a real film is the failure this tool made twice. Say so.
     const implausible = scenes.length < 2 && !old;
-    const bad = (bare > 0 || implausible) && !old;
+    // A missing file is a hard failure for every shot, grandfathered or not: an old video
+    // that no longer renders is not "predating the rule", it is broken.
+    const bad = ((bare > 0 || implausible) && !old) || missing.length > 0;
     if (bad) failed++;
 
-    rows.push({ shot, scenes: scenes.length, plates, bare, noProp, old, bad, implausible, track: !!track });
+    rows.push({ shot, scenes: scenes.length, plates, bare, noProp, old, bad, implausible, track: !!track, missing });
   }
 }
 
@@ -120,7 +135,8 @@ for (const r of rows) {
     console.log(`${r.shot.padEnd(w)}       —       —         —        —  ${r.unparsed}`);
     continue;
   }
-  const flag = r.implausible ? '  ✗ parsed as one scene — the checker probably did not understand this file'
+  const flag = r.missing && r.missing.length ? `  ✗ ${r.missing.length} referenced layer file(s) MISSING: ${r.missing.slice(0, 3).join(', ')}${r.missing.length > 3 ? ' …' : ''}`
+    : r.implausible ? '  ✗ parsed as one scene — the checker probably did not understand this file'
     : r.bad ? '  ✗ brand.md §4a: every scene needs a plate'
     : r.old ? '  (predates the rule)'
     : r.track ? '  ok (backdrop track)' : '  ok';
