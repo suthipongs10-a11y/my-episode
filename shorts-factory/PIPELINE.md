@@ -460,6 +460,20 @@ pgrep -x node   -a
 Empty output is the honest answer. **The liveness check that lies is worse than none**, because
 it converts "I don't know" into a confident wrong claim.
 
+> ### ⬛ Every render leaves a ~1 GB bundle in `/tmp` and NOTHING cleans them up
+>
+> `bundle()` copies the whole `media/` public root into `/tmp/remotion-webpack-bundle-XXXX`
+> and leaves it there. On 2026-08-21 there were **22 GB** of them and the disk was full;
+> three GB of finished masters were deleted trying to make room before anyone looked at what
+> was actually using the space. Check first, always:
+>
+> ```bash
+> du -csh /tmp/remotion-webpack-bundle-* | tail -1   # look BEFORE deleting anything of yours
+> rm -rf /tmp/remotion-webpack-bundle-*              # safe when no render is running
+> ```
+>
+> A full disk in this container is almost always this, not your files.
+
 ```bash
 node scripts/render-all.mjs <CompId> --scale=1
 python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --style "…" \
