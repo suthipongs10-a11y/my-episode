@@ -1,0 +1,613 @@
+<title>Ads 990</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:#F4F6F2; --surface:#FFFFFF; --surface-2:#EDF0EA;
+    --border:#DFE4DB; --border-soft:#EAEEE6;
+    --ink:#141A16; --ink-2:#3D4841; --muted:#63706A;
+    --accent:#006B54; --accent-tint:#E1EFEA; --on-accent:#FFFFFF;
+    --crit:#B03A28; --crit-tint:#F7E6E2;
+    --warn:#8F6008; --warn-tint:#F6EDDC;
+    --neutral-fill:#C6CEC6;
+    --f-display:"Anuphan","IBM Plex Sans Thai",system-ui,sans-serif;
+    --f-body:"IBM Plex Sans Thai","Anuphan","Noto Sans Thai",system-ui,sans-serif;
+    --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0D1210; --surface:#151C19; --surface-2:#1C2521;
+      --border:#29332E; --border-soft:#212B27;
+      --ink:#E9EFEA; --ink-2:#C3CEC7; --muted:#92A099;
+      --accent:#35BE99; --accent-tint:#122A24; --on-accent:#06231C;
+      --crit:#EE7461; --crit-tint:#2E1D19;
+      --warn:#D89C3C; --warn-tint:#2B2317;
+      --neutral-fill:#42504A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0D1210; --surface:#151C19; --surface-2:#1C2521;
+    --border:#29332E; --border-soft:#212B27;
+    --ink:#E9EFEA; --ink-2:#C3CEC7; --muted:#92A099;
+    --accent:#35BE99; --accent-tint:#122A24; --on-accent:#06231C;
+    --crit:#EE7461; --crit-tint:#2E1D19;
+    --warn:#D89C3C; --warn-tint:#2B2317;
+    --neutral-fill:#42504A;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink);
+         font-family:var(--f-body); font-size:16px; line-height:1.72;
+         -webkit-font-smoothing:antialiased; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+
+  .wrap { display:grid;
+    grid-template-columns:[full-start] minmax(1.25rem,1fr) [main-start] minmax(0,68ch) [main-end] minmax(1.25rem,1fr) [full-end];
+    row-gap:1.1rem; padding:clamp(2.5rem,7vw,5rem) 0 6rem; }
+  .wrap > * { grid-column:main; margin:0; }
+  .wrap > .wide { grid-column:full; width:100%; max-width:1160px; justify-self:center; }
+
+  h1,h2,h3 { font-family:var(--f-display); text-wrap:balance; line-height:1.28; }
+  h1 { font-size:clamp(2.3rem,6vw,3.4rem); font-weight:700; letter-spacing:-.015em; margin-bottom:.2rem; }
+  h2 { font-size:clamp(1.4rem,3.2vw,1.75rem); font-weight:600; }
+  h3 { font-size:1.08rem; font-weight:600; }
+  p { color:var(--ink-2); }
+  strong { color:var(--ink); font-weight:600; }
+  code,.num { font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+  code { font-size:.88em; background:var(--surface-2); padding:.1em .35em; border-radius:3px; }
+
+  .eyebrow { font-family:var(--f-mono); font-size:.72rem; letter-spacing:.14em;
+             text-transform:uppercase; color:var(--muted); }
+  .lede { font-size:1.12rem; color:var(--ink-2); }
+  .kicker { display:inline-flex; gap:.55rem; align-items:center; font-family:var(--f-mono);
+            font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--accent);
+            border:1px solid var(--border); background:var(--surface);
+            padding:.3rem .7rem; border-radius:999px; margin-bottom:1.2rem; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .rule { border:0; border-top:1px solid var(--border); margin:2.4rem 0 .4rem; }
+  .sec { margin-top:2.6rem; }
+  section > .eyebrow { margin-bottom:-.75rem; }
+
+  .card { background:var(--surface); border:1px solid var(--border);
+          border-radius:10px; padding:1.15rem 1.3rem; }
+  .grid2 { display:grid; gap:.9rem; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); }
+  .grid3 { display:grid; gap:.9rem; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); }
+  .card h3 { margin:0 0 .35rem; }
+  .card p { margin:0; font-size:.93rem; }
+
+  .tablewrap { overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+  table { border-collapse:collapse; width:100%; font-size:.92rem; min-width:480px; }
+  th,td { text-align:left; padding:.62rem .85rem; border-bottom:1px solid var(--border-soft); vertical-align:top; }
+  thead th { font-family:var(--f-mono); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase;
+             color:var(--muted); font-weight:500; background:var(--surface-2); border-bottom:1px solid var(--border); }
+  tbody tr:last-child td { border-bottom:0; }
+  td.n, th.n { text-align:right; font-family:var(--f-mono); font-variant-numeric:tabular-nums; }
+  .hi td { background:var(--accent-tint); font-weight:600; color:var(--ink); }
+  .dim td { color:var(--muted); }
+  .dim td:first-child { text-decoration:line-through; }
+
+  .callout { border-left:3px solid var(--accent); background:var(--accent-tint);
+             padding:.9rem 1.15rem; border-radius:0 8px 8px 0; }
+  .callout p { margin:0; color:var(--ink); }
+  .callout--warn { border-left-color:var(--crit); background:var(--crit-tint); }
+  .callout--amber { border-left-color:var(--warn); background:var(--warn-tint); }
+
+  figure { margin:0; }
+  .figbox { background:var(--surface); border:1px solid var(--border); border-radius:10px;
+            padding:1.1rem; overflow-x:auto; }
+  .figbox svg { display:block; width:100%; min-width:620px; height:auto; color:var(--ink-2); }
+  figcaption { font-size:.86rem; color:var(--muted); margin-top:.6rem; }
+
+  ul.plain { padding-left:1.15rem; color:var(--ink-2); }
+  ul.plain li { margin:.32rem 0; }
+  ol.steps { list-style:none; padding:0; counter-reset:st; display:grid; gap:.6rem; }
+  ol.steps li { counter-increment:st; position:relative; padding-left:2.4rem; color:var(--ink-2); }
+  ol.steps li::before { content:counter(st); position:absolute; left:0; top:.35rem;
+    font-family:var(--f-mono); font-size:.7rem; color:var(--accent);
+    width:1.6rem; height:1.6rem; display:grid; place-items:center;
+    border:1px solid var(--border); border-radius:50%; background:var(--surface); line-height:1; }
+
+  .chat { background:var(--surface-2); border:1px solid var(--border); border-radius:10px;
+          padding:1rem 1.15rem; font-size:.94rem; white-space:pre-wrap; color:var(--ink); }
+
+  .stat { display:flex; flex-wrap:wrap; gap:.5rem 2rem; align-items:baseline; }
+  .stat b { font-family:var(--f-mono); font-size:2rem; font-weight:500; color:var(--accent); }
+  .stat .bad { color:var(--crit); }
+
+  footer.end { color:var(--muted); font-size:.88rem; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="kicker"><span class="dot"></span>เอกสารออกแบบ · 21 ส.ค. 2026</div>
+    <h1>Ads 990</h1>
+    <p class="lede">วิธีใช้ Facebook Ads ให้ได้กำไรที่ราคาขาย 990 บาท
+    เมื่อโฆษณาเป็นช่องทางหาลูกค้าช่องทางเดียว</p>
+  </header>
+
+  <p>เอกสารนี้คู่กับแบบร่างระบบ JobDesk — อันนั้นคือสิ่งที่ต้องสร้าง อันนี้คือ<strong>วิธีใช้เงินโฆษณา</strong>
+  ทุกตัวเลขในนี้ผูกกับเศรษฐศาสตร์ของงาน 990 ถ้าราคาเปลี่ยน ต้องคำนวณใหม่ทั้งหมด</p>
+
+  <div class="callout callout--amber">
+    <p><strong>ข้อจำกัดที่กำหนดทุกอย่าง:</strong> โฆษณาเป็นช่องทางเดียว แปลว่าค่าโฆษณาไม่ใช่ค่าการตลาด
+    แต่เป็น<strong>ต้นทุนขายโดยตรง</strong> ไม่มีงบ “สร้างแบรนด์” ให้เล่น
+    และราคา 990 แคบเกินกว่าจะจ้างเอเจนซี่ ถ่ายโปรดักชัน หรือทดสอบยาว ๆ ยี่สิบชุด</p>
+  </div>
+
+  <p><strong>สิ่งที่ทำได้และรายใหญ่ทำไม่ได้: ตอบเร็ว ปิดเก่ง และรู้ว่าลูกค้าคนไหนจ่ายเงินจริง</strong>
+  ทั้งเอกสารสร้างรอบสามอย่างนี้</p>
+
+  <hr class="rule">
+
+  <!-- ======================= §1 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§1</div>
+    <h2>คณิตศาสตร์ที่ตัดสินว่าอยู่รอดไหม</h2>
+  </section>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>ต่อ 1 งาน</th><th class="n">บาท</th></tr></thead>
+      <tbody>
+        <tr><td>ราคาขาย</td><td class="n">990</td></tr>
+        <tr><td>− ต้นทุนตรง (ธีม ปลั๊กอิน ค่าธรรมเนียม)</td><td class="n">−70</td></tr>
+        <tr><td>= กำไรขั้นต้น</td><td class="n">920</td></tr>
+        <tr><td>− เหลือให้ตัวเองอย่างน้อย 120 ฿/ชม. × 5 ชม.</td><td class="n">−600</td></tr>
+        <tr class="hi"><td>เพดานค่าโฆษณาต่องานที่ปิดได้ (CAC)</td><td class="n">300</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:1.6rem">อัตราปิดการขายเป็นตัวคูณ ไม่ใช่ตัวประกอบเสริม</h3>
+  <p>นี่คือส่วนที่คนพลาดกันมากที่สุด เพดาน CAC 300 บาทแปลเป็นเพดาน “ค่าต่อคนทัก”
+  ได้ต่างกันมหาศาลตามอัตราปิด:</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>อัตราปิดการขาย</th><th class="n">ต้องได้กี่คนทักต่อ 1 งาน</th><th class="n">เพดาน CPL</th></tr></thead>
+      <tbody>
+        <tr><td>10%</td><td class="n">10 คน</td><td class="n">30 ฿</td></tr>
+        <tr><td>20%</td><td class="n">5 คน</td><td class="n">60 ฿</td></tr>
+        <tr class="hi"><td>30%</td><td class="n">3.3 คน</td><td class="n">90 ฿</td></tr>
+        <tr><td>40%</td><td class="n">2.5 คน</td><td class="n">120 ฿</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout" style="margin-top:1.2rem">
+    <p>ปรับอัตราปิดจาก 20% เป็น 30% ทำให้เพดาน CPL ขยายจาก 60 เป็น 90 —
+    <strong>หายใจได้ขึ้น 50% โดยไม่ต้องแตะโฆษณาเลยสักนิด</strong><br><br>
+    เพิ่มอัตราปิดฟรี ลด CPL ต้องจ่ายด้วยงบหรือเวลา <strong>§4 จึงเป็นบทที่สำคัญที่สุดในเอกสารนี้</strong>
+    ไม่ใช่บทเรื่องครีเอทีฟ</p>
+  </div>
+
+  <!-- ======================= §2 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§2</div>
+    <h2>ความจริงเรื่องงบที่ต้องรู้ก่อนวางแผน</h2>
+  </section>
+
+  <p>Meta ต้องการ <strong>ประมาณ 50 ผลลัพธ์ต่อสัปดาห์ต่อ ad set</strong> เพื่อออกจาก learning phase
+  (ราว 7 ต่อวัน) ก่อนหน้านั้นระบบยังเดาอยู่ ค่าต่อผลลัพธ์จะแพงและแกว่ง</p>
+
+  <div class="wide">
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 760 132" role="img" aria-label="แผนภาพเทียบจำนวนคนทักต่อสัปดาห์ที่งบสามพันบาทต่อเดือนได้ราว 23 คน กับเกณฑ์ 50 คนที่ต้องถึงจึงจะพ้น learning phase">
+          <g font-family="IBM Plex Sans Thai, sans-serif">
+            <text x="8" y="20" font-size="12.5" fill="var(--muted)">คนทักต่อสัปดาห์ ที่งบ 3,000 ฿/เดือน และ CPL 30 ฿</text>
+
+            <rect x="8" y="34" width="672" height="30" rx="4" fill="var(--surface-2)"></rect>
+            <rect x="8" y="34" width="257.6" height="30" rx="4" fill="var(--warn)"></rect>
+            <text x="22" y="54" font-size="13" fill="var(--on-accent)" font-weight="600">23</text>
+
+            <line x1="568" y1="26" x2="568" y2="72" stroke="var(--crit)" stroke-width="2"></line>
+            <text x="560" y="28" font-size="12" fill="var(--crit)" font-weight="600" text-anchor="end">เกณฑ์พ้น learning phase — 50</text>
+
+            <g font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">
+              <text x="8" y="84">0</text>
+              <text x="288" y="84" text-anchor="middle">25</text>
+              <text x="568" y="84" text-anchor="middle">50</text>
+              <text x="680" y="84" text-anchor="end">60</text>
+            </g>
+
+            <text x="8" y="112" font-size="12" fill="var(--ink-2)">
+              ขาดอีก 27 คน/สัปดาห์ — ต้องใช้งบราว 6,500 ฿/เดือน ถึงจะถึงเกณฑ์ที่ CPL 30 ฿
+            </text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>ตัวเลขนี้คิดจากสมมติฐาน CPL 30 บาท ซึ่งยังไม่ใช่ตัวเลขจริงของคุณ —
+      §7 บอกวิธีหาของจริงภายในเดือนแรก</figcaption>
+    </figure>
+  </div>
+
+  <p style="margin-top:1.2rem">ไม่ใช่หายนะ โฆษณายังยิงและยังได้ลูกค้า แต่มีผลตามมาสามข้อที่ต้องยอมรับ:</p>
+
+  <div class="wide grid3">
+    <div class="card">
+      <h3>1 · ห้ามแตกงบเด็ดขาด</h3>
+      <p>ad set เดียว ทุกบาทไปที่เดียวกัน แตกเป็น 3 ชุด ชุดละ 33 ฿/วัน = ไม่มีชุดไหนได้เรียนรู้เลยสักชุด</p>
+    </div>
+    <div class="card">
+      <h3>2 · อย่าตกใจกับรายวัน</h3>
+      <p>วันที่ได้ 0 คนทักไม่ได้แปลว่าพัง ดูเป็นรายสัปดาห์เท่านั้น</p>
+    </div>
+    <div class="card">
+      <h3>3 · ขยายที่ชุดเดิม</h3>
+      <p>ถ้าจะเพิ่มงบ ให้ใส่เพิ่มที่ ad set เดิม ไม่ใช่เปิดชุดใหม่</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:1.8rem">โครงสร้างที่ควรเป็น</h3>
+  <div class="chat">1 แคมเปญ · วัตถุประสงค์: ข้อความ (Messaging)
+  └─ 1 ad set · optimize: เริ่มบทสนทนา
+       ├─ ครีเอทีฟ A
+       ├─ ครีเอทีฟ B
+       └─ ครีเอทีฟ C     ← ให้ Meta เลือกเอง อย่าแยก ad set</div>
+
+  <p style="margin-top:1rem"><strong>ทำไมต้อง Messaging ไม่ใช่ Conversion</strong> — ที่ปริมาณนี้
+  ถ้า optimize เป็น “ซื้อ” จะได้ผลลัพธ์ราว 5 ครั้ง/สัปดาห์ ห่างจาก 50 มาก
+  จะไม่มีวันออกจาก learning phase เลยตลอดชีพ ส่วน “คนทัก” เกิดบ่อยกว่ามาก
+  จึงเป็นเหตุการณ์เดียวที่มีจำนวนพอให้ระบบเรียนรู้ได้</p>
+
+  <p><strong>กลุ่มเป้าหมายตั้งกว้างไว้</strong> — ไทย อายุ 25–55 <strong>ไม่ต้องใส่ interest อะไรเลย</strong>
+  การไล่ใส่ interest ละเอียด ๆ เป็นวิธีคิดของปี 2018 ทุกวันนี้ระบบหาคนที่จะทักเก่งกว่าการเดาของเรา
+  และการจำกัดกลุ่มแคบทำให้ค่าต่อผลลัพธ์แพงขึ้นเฉย ๆ</p>
+
+  <!-- ======================= §3 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§3</div>
+    <h2>Facebook รู้แค่ครึ่งเดียว</h2>
+  </section>
+
+  <div class="wide">
+    <figure>
+      <div class="figbox">
+        <svg viewBox="0 0 960 232" role="img" aria-label="แผนภาพแสดงว่า Facebook มองเห็นตั้งแต่ค่าโฆษณาจนถึงคนทักเท่านั้น ส่วนการเสนอราคา การปิดการขาย และเงินที่เข้าจริง มีแต่ JobDesk ที่เห็น และตัวเลข CAC ต้องใช้ข้อมูลทั้งสองฝั่ง">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="currentColor"></path>
+            </marker>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="var(--accent)"></path>
+            </marker>
+          </defs>
+
+          <g font-family="IBM Plex Sans Thai, sans-serif" font-size="12.5" text-anchor="middle">
+            <g fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55">
+              <rect x="8"   y="76" width="112" height="42" rx="6"></rect>
+              <rect x="142" y="76" width="112" height="42" rx="6"></rect>
+              <rect x="276" y="76" width="112" height="42" rx="6"></rect>
+            </g>
+            <g fill="none" stroke="var(--accent)" stroke-width="1.6">
+              <rect x="410" y="76" width="112" height="42" rx="6"></rect>
+              <rect x="576" y="76" width="112" height="42" rx="6"></rect>
+              <rect x="710" y="76" width="112" height="42" rx="6"></rect>
+              <rect x="844" y="76" width="108" height="42" rx="6"></rect>
+            </g>
+            <g fill="currentColor" opacity=".75">
+              <text x="64"  y="102">ค่าโฆษณา</text>
+              <text x="198" y="102">คนเห็น</text>
+              <text x="332" y="102">คนคลิก</text>
+            </g>
+            <g fill="var(--accent)">
+              <text x="466" y="102">คนทัก</text>
+              <text x="632" y="102">เสนอราคา</text>
+              <text x="766" y="102">ปิดได้</text>
+              <text x="898" y="102">เงินเข้า</text>
+            </g>
+          </g>
+
+          <g stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#a1)" opacity=".55">
+            <line x1="120" y1="97" x2="136" y2="97"></line>
+            <line x1="254" y1="97" x2="270" y2="97"></line>
+            <line x1="388" y1="97" x2="404" y2="97"></line>
+          </g>
+          <g stroke="var(--accent)" stroke-width="1.6" fill="none" marker-end="url(#a2)">
+            <line x1="522" y1="97" x2="570" y2="97"></line>
+            <line x1="688" y1="97" x2="704" y2="97"></line>
+            <line x1="822" y1="97" x2="838" y2="97"></line>
+          </g>
+
+          <line x1="549" y1="28" x2="549" y2="150" stroke="var(--crit)" stroke-width="2" stroke-dasharray="5 4"></line>
+
+          <g font-family="IBM Plex Sans Thai, sans-serif" font-size="12">
+            <text x="280" y="48" fill="var(--muted)" text-anchor="middle">Facebook เห็นถึงแค่นี้</text>
+            <text x="760" y="48" fill="var(--accent)" text-anchor="middle">มีแต่ JobDesk ที่เห็น</text>
+            <text x="466" y="136" fill="var(--muted)" font-size="11" text-anchor="middle">จุดส่งต่อ — ทั้งสองฝั่งเห็น</text>
+          </g>
+
+          <path d="M64,158 V176 H898 V158" fill="none" stroke="var(--accent)" stroke-width="1.4"></path>
+          <text x="481" y="200" font-family="IBM Plex Sans Thai, sans-serif" font-size="12.5"
+                fill="var(--ink-2)" text-anchor="middle">
+            CAC = ค่าโฆษณา ÷ งานที่ปิดได้ — ตัวเลขที่ตัดสินว่ากำไรไหม กินข้อมูลทั้งสองฝั่ง
+          </text>
+        </svg>
+      </div>
+      <figcaption>เส้นประคือขอบเขตความรู้ของ Facebook ไม่มีเครื่องมือของ Meta หรือของเจ้าไหนข้ามเส้นนี้ได้
+      เพราะข้อมูลอีกครึ่งอยู่ในฐานข้อมูลเราเท่านั้น</figcaption>
+    </figure>
+  </div>
+
+  <div class="callout callout--warn" style="margin-top:1.4rem">
+    <p><strong>ผลที่ตามมาซึ่งอันตรายมาก:</strong> Meta จะ optimize ไปหาคนที่ทักง่ายที่สุด
+    ไม่ใช่คนที่จ่ายเงิน แคมเปญที่ได้คนทักถูก ๆ จากคนที่ถามเล่นจะดูดีที่สุดใน Ads Manager และขาดทุนจริง</p>
+  </div>
+
+  <div class="wide" style="margin-top:1.2rem">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>ตัวเลข</th><th>ดูที่ไหน</th><th>ใช้ตัดสินอะไร</th></tr></thead>
+        <tbody>
+          <tr class="hi"><td>CAC — ต้นทุนต่องานที่ปิดได้</td><td>JobDesk</td><td>ตัวเดียวที่ตัดสินว่ากำไรไหม</td></tr>
+          <tr><td>อัตราปิดการขาย</td><td>JobDesk</td><td>ตัวคูณที่แรงที่สุด (§1)</td></tr>
+          <tr><td>CPL — ค่าต่อคนทัก</td><td>Ads Manager + JobDesk</td><td>ใช้เฝ้าประจำวัน</td></tr>
+          <tr><td>Frequency</td><td>Ads Manager</td><td>บอกว่าถึงเวลาเปลี่ยนครีเอทีฟหรือยัง</td></tr>
+          <tr class="dim"><td>ROAS ใน Ads Manager</td><td>—</td><td>เลิกดู มันไม่รู้ว่าใครจ่ายจริง</td></tr>
+          <tr class="dim"><td>ยอดไลก์ แชร์ เข้าถึง</td><td>—</td><td>เลิกดู ไม่มีอันไหนซื้อข้าวได้</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:1.2rem">
+    <p><strong>ตัดสินด้วย CAC เท่านั้น ห้ามตัดสินด้วย CPL เพียงอย่างเดียว</strong><br><br>
+    แคมเปญ A — CPL <span class="num">25 ฿</span> ปิดได้ <span class="num">8%</span> →
+    CAC <span class="num">313 ฿</span> → <strong>ขาดทุน</strong><br>
+    แคมเปญ B — CPL <span class="num">55 ฿</span> ปิดได้ <span class="num">30%</span> →
+    CAC <span class="num">183 ฿</span> → <strong>กำไรดี</strong><br><br>
+    ใน Ads Manager แคมเปญ A ดูดีกว่าสองเท่า</p>
+  </div>
+
+  <!-- ======================= §4 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§4</div>
+    <h2>ข้อความแรกที่ตอบลูกค้า — บทที่สำคัญที่สุด</h2>
+  </section>
+
+  <p>§1 พิสูจน์แล้วว่าอัตราปิดการขายเป็นตัวคูณที่แรงกว่าทุกอย่าง และมันถูกตัดสิน
+  <strong>ในข้อความแรกที่ตอบกลับ</strong> ไม่ใช่ในโฆษณา</p>
+
+  <p><strong>ตอบภายใน 5 นาที</strong> ตอนที่เขายังเปิดแอปอยู่และยังคิดเรื่องนี้อยู่
+  ตอบพรุ่งนี้เช้าคือคุยกับคนที่ทักไปอีกสามเจ้าแล้ว ตั้งข้อความอัตโนมัติของเพจไว้ซื้อเวลา
+  แล้วไปตอบจริงภายในไม่กี่นาที</p>
+
+  <p><strong>ไม่ต้องรอให้เขาถามราคา บอกไปเลย</strong> คนที่รับราคาไม่ได้จะหายไปตั้งแต่นาทีแรก
+  ซึ่งเป็นเรื่องดี — เวลาที่ประหยัดได้คือกำไร</p>
+
+  <div class="chat">สวัสดีครับ ขอบคุณที่ทักมาครับ 🙏
+ทำเว็บให้ธุรกิจอะไรครับ เดี๋ยวผมส่งตัวอย่างที่ใกล้เคียงให้ดู
+
+ราคา 990 บาท ได้ [จำนวน] หน้า พร้อม [สิ่งที่รวม]
+เสร็จภายใน [X] วัน แก้ได้ [Y] รอบ
+
+ตัวอย่างงานที่เคยทำ:
+1. …
+2. …
+3. …
+
+สนใจให้เริ่มเลยไหมครับ ผมขอข้อมูลร้านนิดหน่อย</div>
+
+  <p style="margin-top:1rem">จุดสำคัญสี่อย่าง: <strong>ถามว่าธุรกิจอะไร</strong> (ทำให้เขาตอบ) ·
+  <strong>บอกราคาทันที</strong> · <strong>ส่งตัวอย่างจริง</strong> ·
+  <strong>ปิดด้วยคำถามที่ตอบง่าย</strong></p>
+
+  <div class="callout">
+    <p>JobDesk บันทึกทุกคนที่ทักมาและเหตุผลที่ไม่ซื้อ ถ้าเหตุผล “แพงไป” ขึ้นมาเกินครึ่ง
+    แปลว่า<strong>โฆษณาดึงคนผิดกลุ่ม ไม่ใช่ราคาผิด</strong> — ต้องแก้ที่โฆษณาให้พูดราคาชัดขึ้น ไม่ใช่ลดราคา</p>
+  </div>
+
+  <!-- ======================= §5 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§5</div>
+    <h2>ครีเอทีฟ</h2>
+  </section>
+
+  <h3>ลำดับการทดสอบ เรียงตามผลกระทบ</h3>
+  <p>คนส่วนใหญ่ทดสอบจากล่างขึ้นบน ซึ่งกลับหัว:</p>
+  <ol class="steps">
+    <li><strong>ข้อเสนอ</strong> — ราคา สิ่งที่รวม เงื่อนไข <em>เปลี่ยนผลลัพธ์มากที่สุด</em></li>
+    <li><strong>hook สามบรรทัดแรก</strong> — คนตัดสินใจหยุดนิ้วตรงนี้</li>
+    <li><strong>ภาพหรือวิดีโอ</strong></li>
+    <li><strong>กลุ่มเป้าหมาย</strong> — <em>เปลี่ยนน้อยที่สุด ปล่อยให้ Meta ทำ</em></li>
+  </ol>
+
+  <h3 style="margin-top:1.6rem">รูปแบบที่ทำเองได้ใน 30 นาที</h3>
+  <ul class="plain">
+    <li><strong>ภาพหน้าจอเว็บที่เคยทำ</strong> วางเรียง 3–4 อัน ใส่ราคาทับ — ง่ายที่สุด พิสูจน์ผลงานได้ทันที</li>
+    <li><strong>ก่อน/หลัง</strong> เพจเฟซบุ๊กรก ๆ เทียบกับเว็บที่เป็นระเบียบ</li>
+    <li><strong>วิดีโอจอ 15–20 วินาที</strong> เลื่อนเว็บที่ทำเสร็จให้ดู ถ่ายจากมือถือได้เลย</li>
+    <li><strong>ข้อความตรง ๆ บนพื้นสีเดียว</strong> ราคาและสิ่งที่ได้ ไม่ต้องมีรูป</li>
+  </ul>
+  <p style="font-size:.93rem;color:var(--muted)">หลีกเลี่ยง: ภาพสต็อกฝรั่งใส่สูท ข้อความยาวเป็นเรียงความ
+  และคำว่า “โปรโมชั่นพิเศษ” ลอย ๆ</p>
+
+  <h3 style="margin-top:1.6rem">เปลี่ยนครีเอทีฟเมื่อไหร่</h3>
+  <ul class="plain">
+    <li><strong>Frequency เกิน 2.5</strong> — คนกลุ่มเดิมเห็นซ้ำจนเบื่อแล้ว</li>
+    <li><strong>CPL ขึ้นเกิน 50%</strong> จากค่าเฉลี่ย 7 วันก่อนหน้า และไม่ลงกลับใน 3 วัน</li>
+    <li><strong>ผ่านไป 4–6 สัปดาห์</strong> ต่อให้ตัวเลขยังดี</li>
+  </ul>
+  <p><strong>เตรียมครีเอทีฟสำรองไว้ 2 ชิ้นเสมอ</strong> วันที่ตัวหลักตกคือวันที่ต้องมีของเปลี่ยนทันที
+  ไม่ใช่วันที่เพิ่งเริ่มคิด</p>
+
+  <!-- ======================= §6 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§6</div>
+    <h2>วิเคราะห์คู่แข่ง</h2>
+  </section>
+
+  <p>เปิด <code>facebook.com/ads/library</code> เลือกประเทศไทย ไม่ต้องล็อกอิน
+  ค้นชื่อเพจคู่แข่ง หรือคำว่า “รับทำเว็บ” “ทำเว็บไซต์” “เว็บร้านค้า” — <strong>ฟรีและพอแล้ว</strong></p>
+
+  <div class="callout">
+    <p><strong>สัญญาณเดียวที่เป็นของจริง คือ อายุของโฆษณา</strong><br><br>
+    Ad Library ไม่แสดงผลลัพธ์ของใครทั้งนั้น ไม่มี CTR ไม่มี ROAS ไม่มียอดขาย
+    ใครขายเครื่องมือที่อ้างว่าดูตัวเลขคู่แข่งได้ นั่นคือการประมาณให้ฟัง<br><br>
+    แต่ <strong>โฆษณาที่ยิงตัวเดิมมาหลายเดือนแล้วยังทำงานอยู่ = โฆษณาที่ทำเงินให้เขา</strong>
+    ไม่มีใครจ่ายเงินยิงของที่ขาดทุนต่อเนื่องสามเดือน นั่นคือสูตรที่ผ่านการทดสอบด้วยเงินจริงของคนอื่นมาแล้ว</p>
+  </div>
+
+  <div class="wide" style="margin-top:1.2rem">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>จดทุกครั้ง</th><th>เพราะ</th></tr></thead>
+        <tbody>
+          <tr><td>ชื่อเพจ</td><td>ไว้ตามต่อ</td></tr>
+          <tr class="hi"><td>วันที่เริ่มยิง</td><td>อายุ = สัญญาณเดียวที่บอกว่าได้ผล</td></tr>
+          <tr><td>ราคาที่โฆษณา</td><td>บอกว่าตลาดอยู่ตรงไหน เราถูกหรือแพงเกิน</td></tr>
+          <tr><td>สิ่งที่สัญญา</td><td>จำนวนหน้า ฟรีโดเมนไหม กี่วันเสร็จ กี่รอบแก้</td></tr>
+          <tr><td>hook สามบรรทัดแรก</td><td>สิ่งที่เอามาปรับใช้ได้เร็วที่สุด</td></tr>
+          <tr><td>จำนวนตัวที่ยิงพร้อมกัน</td><td>บอกว่าเขาลงทุนหนักแค่ไหน</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p style="margin-top:1.2rem"><strong>ทำเดือนละครั้ง 20 นาที</strong> ไม่ต้องบ่อยกว่านี้
+  ตลาดไม่ได้เปลี่ยนทุกสัปดาห์ และเวลาที่เอาไปส่องคู่แข่งคือเวลาที่ไม่ได้เอาไปตอบลูกค้า</p>
+  <p><strong>ห้ามลอกทั้งดุ้น</strong> ราคาที่เขาโฆษณาอาจมาพร้อมต้นทุนที่เราไม่เห็น
+  (ทีมงาน 5 คน หรือขายของเสริมทีหลัง) เอามาเป็นข้อมูล ไม่ใช่เอามาเป็นคำสั่ง</p>
+
+  <!-- ======================= §7 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§7</div>
+    <h2>กฎการตัดสินใจ</h2>
+  </section>
+
+  <p>ตัวเลขข้างล่างคิดจากเพดาน CAC 300 และ CPL เป้า 60 บาท (อัตราปิด 20%)
+  <strong>ถ้าอัตราปิดจริงของคุณต่างจากนี้ ให้คำนวณเพดาน CPL ใหม่จาก §1 ก่อน</strong></p>
+
+  <div class="wide">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>สถานการณ์</th><th>ทำอะไร</th></tr></thead>
+        <tbody>
+          <tr><td>ใช้งบไป 180 ฿ (3× CPL เป้า) ยังไม่มีใครทัก</td><td>ฆ่าครีเอทีฟตัวนั้น</td></tr>
+          <tr><td>CPL &gt; 90 ฿ หลังใช้ไป 300 ฿</td><td>ฆ่าหรือรื้อครีเอทีฟใหม่</td></tr>
+          <tr><td>CPL 60–90 ฿</td><td>ปล่อยไว้ ดูอีกสัปดาห์ อย่าเพิ่งขยับ</td></tr>
+          <tr class="hi"><td>CPL &lt; 60 และอัตราปิด ≥ 15%</td><td>ขยายงบ +20–30% ต่อครั้ง ห่างกันอย่างน้อย 3 วัน</td></tr>
+          <tr><td>CAC &gt; 300 สองสัปดาห์ติด</td><td>หยุดยิง กลับไปแก้ §4 ก่อน ไม่ใช่แก้โฆษณา</td></tr>
+          <tr><td>Frequency &gt; 2.5</td><td>เปลี่ยนครีเอทีฟ</td></tr>
+          <tr><td>ยังไม่ถึง 3 วัน หรือใช้ไม่ถึง 3× CPL เป้า</td><td><strong>ห้ามแตะ</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="wide grid3" style="margin-top:1.2rem">
+    <div class="card">
+      <h3>ห้ามตัดสินก่อน 3 วัน</h3>
+      <p>ระบบยังเรียนรู้อยู่ ตัวเลขวันแรกไม่มีความหมาย</p>
+    </div>
+    <div class="card">
+      <h3>ห้ามขยับงบเกิน 30%</h3>
+      <p>การขยับแรง ๆ ทำให้ ad set กลับเข้า learning phase และเสียการเรียนรู้ที่ลงทุนไปแล้วทั้งหมด</p>
+    </div>
+    <div class="card">
+      <h3>ห้ามปิดแล้วเปิดใหม่</h3>
+      <p>ทุกครั้งที่เปิดใหม่คือเริ่มนับ learning ใหม่ ถ้าจะหยุดให้หยุดยาว</p>
+    </div>
+  </div>
+
+  <!-- ======================= §8 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§8</div>
+    <h2>จังหวะการทำงาน</h2>
+  </section>
+
+  <div class="wide grid3">
+    <div class="card">
+      <h3>ทุกวัน · 5 นาที</h3>
+      <p>ตอบคนที่ทักภายใน 5 นาที · บันทึกทุกคนที่ทักลง JobDesk พร้อมแคมเปญที่พามา ·
+      ดูว่าใช้งบเท่าไหร่ได้กี่คนทัก <strong>แล้วไม่ต้องแตะอะไร</strong></p>
+    </div>
+    <div class="card">
+      <h3>ทุกสัปดาห์ · 20 นาที</h3>
+      <p>นำเข้าค่าโฆษณา CSV เข้า JobDesk · ดู CPL / อัตราปิด / <strong>CAC</strong> ·
+      ใช้กฎใน §7 ตัดสิน · เช็ก Frequency</p>
+    </div>
+    <div class="card">
+      <h3>ทุกเดือน · 1 ชั่วโมง</h3>
+      <p>ส่อง Ad Library 20 นาที · ทำครีเอทีฟใหม่ 2 ชิ้นเก็บไว้ · ดูกำไรสุทธิเทียบเดือนก่อน ·
+      ทบทวนว่าเพดาน CAC 300 ยังใช่ไหม</p>
+    </div>
+  </div>
+
+  <!-- ======================= §9 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§9</div>
+    <h2>สิ่งที่ JobDesk ต้องมีเพิ่ม</h2>
+  </section>
+
+  <p>เฟส 4 ตามแผนเดิมครอบคลุมส่วนใหญ่แล้ว — คนที่ทักมา แคมเปญ ค่าโฆษณารายวัน
+  หน้าโฆษณาที่คำนวณ CPL / CAC / อัตราปิด และเตือนเมื่อทะลุเพดาน เอกสารนี้เพิ่มสามอย่าง:</p>
+
+  <div class="wide grid3">
+    <div class="card">
+      <h3>บันทึกครีเอทีฟ</h3>
+      <p>ครีเอทีฟไหนเริ่มวันไหน หยุดวันไหน — เพื่อตอบได้ว่า CPL ที่พุ่งสัปดาห์ที่แล้ว
+      ตรงกับวันเปลี่ยนครีเอทีฟพอดีไหม ถ้าไม่บันทึกจะเดาตลอดไป</p>
+    </div>
+    <div class="card">
+      <h3>บันทึกคู่แข่ง</h3>
+      <p>ที่เก็บผลส่อง Ad Library รายเดือน ค่าของมันอยู่ที่<strong>การเปรียบเทียบข้ามเดือน</strong> —
+      ตัวไหนของเขายังอยู่หลังสามเดือน ซึ่งการส่องครั้งเดียวไม่มีวันบอกได้</p>
+    </div>
+    <div class="card">
+      <h3>เพดาน CAC ที่แก้ได้จากหน้าเว็บ</h3>
+      <p>ตอนนี้อยู่ใน <code>.env</code> ควรแก้ได้จากหน้าเว็บ เพราะ §8 บอกให้ทบทวนทุกเดือน</p>
+    </div>
+  </div>
+
+  <!-- ======================= §10 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§10</div>
+    <h2>สิ่งที่ห้ามทำ เรียงตามความเสียหาย</h2>
+  </section>
+
+  <ol class="steps">
+    <li><strong>แตกงบไปหลาย ad set</strong> — ไม่มีชุดไหนพ้น learning phase ทั้งเดือนคือการจ่ายค่าเรียนรู้ที่ไม่มีวันได้ใช้</li>
+    <li><strong>optimize เป็น purchase</strong> — ที่ปริมาณ 5 งาน/สัปดาห์ จะไม่มีวันพ้น learning</li>
+    <li><strong>ตัดสินด้วย ROAS ใน Ads Manager</strong> — มันไม่รู้ว่าใครจ่ายเงินจริง</li>
+    <li><strong>ปิด ๆ เปิด ๆ หรือขยับงบแรง ๆ</strong> — รีเซ็ต learning ทุกครั้ง</li>
+    <li><strong>จ้างเอเจนซี่หรือซื้อเครื่องมือแพง ๆ</strong> — ที่กำไร 770 ฿/งาน ค่าบริการเดือนละ 3,000 คือต้องขายเพิ่ม 4 งานเพื่อเสมอตัว</li>
+    <li><strong>ลดราคาเพราะปิดไม่ได้</strong> — ปัญหามักอยู่ที่ข้อความแรก (§4) และการลดราคาทำให้เพดาน CAC แคบลงอีก ทุกอย่างยากขึ้น ไม่ใช่ง่ายขึ้น</li>
+    <li><strong>ไล่ใส่ interest ละเอียด ๆ</strong> — แพงขึ้นโดยไม่ได้อะไร</li>
+  </ol>
+
+  <!-- ======================= §11 ======================= -->
+  <section class="sec">
+    <div class="eyebrow">§11</div>
+    <h2>ทำอะไรก่อนหลัง</h2>
+  </section>
+
+  <div class="callout callout--warn">
+    <p><strong>สัปดาห์นี้ ข้อที่ 1 สำคัญที่สุดและใช้เวลา 5 นาที</strong> — ใส่ <code>?ref=camp_xxx</code>
+    ในลิงก์โฆษณาทุกตัว ไม่ทำวันนี้ = ข้อมูลของเดือนนี้หายถาวร และจะไม่มีวันรู้ย้อนหลังว่า
+    ลูกค้าที่จ่ายเงินมาจากแคมเปญไหน</p>
+  </div>
+
+  <ol class="steps" style="margin-top:1.2rem">
+    <li>ใส่ <code>m.me/&lt;เพจ&gt;?ref=camp_xxx</code> ในลิงก์โฆษณาทุกตัว</li>
+    <li>รวม ad set ให้เหลือชุดเดียว</li>
+    <li>เขียนข้อความแรกตาม §4 แล้วตั้งข้อความอัตโนมัติของเพจ</li>
+    <li>ส่อง Ad Library หนึ่งรอบ จดตาม §6</li>
+    <li>บันทึกทุกคนที่ทักลง JobDesk ให้ครบ — ตัวหารของอัตราปิดมาจากตรงนี้</li>
+    <li>นำเข้าค่าโฆษณา CSV รายสัปดาห์</li>
+    <li><strong>หา CPL และอัตราปิดจริงของตัวเอง แล้วคำนวณเพดานใน §1 ใหม่จากตัวเลขจริง</strong></li>
+  </ol>
+
+  <p style="margin-top:1.2rem">แล้วค่อยทำเฟส 4 — เมื่อมีตัวเลขจริงสองเดือนแล้ว เกณฑ์ที่ตั้งจะเป็นของจริง
+  ไม่ใช่ของที่สมมติไว้ในเอกสารนี้</p>
+
+  <hr class="rule">
+  <footer class="end">
+    <p>ฉบับข้อความอยู่ที่ <code>jobdesk/ads-playbook.md</code> · เอกสารระบบอยู่ที่ <code>jobdesk/README.md</code></p>
+  </footer>
+
+</div>
