@@ -55,9 +55,8 @@ per-video state was the one thing that had never been written down.
   playwright install chromium` (capture_web.py). `ffmpeg`/`ffprobe` and `node`/`npx` on PATH.
 - **API keys** live in `.env` at the repo root (copy `.env.example`). Never commit `.env`.
   ELEVENLABS_API_KEY = voice/SFX/music · FAL_KEY = AI clips + images · **GEMINI_API_KEY =
-  images AND Thai TTS** — one key, two very different bills. `COSTS.md` measures the split:
-  voice is ~9% of it, images are the rest, and `--size` defaults to 2K when props only need
-  1K. Read it before generating a batch of layers.
+  images AND Thai TTS** — one key, two very different bills. `COSTS.md` has the real SKU
+  breakdown: images 57%, voice 35%. Read it before generating a batch of layers.
 - **Registry is generated:** after adding/renaming a shot, `cd remotion && npm run gen`
   (frames.mjs/render-all.mjs do NOT run it themselves).
 - **Media rules:** `media/library/` is for CROSS-VIDEO reusable assets only (each with a
@@ -66,7 +65,10 @@ per-video state was the one thing that had never been written down.
   generate — check the catalogs first.
 - **Committed vs gitignored media:** AI-generated clips and collage layers in
   `media/projects/` ARE committed (paid, non-reproducible pixels). `*/voice/` and `*/output/`
-  are gitignored everywhere (regenerable); `ai-shorts/*/shots/*.mp4` working copies too — the
+  are gitignored everywhere — but **`voice/` is only "regenerable" in the sense that money
+  regenerates it.** It is a paid cache, it dies with the container, and the bill shows the same
+  audio bought 3.3 times over (`COSTS.md` §3). Sync it off-container before a fresh session
+  starts generating; `ai-shorts/*/shots/*.mp4` working copies too — the
   canonical clip lives in `media/projects/<name>/`.
 - **Costs (ai-shorts only):** state the derived generation cost BEFORE spending it, and never
   regenerate a locked character from text (see /make-ai-short's iron rules).
