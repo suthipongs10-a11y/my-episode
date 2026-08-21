@@ -1,0 +1,9 @@
+{
+  "prompt": "A bold horizontal YouTube thumbnail, 1920x1080 landscape, very dark navy blue background (#0e1a24) filling the whole frame edge to edge with a faint thin blueprint grid, flat technical drawing style. The dark navy fills THE ENTIRE IMAGE, EDGE TO EDGE. It is NOT a card or panel sitting on another colour — no border, no frame, no second background colour.\n\nLEFT HALF: large Thai headline in warm off-white, heavy geometric sans-serif, stacked on exactly two lines, perfectly spelled, reading exactly:\nมีเครื่องยนต์\nแต่ไม่เคยขับล้อ\nDirectly below the headline, one short line of muted grey-blue Thai text on ONE line, perfectly spelled, much smaller: REEV ต่างจาก PHEV ตรงนี้\n\nRIGHT HALF: a simple flat schematic diagram drawn as plain rounded rectangles joined by straight lines, like a clean engineering block diagram. Three small boxes in a row along the top and two along the bottom, joined left to right by thin amber and teal lines. Below them, ONE separate line that runs from the top-left box down and across toward the bottom-right box — and this line is drawn in flat red and is CROSSED OUT with a single bold red X in the middle of it. The crossed-out line is the most eye-catching element on the right half. The boxes are empty — no text inside any box.\n\nFlat solid colours only: very dark navy, warm off-white, amber, teal, warm red, muted grey-blue. No gradient, no glow, no drop shadow, no 3D, no photographic texture. No car, no vehicle, no wheels, no engine picture, no people, no brand logos, no badges, no number plates, no other numbers or letters anywhere except the specified Thai text.\nKeep 8% clear margin left and right, 6% top and bottom.",
+  "model": "gemini-3-pro-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-21T00:38:29"
+}

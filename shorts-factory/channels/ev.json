@@ -16,7 +16,8 @@
 		"vox-5-tesla-dry",
 		"vox-6-sodium-ion",
 		"vox-9-spec-sheet",
-		"vox-10-charge-curve"
+		"vox-10-charge-curve",
+		"vox-15-reev"
 	],
 	"rules": [
 		"ต้องอธิบาย 'ทำไม' ด้วยกลไก ไม่ใช่แค่ 'อะไร' — คนดูช่องนี้มาหาเหตุผลทางวิศวกรรม",
