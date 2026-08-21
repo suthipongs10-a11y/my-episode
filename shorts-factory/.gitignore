@@ -16,6 +16,12 @@ shorts/*/output/
 ai-shorts/*/voice/
 ai-shorts/*/output/
 vox-shorts/*/voice/
+# ...but vox-shorts/*/voice-cache/ IS committed. The line above calls voice/ regenerable and
+# the invoice disagrees: gemini-3.1-flash-tts billed 15,245s against 4,656s in the caches,
+# because they die with the container and every session re-buys them (COSTS.md §3). The
+# voice-cache/ mirror is the same audio as FLAC, lossless, 58% of the size, and it is paid
+# inventory in exactly the way media/projects/ is. tools/voice-cache.py packs and restores it.
+!vox-shorts/*/voice-cache/
 vox-shorts/*/output/
 
 # ai-shorts working copies of generated clips — the canonical (committed) copies

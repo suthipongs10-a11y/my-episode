@@ -80,3 +80,34 @@ per-video state was the one thing that had never been written down.
   chapter carried by its headline. Sampled frames almost never land in a gap. Run
   `node remotion/scripts/check-chapter-pace.mjs` too; it reads the source, where a gap actually
   lives (`brand.md` §5.5).
+
+## Cost rules (hard) — decided 2026-08-21 from the real invoice
+
+`COSTS.md` has the measurement. These are the standing decisions that came out of it. They are
+here rather than in COSTS.md because they bind every session, and a rule nobody reads is not a
+rule.
+
+1. **NEVER generate a cover image.** Write the prompt into `<project>/covers.th.md` and stop —
+   **the operator generates covers himself.** This is not a cost heuristic, it is an
+   instruction. Covers are the only images that carry Thai text and so the only ones that
+   needed the expensive `pro` model; with them out of the pipeline, `pro` has no remaining use.
+2. **`--model pro` is not used.** Every image this factory still generates is a plate or a
+   cut-out prop — dimmed to 0.84 and put behind type, or run through `rembg`. `fast` is the
+   default in `gen_image.py` and there is no longer a reason to override it.
+3. **`--size` stays at 2K.** 1K and 2K are the *same* 1,120-token billing tier, so dropping
+   resolution buys nothing and costs sharpness. (An earlier version of this file said the
+   opposite. It was wrong.)
+4. **The voice cache is paid inventory, not scratch.** `vox-shorts/*/voice/` was gitignored as
+   "regenerable" and the bill shows the same audio bought **3.3 times over**, because the cache
+   dies with the container. Before generating any voice, run `python tools/voice-cache.py
+   restore`; after, run `python tools/voice-cache.py pack` and commit. It stores FLAC at ~55% of
+   WAV and is lossless.
+5. **Reuse a plate before generating one.** Every generated image is money that does not come
+   back. Check `media/library/` and other projects' `layers/` first — a dimmed backdrop is not
+   specific to its video the way a diagram is.
+6. **We stay on the Gemini API.** Moving the text-free images to a cheap open model (FLUX and
+   similar) would be ~22× cheaper and was considered and **declined by the operator** — do not
+   reopen it. Thai script is why covers could never have moved anyway.
+7. **Batch API is opt-in, not default.** It is a flat −50% on images and every image here is
+   generated ahead of the render, so it fits — but the turnaround is up to 24 hours, which
+   stalls a video for a day. Use it only when the operator asks for a batch run.

@@ -329,6 +329,16 @@ field well past the `text` it replaces, and a line with three clauses pauses bet
 vox-7 line came in 2.4s over its character count, and it was the one with three clauses).
 Under 60s is a hard gate — a Short that measures 60.06s is not a Short.
 
+> **⬛ RESTORE THE CACHE FIRST — every session, before the first generate.**
+> ```bash
+> python tools/voice-cache.py restore
+> ```
+> `vox-shorts/*/voice/` is gitignored and this repo runs in a container that gets recreated, so
+> a fresh session starts with an empty cache and re-buys audio it already owns. The invoice
+> measured it: 15,245 s billed against 4,656 s held, **3.3× over** (`COSTS.md` §3). The FLAC
+> mirror in `voice-cache/` is committed; `restore` turns it back into the WAVs that
+> `gen_voice_gemini.py`'s hash cache looks for. Run `pack` when you are done generating.
+
 ```bash
 python tools/gen_voice_gemini.py --beats <beats.json> --voice Algieba --retime \
   --style "อ่านแบบผู้บรรยายสารคดี น้ำเสียงหนักแน่นจริงจัง จังหวะกระชับ พูดเร็วขึ้นเล็กน้อย ไม่ลากเสียง ไม่เว้นวรรคนาน"
@@ -518,6 +528,14 @@ still refused — the video doesn't teach it. Tags and description, never the ti
 `len()` overcounts by ~20% and rejects titles that fit. Strip them, then apply the ≤40 rule.
 
 ## 11. Cover → `covers.th.md`
+
+> ### ⛔ DO NOT GENERATE THE COVER. Write the prompt and stop.
+>
+> Decided 2026-08-21: **the operator generates covers himself.** This step produces
+> `covers.th.md` — the prompts, the channel rules that bind them, and the checklist — and
+> nothing else. `gen_image.py` exits non-zero on a `covers/` output path; that is deliberate,
+> not a bug. Everything below is how to *write* the prompt, and the upload-size note is for
+> the operator once he has the PNG.
 
 `gemini-3-pro-image` **renders Thai correctly** — put the words in the prompt. Required in
 every cover prompt: explicit margins (8% sides / 6% top-bottom), one number 3–4× the other

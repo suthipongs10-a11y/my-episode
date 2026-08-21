@@ -63,7 +63,22 @@ Kept on purpose. All three errors came from reasoning about the bill instead of 
 The common failure: **an archive that only keeps successes cannot measure spend, and a cache
 that is deleted cannot measure anything.** Bill first, repo second.
 
-## 5. What to change
+## 5. Decisions taken 2026-08-21 — these are settled
+
+| decision | effect |
+|---|---|
+| **Covers are no longer generated here.** The tool writes the prompt; the operator generates the image. | −฿63, and it retires `pro` entirely |
+| **`--model pro` refused by `gen_image.py`.** Nothing left in the pipeline carries text. | −฿124 |
+| **Voice cache committed as FLAC.** `tools/voice-cache.py pack` / `restore`; `voice-cache/` un-ignored. | −฿177, and it stops growing every container |
+| **Stay on the Gemini API.** FLUX for the text-free images was costed at ~22× cheaper and **declined**. Do not reopen. | — |
+| **Batch API stays opt-in.** −50% on images, but up to 24 h turnaround stalls a video for a day. | −฿376 when asked for |
+
+Rules 1–3 are enforced in code, not in prose: `gen_image.py` exits non-zero on a `covers/`
+output path or `--model pro`, with `--i-am-the-operator` as the deliberate override.
+
+**฿1,010 attributable → ~฿646 without batching, ~฿270 with it.**
+
+## 6. What to change if the decisions are ever revisited
 
 ### Free and immediate — do these
 
@@ -75,7 +90,7 @@ that is deleted cannot measure anything.** Bill first, repo second.
 
 **฿1,010 attributable → ~฿333. A 67% cut with no change in output.**
 
-### The bigger move — a different provider for the pixels that carry no text
+### ~~The bigger move — a different provider for the pixels that carry no text~~ — DECLINED 2026-08-21
 
 **212 of 226 kept images contain no text at all** — plates dimmed to 0.84 behind type, and
 cut-out props that go through `rembg` anyway. FLUX.1 [schnell] is ~$0.003 against Gemini flash's
@@ -89,7 +104,7 @@ Bake it off before switching (`tools/bakeoff_clip.py` is the precedent): same fi
 on both, dimmed to 0.84, judged at phone scale. If it passes, images drop from ฿752 to under
 ฿100 and the total lands near **฿165 — an 84% cut**.
 
-## 6. Re-measuring
+## 7. Re-measuring
 
 Download the SKU report — Billing → Reports → **Group by `SKU`** (not `Service`; `Service`
 lumps images and voice into one `Gemini API` line, which is what hid this) → **Download CSV**.
