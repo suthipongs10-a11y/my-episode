@@ -71,3 +71,7 @@ per-video state was the one thing that had never been written down.
   all channels). One full-frame plate per scene dimmed 0.80–0.87, cut-out props on top, no
   faces, no landmarks. Count before rendering: `node remotion/scripts/check-scene-imagery.mjs`.
 - **QA is not optional:** render frames at phone scale and READ them before any full render.
+  Frames alone are not enough for anything that is an *absence* — a hole between scenes, a
+  chapter carried by its headline. Sampled frames almost never land in a gap. Run
+  `node remotion/scripts/check-chapter-pace.mjs` too; it reads the source, where a gap actually
+  lives (`brand.md` §5.5).

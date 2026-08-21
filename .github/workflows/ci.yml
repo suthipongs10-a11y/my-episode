@@ -82,6 +82,14 @@ jobs:
         working-directory: shorts-factory/remotion
         run: node scripts/check-scene-imagery.mjs --check
 
+      - name: No chapter runs long on a headline alone
+        # vox-15 shipped a 20.2s stretch with nothing but a title over its plate, and frame QA
+        # missed it: ten sampled frames out of 14,370 land almost anywhere except in a gap.
+        # A gap is a property of the source, so this reads the source. Shots older than the
+        # check are listed by name inside the script.
+        working-directory: shorts-factory/remotion
+        run: node scripts/check-chapter-pace.mjs --check
+
       - name: Cue blocks match their beats.json
         # Every frame number in a vox composition is generated from that video's measured
         # line timings. A cue block left stale after a script edit is silent — the video

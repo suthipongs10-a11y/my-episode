@@ -69,6 +69,13 @@ the current one (it is the form-filling checklist, not just copy). vox-2 has onl
      The 15–20% conversion loss applies only while the engine is generating; on plug power it
      does not exist. Said carelessly it makes REEV sound far worse than it is, and the
      verification question in §7 exists purely to catch that misreading.
+   - **`check-chapter-pace.mjs` is new, and it found this video after it had already shipped
+     once.** Three chapters ran 11.1s, 14.9s and 20.2s on a headline alone; frame QA missed all
+     three because ten frames out of 14,370 never land in a gap. The video was re-rendered with
+     them filled — the 20.2s one turned out to be a missing half of a comparison, not slow
+     pacing. The check now runs in CI, and it reports that **vox-12 (19.4s) and vox-13 (24.7s)
+     have the same shape**. Both are grandfathered and neither is worth a re-render on its own,
+     but if either is ever rebuilt for another reason, fix it in the same pass.
 
 2. **vox-14's blocking fact-checks — and this one is the strictest in the repo.**
    `vox-shorts/vox-14-trichoderma/POST-KIT.md` §7. It is the channel's first **hands-on**

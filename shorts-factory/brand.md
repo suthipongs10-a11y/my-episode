@@ -138,6 +138,20 @@ as a film. The fix is one full-frame photograph per scene, dimmed back until the
    any gap between the copies flashes. Give the rows their own per-row cues inside one card
    that mounts once (`ats={[...]}` in vox-12) — the card arrives, then the rows arrive into it.
 
+5. **A chapter may not run long on its headline alone.** vox-15 shipped with three chapters —
+   11.1s, 14.9s and 20.2s — showing nothing but a title over a dimmed photograph, and frame QA
+   did not catch it: ten sampled frames out of 14,370 land almost anywhere except in a gap. A
+   gap is a property of the *source*, so measure the source. `node
+   remotion/scripts/check-chapter-pace.mjs` reports the distance from each chapter's start to
+   the first entrance of anything that is not a `<Head>`, and CI fails over 10s.
+
+   **The number is a prompt, not a verdict.** A plate that is doing real work can carry a long
+   beat. But look at what the check finds, because sometimes the gap is not pacing at all:
+   vox-15's twenty seconds were one half of a comparison — an ordinary car converts energy
+   once, a REEV converts it three times — with only the second half ever drawn. Filling it
+   meant drawing the first half, which made the point countable instead of asserted. **A long
+   headline-only stretch is often a missing argument wearing a pacing costume.**
+
 **And plates should move, slowly.** A still photograph held for 40 seconds goes dead. A Ken
 Burns drift — 1.00→1.06 zoom with a few pixels of pan across the scene — reads as life without
 ever pulling attention off the type. It costs nothing and it is the difference between a video
