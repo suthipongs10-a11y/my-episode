@@ -111,12 +111,16 @@ const XFADE = 26;
 const XOVER = 14;
 const XOUT = 26;
 
-const Rise: React.FC<{ at: number; dur?: number; dy?: number; children: React.ReactNode }> =
-  ({ at, dur = 16, dy = 26, children }) => {
+// `out` lets two cards share one slot: the outgoing one lifts and fades while the incoming one
+// rises into the same place, which is the chapter cross-fade of brand.md §5 at card scale.
+const Rise: React.FC<{ at: number; dur?: number; dy?: number; out?: number; children: React.ReactNode }> =
+  ({ at, dur = 16, dy = 26, out, children }) => {
     const frame = useCurrentFrame();
     const k = interpolate(frame, [at, at + dur], [0, 1], { easing: EASE_OUT, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+    const o = out === undefined ? 1
+      : interpolate(frame, [out, out + 18], [1, 0], { easing: EASE_OUT, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
     return (
-      <div style={{ opacity: k, transform: `translateY(${(1 - k) * dy}px) scale(${0.985 + k * 0.015})`, transformOrigin: 'left center' }}>
+      <div style={{ opacity: k * o, transform: `translateY(${(1 - k) * dy + (1 - o) * -14}px) scale(${0.985 + k * 0.015})`, transformOrigin: 'left center' }}>
         {children}
       </div>
     );
@@ -287,17 +291,20 @@ const CHAIN_REEV: Edge[] = [
   ['gen', 'batt', 'elec'], ['batt', 'motor', 'elec'], ['motor', 'wheels', 'mech'],
 ];
 const CHAIN_PHEV: Edge[] = [...CHAIN_REEV, ['engine', 'wheels', 'mech']];
+/** an ordinary petrol car: one conversion, and the shaft is the whole story */
+const CHAIN_ICE: Edge[] = [['fuel', 'engine', 'mech'], ['engine', 'wheels', 'mech']];
 
 const centreOf = (id: NodeId) => {
   const n = NODES.find((x) => x.id === id)!;
   return { x: n.x + NW / 2, y: n.y + NH / 2 };
 };
 
-const PowerFlow: React.FC<{ at: number; mode: 'phev' | 'reev'; tollAt?: number; flowFrom?: number }> =
+const PowerFlow: React.FC<{ at: number; mode: 'phev' | 'reev' | 'ice'; tollAt?: number; flowFrom?: number }> =
   ({ at, mode, tollAt, flowFrom }) => {
     const T = useTheme();
     const frame = useCurrentFrame();
-    const edges = mode === 'phev' ? CHAIN_PHEV : CHAIN_REEV;
+    const edges = mode === 'phev' ? CHAIN_PHEV : mode === 'ice' ? CHAIN_ICE : CHAIN_REEV;
+    const used = new Set<NodeId>(edges.flatMap(([a, b]) => [a, b]));
     const appear = (i: number) => interpolate(frame, [at + i * 8, at + i * 8 + 18], [0, 1], { easing: EASE_OUT, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
     const toll = tollAt === undefined ? 0 : interpolate(frame, [tollAt, tollAt + 20], [0, 1], { easing: EASE_OUT, extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
     const flowOn = flowFrom === undefined ? 0 : interpolate(frame, [flowFrom, flowFrom + 20], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
@@ -330,6 +337,7 @@ const PowerFlow: React.FC<{ at: number; mode: 'phev' | 'reev'; tollAt?: number; 
         })}
 
         {NODES.map((n, i) => {
+          if (!used.has(n.id)) return null;
           const k = appear(i);
           const isEngine = n.id === 'engine';
           return (
@@ -349,7 +357,7 @@ const PowerFlow: React.FC<{ at: number; mode: 'phev' | 'reev'; tollAt?: number; 
             <text x={centreOf('gen').x} y={centreOf('gen').y - 36} textAnchor="middle" fill={T.paper} fontSize={17} fontFamily="var(--vox-display)">1</text>
             <circle cx={centreOf('motor').x} cy={centreOf('motor').y - 42} r={16} fill={T.red} />
             <text x={centreOf('motor').x} y={centreOf('motor').y - 36} textAnchor="middle" fill={T.paper} fontSize={17} fontFamily="var(--vox-display)">2</text>
-            <text x={790} y={110} fill={T.red} fontSize={22} fontFamily="var(--vox-display)">−15–20%</text>
+            <text x={880} y={110} textAnchor="end" fill={T.red} fontSize={22} fontFamily="var(--vox-display)">−15–20%</text>
           </g>
         ) : null}
 
@@ -358,6 +366,14 @@ const PowerFlow: React.FC<{ at: number; mode: 'phev' | 'reev'; tollAt?: number; 
             <text x={450} y={268} textAnchor="middle" fill={T.inkSoft} fontSize={19} fontFamily="var(--vox-body)">
               ไม่มีเส้นทางกลไกจากเครื่องยนต์ถึงล้อ
             </text>
+          </g>
+        ) : null}
+
+        {mode === 'ice' ? (
+          <g opacity={appear(1)}>
+            <circle cx={centreOf('engine').x} cy={centreOf('engine').y - 42} r={16} fill={T.yellow} />
+            <text x={centreOf('engine').x} y={centreOf('engine').y - 36} textAnchor="middle" fill={T.paper} fontSize={17} fontFamily="var(--vox-display)">1</text>
+            <text x={880} y={110} textAnchor="end" fill={T.yellow} fontSize={22} fontFamily="var(--vox-display)">แปลงครั้งเดียว</text>
           </g>
         ) : null}
       </svg>
@@ -528,6 +544,15 @@ export default function Vox15Reev() {
         {/* 4 — REEV: the same diagram with that link simply absent */}
         <Chapter from={C.s10_reev} to={C.s15_sweet}>
           <Head at={0} kicker="แบบที่สอง" head="REEV — รถไฟฟ้าที่ติดเครื่องปั่นไฟ" sub="เครื่องยนต์ไม่มีเพลา ไม่มีคลัตช์ ไม่มีเกียร์ ที่ต่อถึงล้อ" y={300} w={900} />
+          <Layer x={MARGIN_L + 310} y={620} w={640} at={0} dur={1} enter="none" depth={0.04} drift={0}>
+            <Rise at={0} dy={26}>
+              <div style={{ fontFamily: FONT_TH_DISPLAY, fontSize: 30, fontWeight: 700, lineHeight: 1.55, color: BLUEPRINT.ink }}>
+                <span style={{ color: BLUEPRINT.yellow }}>PHEV</span> = รถน้ำมัน <span style={{ color: BLUEPRINT.inkSoft }}>+ มอเตอร์</span>
+                <br />
+                <span style={{ color: BLUEPRINT.teal }}>REEV</span> = รถไฟฟ้า <span style={{ color: BLUEPRINT.inkSoft }}>+ เครื่องยนต์</span>
+              </div>
+            </Rise>
+          </Layer>
           <Layer x={1170} y={640} w={900} at={0} dur={1} enter="none" depth={0.04} drift={0}>
             <Rise at={R(C.s11_nolink, C.s10_reev)} dy={26}>
               <Card w={900} pad={22}>
@@ -544,6 +569,17 @@ export default function Vox15Reev() {
         {/* 5 — THE ADVANTAGE: the engine comes off the leash */}
         <Chapter from={C.s15_sweet} to={C.s20_but}>
           <Head at={0} kicker="ข้อได้เปรียบ" head="เครื่องหลุดจากความเร็วรถ" y={300} w={700} />
+          <Layer x={MARGIN_L + 310} y={580} w={640} at={0} dur={1} enter="none" depth={0.04} drift={0}>
+            <Rise at={0} dy={26}>
+              <div style={{
+                fontFamily: FONT_TH_DISPLAY, fontSize: 28, fontWeight: 700, color: BLUEPRINT.ink, lineHeight: 1.5,
+                borderLeft: `5px solid ${BLUEPRINT.yellow}`, paddingLeft: 20,
+              }}>
+                ถ้าไม่รู้เรื่องช่วงรอบประหยัดก่อน
+                <br />ข้อได้เปรียบของ REEV จะฟังเหมือนคำโฆษณา
+              </div>
+            </Rise>
+          </Layer>
           <Figure at={R(C.s16_band, C.s15_sweet)} x={1230} y={460} w={720}>
             <EffBand at={R(C.s17_forced, C.s15_sweet)} mode="tied" />
           </Figure>
@@ -557,10 +593,24 @@ export default function Vox15Reev() {
         <Chapter from={C.s20_but} to={C.s25_city}>
           <Head at={0} kicker="ค่าผ่านทางที่ต้องจ่าย" head="แปลงพลังงานสองต่อ" y={300} accent={BLUEPRINT.red} w={700} />
           <Layer x={1170} y={620} w={900} at={0} dur={1} enter="none" depth={0.04} drift={0}>
+            <Rise at={R(C.s21_chain, C.s20_but)} out={R(C.s22_double, C.s20_but)} dy={26}>
+              <Card w={900} pad={22}>
+                <PowerFlow at={R(C.s21_chain, C.s20_but)} mode="ice"
+                  flowFrom={R(C.s21_chain, C.s20_but) + 20} />
+                <div style={{ fontFamily: FONT_TH, fontSize: 22, color: BLUEPRINT.inkSoft, marginTop: 4 }}>
+                  รถน้ำมันปกติ — น้ำมันเป็นกำลังกล แล้วไปที่ล้อโดยตรง
+                </div>
+              </Card>
+            </Rise>
+          </Layer>
+          <Layer x={1170} y={620} w={900} at={0} dur={1} enter="none" depth={0.04} drift={0}>
             <Rise at={R(C.s22_double, C.s20_but)} dy={26}>
               <Card w={900} pad={22}>
                 <PowerFlow at={R(C.s22_double, C.s20_but)} mode="reev"
                   tollAt={R(C.s23_loss, C.s20_but)} flowFrom={R(C.s22_double, C.s20_but) + 20} />
+                <div style={{ fontFamily: FONT_TH, fontSize: 22, color: BLUEPRINT.red, marginTop: 4 }}>
+                  REEV ตอนใช้น้ำมัน — เพิ่มมาอีกสองต่อ
+                </div>
               </Card>
             </Rise>
           </Layer>
