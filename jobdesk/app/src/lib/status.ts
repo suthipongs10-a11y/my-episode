@@ -74,3 +74,13 @@ export const EXPENSE_KINDS = {
 
 export type PaymentKind = keyof typeof PAYMENT_KINDS;
 export type ExpenseKind = keyof typeof EXPENSE_KINDS;
+
+export const RENEWAL_STATUS = {
+  upcoming: "รอถึงกำหนด",
+  notified: "แจ้งลูกค้าแล้ว",
+  paid: "ลูกค้าจ่ายแล้ว",
+  declined: "ลูกค้าไม่ต่อ",
+  lapsed: "ปล่อยหมดอายุ",
+} as const;
+
+export type RenewalStatus = keyof typeof RENEWAL_STATUS;

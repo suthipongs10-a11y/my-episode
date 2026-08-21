@@ -236,6 +236,20 @@ CREATE INDEX ON expenses (job_id);
 CREATE INDEX ON expenses (spent_on);
 CREATE INDEX ON expenses (kind);
 
+-- การเตือนต่ออายุที่ส่งไปแล้ว คีย์ด้วยวันหมดอายุของรอบนั้น พอต่ออายุแล้ววันขยับ
+-- ชุดเตือน 30/14/7/1 ของรอบใหม่ก็กลับมาพร้อมส่งเองโดยไม่ต้องล้างอะไร (migrations/002)
+CREATE TABLE renewal_reminders (
+    id          bigserial PRIMARY KEY,
+    website_id  bigint NOT NULL REFERENCES websites(id) ON DELETE CASCADE,
+    expires_on  date NOT NULL,
+    days_before integer NOT NULL,
+    channel     text NOT NULL,
+    sent_at     timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (website_id, expires_on, days_before)
+);
+
+CREATE INDEX ON renewal_reminders (website_id);
+
 -- ----------------------------------------------------- notes & audit log ----
 
 CREATE TABLE notes (
@@ -362,13 +376,18 @@ LEFT JOIN enq  ON enq.month  = m.month
 ORDER BY m.month DESC;
 
 -- Feeds the renewals screen (§5.7) and the 30/14/7/1-day reminders (§8).
+-- Both the page and the reminder job read this, so there is exactly one place
+-- that decides an expiry is the earlier of the domain's and the host's.
 CREATE VIEW v_renewals_due AS
 SELECT
-    w.id AS website_id,
-    c.display_name AS customer,
+    w.id            AS website_id,
+    w.customer_id,
+    c.display_name  AS customer,
     c.phone,
     c.line_id,
     w.domain,
+    w.url,
+    w.note,
     least(
         COALESCE(w.domain_expires_on,  'infinity'::date),
         COALESCE(w.hosting_expires_on, 'infinity'::date)
@@ -377,9 +396,11 @@ SELECT
         COALESCE(w.domain_expires_on,  'infinity'::date),
         COALESCE(w.hosting_expires_on, 'infinity'::date)
     ) - CURRENT_DATE AS days_left,
+    w.domain_expires_on,
+    w.hosting_expires_on,
     w.renewal_cost_thb,
     w.renewal_price_thb,
-    w.renewal_price_thb - COALESCE(w.renewal_cost_thb, 0) AS renewal_profit_thb,
+    COALESCE(w.renewal_price_thb, 0) - COALESCE(w.renewal_cost_thb, 0) AS renewal_profit_thb,
     w.renewal_status
 FROM websites w
 JOIN customers c ON c.id = w.customer_id

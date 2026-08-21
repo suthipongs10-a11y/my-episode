@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { getJob, listActivity, listExpenses, listNotes, listPayments, listTasks } from "@/lib/queries";
+import {
+  getJob,
+  listActivity,
+  listExpenses,
+  listNotes,
+  listPayments,
+  listTasks,
+  listWebsitesForJob,
+} from "@/lib/queries";
 import { EXPENSE_KINDS, JOB_STATUS, PAYMENT_KINDS } from "@/lib/status";
 import { daysSince, daysUntil, dateInputValue, fmtDate, fmtDateTime, stallLabel, thb, todayInputValue } from "@/lib/format";
 import {
@@ -29,12 +37,13 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
   const job = await getJob(jobId);
   if (!job) notFound();
 
-  const [payments, expenses, activity, tasks, notes] = await Promise.all([
+  const [payments, expenses, activity, tasks, notes, websites] = await Promise.all([
     listPayments(jobId),
     listExpenses(jobId),
     listActivity("job", jobId),
     listTasks(jobId),
     listNotes(jobId),
+    listWebsitesForJob(jobId),
   ]);
 
   const left = daysUntil(job.due_on);
@@ -293,6 +302,38 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
                 <Submit>บันทึกการแก้ไข</Submit>
               </div>
             </form>
+          </Panel>
+
+          <Panel
+            title="เว็บที่ส่งมอบ"
+            action={
+              <Link
+                href={`/websites/new?customer=${job.customer_id}&job=${job.id}`}
+                className="btn btn-quiet text-xs"
+              >
+                + เพิ่มเว็บ
+              </Link>
+            }
+          >
+            {websites.length === 0 ? (
+              <Empty>
+                ยังไม่ได้ผูกเว็บกับงานนี้ — ผูกไว้แล้วระบบจะเตือนก่อนโดเมนหมดอายุให้เอง
+              </Empty>
+            ) : (
+              websites.map((w) => (
+                <Row key={w.id}>
+                  <div className="min-w-0">
+                    <Link href={`/websites/${w.id}`} className="block truncate font-medium hover:underline">
+                      {w.domain}
+                    </Link>
+                    <div className="truncate text-xs text-muted">
+                      หมดอายุ {fmtDate(w.domain_expires_on ?? w.hosting_expires_on)}
+                      {w.renewal_price !== null ? ` · ต่ออายุ ฿${thb(w.renewal_price)}/ปี` : ""}
+                    </div>
+                  </div>
+                </Row>
+              ))
+            )}
           </Panel>
 
           <Notes jobId={job.id} notes={notes} />

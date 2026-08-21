@@ -25,4 +25,30 @@ export const env = {
   get cacCeilingThb() {
     return Number(process.env.CAC_CEILING_THB ?? 300);
   },
+
+  /** จำนวนวันก่อนหมดอายุที่จะเตือน เรียงจากไกลไปใกล้ */
+  get reminderDays(): number[] {
+    const raw = process.env.RENEWAL_REMINDER_DAYS ?? "30,14,7,1";
+    const days = raw
+      .split(",")
+      .map((s) => Number(s.trim()))
+      .filter((n) => Number.isInteger(n) && n >= 0);
+    return [...new Set(days)].sort((a, b) => b - a);
+  },
+
+  get cronSecret() {
+    return process.env.CRON_SECRET ?? "";
+  },
+
+  get telegram() {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    return token && chatId ? { token, chatId } : null;
+  },
+
+  get line() {
+    const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    const to = process.env.LINE_USER_ID;
+    return token && to ? { token, to } : null;
+  },
 };

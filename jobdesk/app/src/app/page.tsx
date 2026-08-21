@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
-import { getHomeSummary, listActiveJobs, type JobRow } from "@/lib/queries";
+import { getHomeSummary, listActiveJobs, upcomingRenewals, type JobRow } from "@/lib/queries";
 import { OPEN_STATUSES } from "@/lib/status";
 import { daysSince, daysUntil, fmtDay, stallLabel, thb } from "@/lib/format";
 import { Shell } from "@/components/shell";
@@ -12,7 +12,11 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   await requireSession();
 
-  const [summary, jobs] = await Promise.all([getHomeSummary(), listActiveJobs()]);
+  const [summary, jobs, renewals] = await Promise.all([
+    getHomeSummary(),
+    listActiveJobs(),
+    upcomingRenewals(30),
+  ]);
   const open = jobs.filter((j) => (OPEN_STATUSES as string[]).includes(j.status));
   const mine = open.filter((j) => j.waiting_on === "us");
   const theirs = open
@@ -73,6 +77,44 @@ export default async function HomePage() {
             )}
           </Panel>
         </div>
+
+        {renewals.length > 0 ? (
+          <Panel
+            title="ใกล้หมดอายุ"
+            meta={<span className="num">{renewals.length}</span>}
+            action={
+              <Link href="/renewals" className="btn btn-quiet text-xs">
+                ดูทั้งหมด
+              </Link>
+            }
+          >
+            {renewals.map((r) => {
+              const late = r.days_left <= 7;
+              return (
+                <Row key={r.website_id}>
+                  <div className="min-w-0">
+                    <Link
+                      href={`/websites/${r.website_id}`}
+                      className="block truncate font-medium hover:underline"
+                    >
+                      {r.domain}
+                    </Link>
+                    <div className="truncate text-xs text-muted">
+                      {r.customer} · หมดอายุ {fmtDay(r.expires_on)}
+                    </div>
+                  </div>
+                  <span className={`num shrink-0 text-xs ${late ? "text-crit" : "text-warn"}`}>
+                    {r.days_left < 0
+                      ? `เลยมา ${Math.abs(r.days_left)} วัน`
+                      : r.days_left === 0
+                        ? "วันนี้"
+                        : `อีก ${r.days_left} วัน`}
+                  </span>
+                </Row>
+              );
+            })}
+          </Panel>
+        ) : null}
       </div>
     </Shell>
   );

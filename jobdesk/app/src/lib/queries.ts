@@ -393,3 +393,158 @@ export async function ledger(from: string, to: string): Promise<LedgerRow[]> {
     ORDER BY entry_date, direction
   `;
 }
+
+/* ------------------------------------------------- Phase 3: ต่ออายุ */
+
+export type RenewalRow = {
+  website_id: number;
+  customer_id: number;
+  customer: string;
+  phone: string | null;
+  line_id: string | null;
+  domain: string;
+  url: string | null;
+  note: string | null;
+  expires_on: string;
+  days_left: number;
+  domain_expires_on: string | null;
+  hosting_expires_on: string | null;
+  renewal_cost: number | null;
+  renewal_price: number | null;
+  renewal_profit: number;
+  renewal_status: string;
+};
+
+/** ทุกอย่างมาจาก v_renewals_due — มีที่เดียวที่ตัดสินว่า "หมดอายุเมื่อไหร่" */
+const RENEWAL_SELECT = sql`
+  SELECT
+    website_id::int, customer_id::int, customer, phone, line_id, domain, url, note,
+    expires_on, days_left::int, domain_expires_on, hosting_expires_on,
+    renewal_cost_thb::float8   AS renewal_cost,
+    renewal_price_thb::float8  AS renewal_price,
+    renewal_profit_thb::float8 AS renewal_profit,
+    renewal_status::text
+  FROM v_renewals_due
+`;
+
+export async function listRenewals(): Promise<RenewalRow[]> {
+  return sql<RenewalRow[]>`${RENEWAL_SELECT}`;
+}
+
+export async function upcomingRenewals(withinDays = 30): Promise<RenewalRow[]> {
+  return sql<RenewalRow[]>`
+    ${RENEWAL_SELECT}
+    WHERE days_left <= ${withinDays} AND renewal_status <> 'declined'
+  `;
+}
+
+/**
+ * เว็บที่ถึงคิวเตือนพอดีวันนี้และยังไม่เคยเตือนสำหรับรอบนี้
+ * คีย์ที่ expires_on ทำให้พอต่ออายุแล้ววันขยับ ชุดเตือนของปีถัดไปกลับมาเองอัตโนมัติ
+ */
+export async function dueReminders(days: number[]): Promise<RenewalRow[]> {
+  if (days.length === 0) return [];
+  return sql<RenewalRow[]>`
+    ${RENEWAL_SELECT}
+    WHERE renewal_status <> 'declined'
+      AND days_left = ANY(${days})
+      AND NOT EXISTS (
+        SELECT 1 FROM renewal_reminders r
+        WHERE r.website_id  = v_renewals_due.website_id
+          AND r.expires_on  = v_renewals_due.expires_on
+          AND r.days_before = v_renewals_due.days_left
+      )
+  `;
+}
+
+export async function markReminderSent(
+  websiteId: number,
+  expiresOn: string,
+  daysBefore: number,
+  channel: string,
+): Promise<void> {
+  await sql`
+    INSERT INTO renewal_reminders (website_id, expires_on, days_before, channel)
+    VALUES (${websiteId}, ${expiresOn}, ${daysBefore}, ${channel})
+    ON CONFLICT (website_id, expires_on, days_before) DO NOTHING
+  `;
+}
+
+export type RenewalSummary = {
+  active_sites: number;
+  due_30: number;
+  overdue: number;
+  /** รายได้ต่ออายุต่อปีถ้าทุกเว็บต่อครบ กับกำไรที่เหลือจริงหลังหักต้นทุน */
+  yearly_price: number;
+  yearly_profit: number;
+  collected_this_year: number;
+};
+
+export async function renewalSummary(): Promise<RenewalSummary> {
+  const [row] = await sql<RenewalSummary[]>`
+    SELECT
+      (SELECT count(*) FROM v_renewals_due)::int                                   AS active_sites,
+      (SELECT count(*) FROM v_renewals_due
+        WHERE days_left BETWEEN 0 AND 30 AND renewal_status <> 'declined')::int    AS due_30,
+      (SELECT count(*) FROM v_renewals_due
+        WHERE days_left < 0 AND renewal_status <> 'declined')::int                 AS overdue,
+      (SELECT COALESCE(sum(renewal_price_thb), 0) FROM v_renewals_due
+        WHERE renewal_status <> 'declined')::float8                                AS yearly_price,
+      (SELECT COALESCE(sum(renewal_profit_thb), 0) FROM v_renewals_due
+        WHERE renewal_status <> 'declined')::float8                                AS yearly_profit,
+      (SELECT COALESCE(sum(amount_thb), 0) FROM payments
+        WHERE kind = 'renewal' AND status = 'received'
+          AND paid_on >= date_trunc('year', CURRENT_DATE))::float8                 AS collected_this_year
+  `;
+  return row;
+}
+
+export type WebsiteRow = {
+  id: number;
+  customer_id: number;
+  customer: string;
+  origin_job_id: number | null;
+  domain: string;
+  url: string | null;
+  admin_url: string | null;
+  platform: string | null;
+  registrar: string | null;
+  hosting_provider: string | null;
+  domain_expires_on: string | null;
+  hosting_expires_on: string | null;
+  renewal_cost: number | null;
+  renewal_price: number | null;
+  renewal_status: string;
+  credential_ref: string | null;
+  note: string | null;
+  is_active: boolean;
+};
+
+const WEBSITE_SELECT = sql`
+  SELECT
+    w.id::int, w.customer_id::int, c.display_name AS customer, w.origin_job_id::int,
+    w.domain, w.url, w.admin_url, w.platform, w.registrar, w.hosting_provider,
+    w.domain_expires_on, w.hosting_expires_on,
+    w.renewal_cost_thb::float8  AS renewal_cost,
+    w.renewal_price_thb::float8 AS renewal_price,
+    w.renewal_status::text, w.credential_ref, w.note, w.is_active
+  FROM websites w
+  JOIN customers c ON c.id = w.customer_id
+`;
+
+export async function getWebsite(id: number): Promise<WebsiteRow | null> {
+  const [row] = await sql<WebsiteRow[]>`${WEBSITE_SELECT} WHERE w.id = ${id}`;
+  return row ?? null;
+}
+
+export async function listWebsitesForCustomer(customerId: number): Promise<WebsiteRow[]> {
+  return sql<WebsiteRow[]>`
+    ${WEBSITE_SELECT} WHERE w.customer_id = ${customerId} ORDER BY w.domain
+  `;
+}
+
+export async function listWebsitesForJob(jobId: number): Promise<WebsiteRow[]> {
+  return sql<WebsiteRow[]>`
+    ${WEBSITE_SELECT} WHERE w.origin_job_id = ${jobId} ORDER BY w.domain
+  `;
+}

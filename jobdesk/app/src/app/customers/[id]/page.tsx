@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { getCustomer, listJobsForCustomer } from "@/lib/queries";
+import { getCustomer, listJobsForCustomer, listWebsitesForCustomer } from "@/lib/queries";
 import { updateCustomerAction } from "@/lib/actions";
 import { fmtDay, thb } from "@/lib/format";
 import { Shell } from "@/components/shell";
@@ -18,7 +18,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
   const customer = await getCustomer(customerId);
   if (!customer) notFound();
-  const jobs = await listJobsForCustomer(customerId);
+  const [jobs, websites] = await Promise.all([
+    listJobsForCustomer(customerId),
+    listWebsitesForCustomer(customerId),
+  ]);
   const outstanding = jobs.reduce((sum, j) => sum + (j.status === "cancelled" ? 0 : j.outstanding), 0);
 
   return (
@@ -78,6 +81,35 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           )}
         </Panel>
 
+        <div className="flex flex-col gap-4">
+        <Panel
+          title="เว็บที่ดูแล"
+          meta={<span className="num">{websites.length}</span>}
+          action={
+            <Link href={`/websites/new?customer=${customer.id}`} className="btn btn-quiet text-xs">
+              + เพิ่มเว็บ
+            </Link>
+          }
+        >
+          {websites.length === 0 ? (
+            <Empty>ยังไม่มีเว็บในระบบ</Empty>
+          ) : (
+            websites.map((w) => (
+              <Row key={w.id}>
+                <div className="min-w-0">
+                  <Link href={`/websites/${w.id}`} className="block truncate font-medium hover:underline">
+                    {w.domain}
+                  </Link>
+                  <div className="truncate text-xs text-muted">
+                    หมดอายุ {fmtDay(w.domain_expires_on ?? w.hosting_expires_on)}
+                    {w.renewal_price !== null ? ` · ต่ออายุ ฿${thb(w.renewal_price)}/ปี` : ""}
+                  </div>
+                </div>
+              </Row>
+            ))
+          )}
+        </Panel>
+
         <Panel title="ข้อมูลติดต่อ">
           <form action={updateCustomerAction} className="grid gap-3 p-3">
             <input type="hidden" name="customer_id" value={customer.id} />
@@ -106,6 +138,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             </div>
           </form>
         </Panel>
+        </div>
       </div>
     </Shell>
   );

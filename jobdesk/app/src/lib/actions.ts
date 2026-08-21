@@ -6,6 +6,8 @@ import { sql } from "./db";
 import { signIn, signOut, requireSession } from "./auth";
 import { JOB_STATUS, isJobStatus, type JobStatus } from "./status";
 import { templateFor } from "./templates";
+import { runRenewalReminders } from "./renewal-notify";
+import { sendNotification } from "./notify";
 
 /* ------------------------------------------------------------------ utils */
 
@@ -395,4 +397,165 @@ export async function deleteNoteAction(fd: FormData): Promise<void> {
   await log("job", jobId, "note_removed");
   refreshJobViews(jobId);
   redirect(`/jobs/${jobId}`);
+}
+
+/* ---------------------------------------------------------------- เว็บ */
+
+function refreshRenewalViews(websiteId?: number) {
+  revalidatePath("/");
+  revalidatePath("/renewals");
+  revalidatePath("/customers");
+  if (websiteId) revalidatePath(`/websites/${websiteId}`);
+}
+
+function websiteFields(fd: FormData) {
+  return {
+    domain: required(fd, "domain", "ชื่อโดเมน"),
+    url: text(fd, "url"),
+    admin_url: text(fd, "admin_url"),
+    platform: text(fd, "platform"),
+    registrar: text(fd, "registrar"),
+    hosting_provider: text(fd, "hosting_provider"),
+    domain_expires_on: text(fd, "domain_expires_on"),
+    hosting_expires_on: text(fd, "hosting_expires_on"),
+    renewal_cost_thb: optionalNumber(fd, "renewal_cost"),
+    renewal_price_thb: optionalNumber(fd, "renewal_price"),
+    // ห้ามเก็บรหัสผ่านจริง — ช่องนี้ไว้ชี้ว่ารหัสอยู่ที่ไหน
+    credential_ref: text(fd, "credential_ref"),
+    note: text(fd, "note"),
+  };
+}
+
+export async function createWebsiteAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const customerId = id(fd, "customer_id");
+  const jobId = text(fd, "origin_job_id");
+
+  const [row] = await sql<{ id: number }[]>`
+    INSERT INTO websites ${sql({
+      customer_id: customerId,
+      origin_job_id: jobId ? Number(jobId) : null,
+      ...websiteFields(fd),
+    })}
+    RETURNING id::int
+  `;
+  await log("website", row.id, "created");
+  refreshRenewalViews(row.id);
+  if (jobId) revalidatePath(`/jobs/${jobId}`);
+  redirect(text(fd, "back") ?? "/renewals");
+}
+
+export async function updateWebsiteAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const websiteId = id(fd, "website_id");
+  await sql`
+    UPDATE websites SET ${sql({ ...websiteFields(fd), updated_at: new Date() })}
+    WHERE id = ${websiteId}
+  `;
+  await log("website", websiteId, "updated");
+  refreshRenewalViews(websiteId);
+  redirect(`/websites/${websiteId}`);
+}
+
+export async function archiveWebsiteAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const websiteId = id(fd, "website_id");
+  await sql`UPDATE websites SET is_active = false, updated_at = now() WHERE id = ${websiteId}`;
+  await log("website", websiteId, "archived");
+  refreshRenewalViews(websiteId);
+  redirect("/renewals");
+}
+
+/* ------------------------------------------------------------- ต่ออายุ */
+
+export async function setRenewalStatusAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const websiteId = id(fd, "website_id");
+  const status = required(fd, "renewal_status", "สถานะ");
+  if (!["upcoming", "notified", "paid", "declined", "lapsed"].includes(status)) {
+    throw new Error("สถานะการต่ออายุไม่ถูกต้อง");
+  }
+  await sql`
+    UPDATE websites SET renewal_status = ${status}::renewal_status, updated_at = now()
+    WHERE id = ${websiteId}
+  `;
+  await log("website", websiteId, "renewal_status_changed", null, status);
+  refreshRenewalViews(websiteId);
+}
+
+/**
+ * บันทึกว่าต่ออายุแล้ว — งานเดียวที่ทำสามอย่างพร้อมกันโดยตั้งใจ
+ *
+ * เงินที่เก็บได้ต้องไปโผล่ในหน้าการเงิน ต้นทุนที่จ่ายผู้ให้บริการก็ต้องไปด้วย
+ * และวันหมดอายุต้องขยับ มิฉะนั้นปีหน้าจะไม่มีอะไรเตือน การขยับวันยังทำให้
+ * ชุดเตือน 30/14/7/1 ของรอบใหม่กลับมาพร้อมส่งเองด้วย (migrations/002)
+ */
+export async function recordRenewalAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const websiteId = id(fd, "website_id");
+  const [site] = await sql<{ customer_id: number; domain: string }[]>`
+    SELECT customer_id::int, domain FROM websites WHERE id = ${websiteId}
+  `;
+  if (!site) throw new Error("ไม่พบเว็บนี้");
+
+  const price = money(fd, "amount_thb", "ยอดที่เก็บได้");
+  const cost = optionalNumber(fd, "cost_thb") ?? 0;
+  const paidOn = text(fd, "paid_on") ?? new Date().toISOString().slice(0, 10);
+  const years = Math.max(1, Math.min(5, optionalNumber(fd, "years") ?? 1));
+
+  if (price > 0) {
+    await sql`
+      INSERT INTO payments (job_id, website_id, customer_id, kind, amount_thb, method, paid_on, status)
+      VALUES (NULL, ${websiteId}, ${site.customer_id}, 'renewal', ${price},
+              ${text(fd, "method")}, ${paidOn}, 'received')
+    `;
+  }
+  if (cost > 0) {
+    await sql`
+      INSERT INTO expenses (website_id, kind, description, amount_thb, vendor, spent_on)
+      VALUES (${websiteId}, ${required(fd, "cost_kind", "หมวดต้นทุน")}::expense_kind,
+              ${`ต่ออายุ ${site.domain}`}, ${cost}, ${text(fd, "vendor")}, ${paidOn})
+    `;
+  }
+
+  await sql`
+    UPDATE websites SET
+      domain_expires_on  = domain_expires_on  + ${`${years} years`}::interval,
+      hosting_expires_on = hosting_expires_on + ${`${years} years`}::interval,
+      -- กลับเป็น upcoming เพราะรอบใหม่เพิ่งเริ่ม ไม่ใช่ paid ค้างไว้ทั้งปี
+      renewal_status     = 'upcoming',
+      updated_at         = now()
+    WHERE id = ${websiteId}
+  `;
+
+  await log("website", websiteId, "renewed", null, String(price));
+  refreshRenewalViews(websiteId);
+  revalidatePath("/money");
+  redirect("/renewals");
+}
+
+/* --------------------------------------------------- แจ้งเตือนต่ออายุ */
+
+/** กดรันงานเตือนเองได้ ไม่ต้องรอ cron — ใช้ตอนตั้งค่าเสร็จใหม่ ๆ เพื่อดูว่ามันทำงาน */
+export async function runRemindersAction(): Promise<void> {
+  await requireSession();
+  const run = await runRenewalReminders();
+  revalidatePath("/renewals");
+  const params = new URLSearchParams({ due: String(run.due), sent: String(run.sent) });
+  if (run.errors.length) params.set("err", run.errors.join(" | ").slice(0, 300));
+  redirect(`/renewals?${params}`);
+}
+
+export async function sendTestNotificationAction(): Promise<void> {
+  await requireSession();
+  const results = await sendNotification(
+    "JobDesk — ทดสอบการแจ้งเตือน ถ้าเห็นข้อความนี้แปลว่าตั้งค่าถูกแล้ว",
+  );
+  const failed = results.filter((r) => !r.ok);
+  revalidatePath("/renewals");
+  const params = new URLSearchParams({ test: failed.length ? "fail" : "ok" });
+  if (failed.length) {
+    params.set("err", failed.map((r) => `${r.channel}: ${r.error}`).join(" | ").slice(0, 300));
+  }
+  redirect(`/renewals?${params}`);
 }

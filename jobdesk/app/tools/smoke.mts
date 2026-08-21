@@ -11,6 +11,7 @@ for (const f of [".env.local", ".env"]) {
 const { sql } = await import("../src/lib/db.js");
 const q = await import("../src/lib/queries.js");
 const { JOB_STATUS } = await import("../src/lib/status.js");
+const { buildMessage } = await import("../src/lib/renewal-notify.js");
 
 let failures = 0;
 function check(name: string, actual: unknown, expected: unknown) {
@@ -22,6 +23,7 @@ function check(name: string, actual: unknown, expected: unknown) {
 const tag = `smoke-${process.pid}`;
 let customerId: number | undefined;
 let jobId: number | undefined;
+let websiteId: number | undefined;
 
 try {
   [{ id: customerId }] = await sql<{ id: number }[]>`
@@ -113,11 +115,59 @@ try {
         (await q.listOutstanding()).some((r) => r.job_id === jobId), false);
   await sql`UPDATE jobs SET status = 'awaiting_brief' WHERE id = ${jobId}`;
 
+  console.log("\nต่ออายุ");
+  const [site] = await sql<{ id: number }[]>`
+    INSERT INTO websites (customer_id, domain, domain_expires_on, hosting_expires_on,
+                          renewal_cost_thb, renewal_price_thb)
+    VALUES (${customerId!}, ${`${tag}.com`}, CURRENT_DATE + 7, CURRENT_DATE + 40, 450, 990)
+    RETURNING id::int`;
+  websiteId = site.id;
+
+  const renewal = (await q.listRenewals()).find((r) => r.website_id === websiteId);
+  check("วันหมดอายุใช้อันที่มาก่อนระหว่างโดเมนกับโฮสต์", renewal?.days_left, 7);
+  check("กำไรต่ออายุ = ราคา − ต้นทุน", renewal?.renewal_profit, 540);
+
+  const ladder = [30, 14, 7, 1];
+  const isDue = async () =>
+    (await q.dueReminders(ladder)).some((r) => r.website_id === websiteId);
+  check("ถึงคิวเตือนที่ 7 วัน", await isDue(), true);
+  check("ไม่ถึงคิวถ้าไม่มีขั้นที่ตรง", (await q.dueReminders([2, 3])).some((r) => r.website_id === websiteId), false);
+
+  await q.markReminderSent(websiteId, renewal!.expires_on, 7, "test");
+  check("เตือนแล้วไม่ถูกหยิบซ้ำ", await isDue(), false);
+
+  // ต่ออายุ = วันหมดอายุขยับ ชุดเตือนของรอบใหม่ต้องกลับมาเอง
+  await sql`UPDATE websites
+              SET domain_expires_on = domain_expires_on + interval '1 year',
+                  hosting_expires_on = hosting_expires_on + interval '1 year'
+            WHERE id = ${websiteId}`;
+  check("ต่ออายุแล้วรอบเตือนใหม่ยังไม่ถึงคิว (อีก 372 วัน)", await isDue(), false);
+  await sql`UPDATE websites SET domain_expires_on = CURRENT_DATE + 14 WHERE id = ${websiteId}`;
+  check("พอถึงขั้น 14 วันของรอบใหม่ กลับมาถูกหยิบอีกครั้ง", await isDue(), true);
+
+  const declined = await sql`UPDATE websites SET renewal_status = 'declined' WHERE id = ${websiteId}`;
+  void declined;
+  check("ลูกค้าไม่ต่อแล้วไม่ต้องเตือน", await isDue(), false);
+  await sql`UPDATE websites SET renewal_status = 'upcoming' WHERE id = ${websiteId}`;
+
+  const rows2 = await q.dueReminders(ladder);
+  const msg = buildMessage(rows2);
+  check("ข้อความเตือนมีชื่อโดเมน", msg.includes(`${tag}.com`), true);
+  check("ข้อความเตือนบอกจำนวนวัน", /อีก 14 วัน/.test(msg), true);
+
+  const summary = await q.renewalSummary();
+  check("สรุปนับเว็บนี้ด้วย", summary.active_sites >= 1, true);
+
   const rows = await q.ledger("1900-01-01", "2999-12-31");
   check("ledger มีทั้งรายรับและรายจ่าย",
         new Set(rows.map((r) => r.direction)).size, 2);
   check("รายจ่ายใน ledger ติดลบ", rows.every((r) => r.direction !== "รายจ่าย" || r.amount < 0), true);
 } finally {
+  if (websiteId) {
+    await sql`DELETE FROM payments WHERE website_id = ${websiteId}`;
+    await sql`DELETE FROM expenses WHERE website_id = ${websiteId}`;
+    await sql`DELETE FROM websites WHERE id = ${websiteId}`;
+  }
   if (jobId) {
     await sql`DELETE FROM job_tasks WHERE job_id = ${jobId}`;
     await sql`DELETE FROM notes WHERE job_id = ${jobId}`;

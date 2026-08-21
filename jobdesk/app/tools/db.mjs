@@ -103,6 +103,30 @@ SELECT 'ads', 'ค่าโฆษณาเพจ', v.amount,
        (date_trunc('month', CURRENT_DATE) - (v.months || ' months')::interval)::date
   FROM (VALUES (1, 2400), (2, 1800), (3, 2600), (4, 1500), (5, 2100)) AS v(months, amount);
 
+-- เว็บที่ดูแลอยู่ วันหมดอายุตั้งให้ตรงกับขั้นเตือน 7 และ 30 วัน เพื่อให้ทดลองงานเตือนได้
+INSERT INTO websites (customer_id, origin_job_id, domain, url, registrar, hosting_provider,
+                      domain_expires_on, hosting_expires_on, renewal_cost_thb, renewal_price_thb,
+                      credential_ref)
+SELECT c.id, j.id, 'baansuancoffee.com', 'https://baansuancoffee.com', 'Namecheap', 'Hostinger',
+       CURRENT_DATE + 7, CURRENT_DATE + 40, 450, 990, 'Bitwarden: baansuancoffee'
+  FROM customers c LEFT JOIN jobs j ON j.customer_id = c.id
+ WHERE c.display_name = 'คุณนก' LIMIT 1;
+
+INSERT INTO websites (customer_id, domain, registrar, domain_expires_on, hosting_expires_on,
+                      renewal_cost_thb, renewal_price_thb)
+SELECT id, 'changek-garage.com', 'Namecheap', CURRENT_DATE + 30, CURRENT_DATE + 30, 450, 990
+  FROM customers WHERE display_name = 'ช่างเอก';
+
+INSERT INTO websites (customer_id, domain, registrar, domain_expires_on, hosting_expires_on,
+                      renewal_cost_thb, renewal_price_thb)
+SELECT id, 'jaidee-dental.com', 'Cloudflare', CURRENT_DATE + 120, CURRENT_DATE + 150, 380, 1290
+  FROM customers WHERE display_name = 'หมอฟ้า';
+
+INSERT INTO websites (customer_id, domain, registrar, domain_expires_on,
+                      renewal_cost_thb, renewal_price_thb)
+SELECT id, 'teeyon-parts.com', 'Namecheap', CURRENT_DATE - 3, 450, 990
+  FROM customers WHERE display_name = 'เฮียตี๋';
+
 INSERT INTO activity_log (entity_type, entity_id, action, to_value, actor)
 SELECT 'job', id, 'created', 'awaiting_brief', 'seed' FROM jobs;
 `;

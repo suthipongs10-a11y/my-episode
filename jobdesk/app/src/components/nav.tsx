@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/board", label: "บอร์ดงาน" },
   { href: "/customers", label: "ลูกค้า" },
   { href: "/money", label: "การเงิน" },
+  { href: "/renewals", label: "ต่ออายุ" },
 ];
 
 export function Nav() {
