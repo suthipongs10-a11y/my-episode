@@ -20,7 +20,7 @@ import { FONT_TH, FONT_TH_DISPLAY } from '../../fonts';
 
 export const compositionConfig = {
   id: 'Vox15Reev',
-  durationInSeconds: 470,   // replaced from beats.json once the voice is measured
+  durationInSeconds: 479,   // beats.json: VO ends 476.58s (measured)
   fps: 30,
   width: 1920,
   height: 1080,
@@ -33,70 +33,70 @@ const A = (f: string) => staticFile(`projects/vox-15-reev/layers/${f}`);
 
 // ---- GENERATED CUES — rebuilt from beats.json by scripts/gen-cues.mjs. Do not hand-edit.
 // Cue name === segment id in beats.json, so there is no map to keep in sync.
-// !! 51 of 51 lines are NOT measured audio.
-// Run the voice tool with --retime, then re-run this script, BEFORE the final render.
+// All 52 windows are measured from the real audio.
 const C = {
   s01_arrive: 15,
-  s02_wrong: 349,
-  s03_onequestion: 553,
-  s04_promise: 831,
+  s02_wrong: 383,
+  s03_onequestion: 614,
+  s04_promise: 887,
 
-  s05_axle: 1000,
-  s05b_feel: 1253,
-  s06_setup: 1525,
+  s05_axle: 1076,
+  s05b_feel: 1322,
+  s06_setup: 1573,
 
-  s07_phev: 1718,
-  s08_both: 1988,
-  s09_modes: 2299,
+  s07_phev: 1747,
+  s08_both: 2030,
+  s09_modes: 2360,
 
-  s10_reev: 2630,
-  s11_nolink: 2927,
-  s12_generator: 3136,
-  s13_always: 3374,
-  s14_feel: 3650,
+  s10_reev: 2663,
+  s11_nolink: 2997,
+  s12_generator: 3220,
+  s13_always: 3454,
+  s14_feel: 3723,
 
-  s15_sweet: 3887,
-  s16_band: 4163,
-  s17_forced: 4441,
-  s18_cut: 4758,
-  s19_hold: 4985,
+  s15_sweet: 3973,
+  s15b_why: 4192,
+  s16_band: 4419,
+  s17_forced: 4677,
+  s18_cut: 5018,
+  s19_hold: 5222,
 
-  s20_but: 5272,
-  s21_chain: 5506,
-  s22_double: 5821,
-  s23_loss: 6099,
-  s24_scope: 6411,
+  s20_but: 5474,
+  s21_chain: 5744,
+  s22_double: 6081,
+  s23_loss: 6379,
+  s24_scope: 6677,
 
-  s25_city: 6758,
-  s26_citywin: 7025,
-  s27_highway: 7321,
-  s28_shrink: 7601,
+  s25_city: 7042,
+  s26_citywin: 7345,
+  s27_highway: 7648,
+  s28_shrink: 7934,
 
-  s29_thai: 7937,
-  s30_batt: 8207,
-  s31_range: 8536,
-  s32_standard: 8888,
-  s33_engine: 9215,
-  s33b_again: 9447,
-  s34_motor: 9624,
-  s34b_howq: 9926,
-  s34c_buffer: 10190,
-  s34d_peak: 10487,
-  s34d2_avg: 10719,
-  s34e_why: 10940,
+  s29_thai: 8284,
+  s30_batt: 8571,
+  s31_range: 8909,
+  s32_standard: 9262,
+  s33_engine: 9644,
+  s33b_again: 9855,
+  s34_motor: 10052,
+  s34b_howq: 10319,
+  s34c_buffer: 10573,
+  s34d_peak: 10877,
+  s34d2_avg: 11087,
+  s34e_why: 11295,
 
-  s35_epower: 11231,
-  s36_same: 11518,
-  s37_diff: 11726,
-  s38_meaning: 11988,
+  s35_epower: 11593,
+  s36_same: 11947,
+  s37_diff: 12136,
+  s38_meaning: 12398,
 
-  s39_sum: 12260,
-  s40_q: 12350,
-  s41_mech: 12582,
-  s42_choose: 12911,
-  s43_ev: 13141,
-  s44_close: 13475,
-  tail: 13813,
+  s39_sum: 12652,
+  s40_q: 12754,
+  s41_mech: 13066,
+  s42_choose: 13383,
+  s43_ev: 13648,
+  s44_close: 13946,
+  tail: 14297,
 } as const;
 // ---- END GENERATED CUES
 
@@ -189,8 +189,9 @@ const EndFade: React.FC<{ at: number; dur: number }> = ({ at, dur }) => {
 const Head: React.FC<{ at: number; kicker?: string; head: string; sub?: string; y?: number; accent?: string; w?: number }> =
   ({ at, kicker, head, sub, y = 330, accent, w = 620 }) => {
     const T = useTheme();
+    // anchored by its LEFT edge, so a wider w never walks the column off the margin
     return (
-      <Layer x={MARGIN_L + 300} y={y} w={w} at={0} dur={1} enter="none" depth={0.04} drift={0}>
+      <Layer x={MARGIN_L - 10 + w / 2} y={y} w={w} at={0} dur={1} enter="none" depth={0.04} drift={0}>
         <Rise at={at}>
           {kicker ? <div style={{ fontFamily: FONT_TH, fontSize: 24, color: accent ?? T.inkSoft, letterSpacing: '0.6px', marginBottom: 12 }}>{kicker}</div> : null}
           <div style={{ fontFamily: FONT_TH_DISPLAY, fontSize: 54, lineHeight: 1.28, fontWeight: 700, color: T.ink, letterSpacing: '0.6px' }}>{head}</div>
@@ -526,7 +527,7 @@ export default function Vox15Reev() {
 
         {/* 4 — REEV: the same diagram with that link simply absent */}
         <Chapter from={C.s10_reev} to={C.s15_sweet}>
-          <Head at={0} kicker="แบบที่สอง" head="REEV — รถไฟฟ้าที่ติดเครื่องปั่นไฟ" sub="เครื่องยนต์ไม่มีเพลา ไม่มีคลัตช์ ไม่มีเกียร์ ที่ต่อถึงล้อ" y={300} w={740} />
+          <Head at={0} kicker="แบบที่สอง" head="REEV — รถไฟฟ้าที่ติดเครื่องปั่นไฟ" sub="เครื่องยนต์ไม่มีเพลา ไม่มีคลัตช์ ไม่มีเกียร์ ที่ต่อถึงล้อ" y={300} w={900} />
           <Layer x={1170} y={640} w={900} at={0} dur={1} enter="none" depth={0.04} drift={0}>
             <Rise at={R(C.s11_nolink, C.s10_reev)} dy={26}>
               <Card w={900} pad={22}>
@@ -631,7 +632,7 @@ export default function Vox15Reev() {
             <SummaryCard ats={[C.s40_q, C.s41_mech, C.s42_choose].map((f) => R(f, C.s39_sum))} />
           </Figure>
           <Prop src={A('o-fuel-nozzle.png')} x={360} y={900} w={280} at={R(C.s41_mech, C.s39_sum)} rot={-1.5} />
-          <Layer x={MARGIN_L + 300} y={690} w={640} at={0} dur={1} enter="none" depth={0.04} drift={0}>
+          <Layer x={MARGIN_L + 310} y={690} w={640} at={0} dur={1} enter="none" depth={0.04} drift={0}>
             <Rise at={R(C.s43_ev, C.s39_sum)} dy={30}>
               <div style={{
                 fontFamily: FONT_TH_DISPLAY, fontSize: 29, fontWeight: 700, color: BLUEPRINT.ink, lineHeight: 1.42,
