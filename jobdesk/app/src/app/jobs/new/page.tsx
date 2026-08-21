@@ -32,14 +32,14 @@ export default async function NewJobPage() {
 
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="แพ็กเกจ">
-                <input className="field" name="package" defaultValue="เว็บ 990" />
+                <input className="field" name="package" defaultValue="เว็บ 1990 สองภาษา" />
               </Field>
               <Field label="ราคาขาย (฿)">
                 <input
                   className="field num"
                   name="price_thb"
                   inputMode="decimal"
-                  defaultValue="990"
+                  defaultValue="1990"
                   required
                 />
               </Field>

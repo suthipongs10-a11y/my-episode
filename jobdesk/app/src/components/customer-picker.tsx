@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { CustomerOption } from "@/lib/queries";
 import { Field } from "./ui";
 
-/** เลือกลูกค้าเดิม หรือพิมพ์ลูกค้าใหม่ตรงนี้เลย — งาน 990 ต้องเปิดงานได้ใน 30 วินาที */
+/** เลือกลูกค้าเดิม หรือพิมพ์ลูกค้าใหม่ตรงนี้เลย — งานราคานี้ต้องเปิดงานได้ใน 30 วินาที */
 export function CustomerPicker({ options }: { options: CustomerOption[] }) {
   const [value, setValue] = useState(options.length ? String(options[0].id) : "new");
   const isNew = value === "new";

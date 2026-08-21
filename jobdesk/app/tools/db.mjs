@@ -59,27 +59,27 @@ INSERT INTO customers (display_name, business_name, phone, line_id) VALUES
   ('เฮียตี๋','ร้านอะไหล่ตี๋ยนต์','084-444-4444',NULL);
 
 INSERT INTO jobs (customer_id, title, package, price_thb, status, waiting_on, status_since, due_on, delivered_on, hours_spent, revisions_used)
-SELECT id, 'เว็บร้านกาแฟบ้านสวน', 'เว็บ 990', 990, 'delivered', 'nobody',
+SELECT id, 'เว็บร้านกาแฟบ้านสวน', 'เว็บ 1990 สองภาษา', 1990, 'delivered', 'nobody',
        now() - interval '10 days', CURRENT_DATE - 12, CURRENT_DATE - 10, 5, 1
   FROM customers WHERE display_name = 'คุณนก';
 
 INSERT INTO jobs (customer_id, title, package, price_thb, status, waiting_on, status_since, due_on)
-SELECT id, 'เว็บอู่ช่างเอก', 'เว็บ 990', 990, 'in_progress', 'us',
+SELECT id, 'เว็บอู่ช่างเอก', 'เว็บ 1990 สองภาษา', 1990, 'in_progress', 'us',
        now() - interval '2 days', CURRENT_DATE + 1
   FROM customers WHERE display_name = 'ช่างเอก';
 
 INSERT INTO jobs (customer_id, title, package, price_thb, status, waiting_on, status_since, due_on)
-SELECT id, 'เว็บคลินิกใจดี', 'เว็บ 990', 1490, 'client_review', 'client',
+SELECT id, 'เว็บคลินิกใจดี', 'เว็บ 1990 สองภาษา', 2490, 'client_review', 'client',
        now() - interval '6 days', CURRENT_DATE + 2
   FROM customers WHERE display_name = 'หมอฟ้า';
 
 INSERT INTO jobs (customer_id, title, package, price_thb, status, waiting_on, status_since, due_on)
-SELECT id, 'เว็บร้านอะไหล่ตี๋ยนต์', 'เว็บ 990', 990, 'awaiting_brief', 'client',
+SELECT id, 'เว็บร้านอะไหล่ตี๋ยนต์', 'เว็บ 1990 สองภาษา', 1990, 'awaiting_brief', 'client',
        now() - interval '9 days', CURRENT_DATE - 2
   FROM customers WHERE display_name = 'เฮียตี๋';
 
 INSERT INTO payments (job_id, customer_id, kind, amount_thb, method, paid_on, status)
-SELECT j.id, j.customer_id, 'full', 990, 'promptpay', CURRENT_DATE - 10, 'received'
+SELECT j.id, j.customer_id, 'full', 1990, 'promptpay', CURRENT_DATE - 10, 'received'
   FROM jobs j WHERE j.title = 'เว็บร้านกาแฟบ้านสวน';
 
 INSERT INTO payments (job_id, customer_id, kind, amount_thb, method, paid_on, status)
