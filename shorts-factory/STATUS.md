@@ -41,7 +41,7 @@ Voices must stay unique per channel — `channels/README.md` makes a duplicate a
 | 14 | `vox-14-trichoderma` | agri | ✅ 51 | ✅ voiced **16:9** · 28 ภาพ + 6 แผนภาพโค้ด | ✅ | ✅ 1 + upload jpg | ✅ 114 |
 | 15 | `vox-15-reev` | ev | ✅ 52 | ✅ voiced **16:9** · 19 ภาพ + 4 แผนภาพโค้ด | ✅ | ✅ 1 + upload jpg | ✅ 112 |
 | 16 | `vox-16-bordeaux` | agri | ✅ 61 | ✅ voiced **16:9** · 29 ภาพ + 6 แผนภาพโค้ด | ✅ | ⛔ prompt only — operator generates | ✅ 108 |
-| 17 | `vox-17-packing` | agri | ✅ 57 | ⏳ rendering **16:9** · 28 ภาพ + **8 PhotoCard** + 5 แผนภาพโค้ด | ✅ | ⛔ prompt only — operator generates | ⏳ |
+| 17 | `vox-17-packing` | agri | ✅ 57 | ✅ voiced **16:9** · 28 ภาพ + **8 PhotoCard** + 5 แผนภาพโค้ด | ✅ | ⛔ prompt only — operator generates | ✅ 93 |
 
 **vox-8 onward are the landscape videos** (8 through 17). Everything else is 1080×1920.
 That is correct — they are the ones over 60s. See `PIPELINE.md` §3.
