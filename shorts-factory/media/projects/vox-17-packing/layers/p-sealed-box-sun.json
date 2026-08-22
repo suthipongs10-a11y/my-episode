@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph of a single closed brown cardboard box sitting alone in bright direct sunlight on hot concrete, hard shadow. Documentary photography, natural colour, no printing, no labels, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-22T03:39:32"
+}

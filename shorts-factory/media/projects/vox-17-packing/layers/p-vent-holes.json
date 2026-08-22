@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph of a plain brown cardboard box with several round ventilation holes punched along its side wall, sitting on a concrete floor. Product documentary photography, natural colour, no printing, no labels, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-22T03:37:54"
+}

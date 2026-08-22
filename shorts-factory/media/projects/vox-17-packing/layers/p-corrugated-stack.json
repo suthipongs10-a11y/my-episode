@@ -1,0 +1,9 @@
+{
+  "prompt": "A close-up photograph of a stack of plain brown corrugated cardboard boxes, the fluted edge of the board clearly visible in cross-section. Product documentary photography, natural colour, no printing, no labels, no text, no logos.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-22T03:36:29"
+}

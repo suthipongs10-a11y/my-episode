@@ -1,0 +1,9 @@
+{
+  "prompt": "Product photograph of one ripe unblemished mango with a short stem, sitting at a three-quarter angle. Isolated on a plain pure white background, soft even studio light. No text, no stickers, no labels, no logos, no hands, no people.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-22T03:41:55"
+}

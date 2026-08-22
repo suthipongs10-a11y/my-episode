@@ -94,7 +94,10 @@ for (const shot of shots.sort()) {
       }
       if (!cur) continue;
       if (/<Plate\s+src=/.test(line)) cur.plates++;
-      if (/<Prop\s+src=/.test(line)) cur.props++;
+      // <PhotoCard> is vox-17's addition — an UNDIMMED photograph presented as content rather
+      // than as a dimmed backdrop. It carries a scene the same way a cut-out prop does, so it
+      // counts here; without this the checker reported six of vox-17's ten chapters as bare.
+      if (/<(Prop|PhotoCard)\s+[\s\S]*?src=/.test(line) || /<PhotoCard\b/.test(line)) cur.props++;
     }
     if (cur) scenes.push(cur);
 

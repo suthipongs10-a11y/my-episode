@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph looking through the open slatted wall of a simple farm building with light and air passing through the gaps, dust visible in the light beams. This is rural THAILAND in Southeast Asia — humid tropical air, banana and coconut palms, corrugated zinc roofing, red-brown laterite soil, dense green tropical vegetation. NOT Europe: no stone walls, no hedgerows, no oak or beech trees, no temperate farmland, no European road markings. Documentary photography, natural colour, no people, no faces, no readable text, no logos, no number plates.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-22T03:42:57"
+}

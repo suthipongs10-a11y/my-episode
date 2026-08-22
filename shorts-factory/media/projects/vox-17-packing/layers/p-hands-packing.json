@@ -1,0 +1,9 @@
+{
+  "prompt": "A close-up photograph of two hands placing crumpled paper into the corner of a cardboard box packed with fruit, seen from above. Documentary photography, natural colour, hands only, no face visible, no text.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-22T03:38:28"
+}

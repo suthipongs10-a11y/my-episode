@@ -1,0 +1,9 @@
+{
+  "prompt": "A photograph of a plain brown cardboard parcel sitting on a tiled doorstep outside a Thai house, morning light. Documentary photography, natural colour, no people, no addresses, no labels, no text, no logos.",
+  "model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "image_size": "2K",
+  "seed": null,
+  "refs": [],
+  "created": "2026-08-22T03:40:07"
+}
