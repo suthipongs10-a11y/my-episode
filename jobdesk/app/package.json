@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "db": "node tools/db.mjs",
-    "smoke": "node --conditions=react-server --import tsx tools/smoke.mts"
+    "smoke": "node --conditions=react-server --import tsx tools/smoke.mts",
+    "test:e2e": "./tests/run.sh"
   },
   "dependencies": {
     "next": "16.3.1",

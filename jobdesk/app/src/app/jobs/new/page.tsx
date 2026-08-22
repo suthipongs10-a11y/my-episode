@@ -10,21 +10,34 @@ import { Submit } from "@/components/submit";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewJobPage() {
+export default async function NewJobPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lead?: string; name?: string }>;
+}) {
   await requireSession();
-  const options = await customerOptions();
+  const [options, params] = await Promise.all([customerOptions(), searchParams]);
+  const leadId = Number(params.lead);
+  const fromLead = Number.isInteger(leadId) && leadId > 0 ? leadId : null;
 
   return (
     <Shell>
       <div className="mx-auto max-w-2xl">
-        <Link href="/board" className="text-xs text-muted hover:underline">
-          ← กลับไปบอร์ดงาน
+        <Link href={fromLead ? "/leads" : "/board"} className="text-xs text-muted hover:underline">
+          {fromLead ? "← กลับไปหน้าคนทัก" : "← กลับไปบอร์ดงาน"}
         </Link>
         <h1 className="mt-1 mb-4 text-xl font-semibold">งานใหม่</h1>
 
+        {fromLead ? (
+          <p className="mb-3 rounded-lg border border-line bg-accent-tint px-3 py-2 text-xs text-ink">
+            เปิดงานจากคนที่ทักมา — พอกดเปิดงาน รายการนี้จะถูกนับเป็น “ปิดได้” ให้เอง
+          </p>
+        ) : null}
+
         <Panel title="รายละเอียด">
           <form action={createJobAction} className="grid gap-3 p-3">
-            <CustomerPicker options={options} />
+            {fromLead ? <input type="hidden" name="lead_id" value={fromLead} /> : null}
+            <CustomerPicker options={options} defaultNewName={fromLead ? params.name : undefined} />
 
             <Field label="ชื่องาน">
               <input className="field" name="title" required placeholder="เช่น เว็บร้านกาแฟบ้านสวน" />

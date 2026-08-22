@@ -59,9 +59,12 @@ export function Panel({
   );
 }
 
-export function Row({ children }: { children: ReactNode }) {
+export function Row({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2 border-b border-line-soft px-3 py-2 text-sm last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <div
+      id={id}
+      className="flex scroll-mt-4 flex-col gap-2 border-b border-line-soft px-3 py-2 text-sm last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+    >
       {children}
     </div>
   );

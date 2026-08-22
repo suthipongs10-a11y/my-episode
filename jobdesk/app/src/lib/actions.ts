@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { sql } from "./db";
 import { signIn, signOut, requireSession } from "./auth";
-import { JOB_STATUS, isJobStatus, type JobStatus } from "./status";
+import { JOB_STATUS, isJobStatus, isLeadStatus, isLostReason, type JobStatus } from "./status";
 import { templateFor } from "./templates";
 import { runRenewalReminders } from "./renewal-notify";
 import { sendNotification } from "./notify";
@@ -144,11 +144,16 @@ export async function createJobAction(fd: FormData): Promise<void> {
     await log("customer", customerId, "created");
   }
 
+  // เปิดงานจากคนที่ทักมา — ผูกกันไว้เพื่อให้ตัวเศษของอัตราปิดตรงกับตัวหาร
+  const leadId = optionalNumber(fd, "lead_id");
+  const linkLead = leadId && leadId > 0 ? leadId : null;
+
   const [job] = await sql<{ id: number }[]>`
-    INSERT INTO jobs (customer_id, title, package, price_thb, due_on, note,
+    INSERT INTO jobs (customer_id, lead_id, title, package, price_thb, due_on, note,
                       revisions_included, status, waiting_on, status_since)
     VALUES (
       ${customerId},
+      ${linkLead},
       ${required(fd, "title", "ชื่องาน")},
       ${text(fd, "package")},
       ${money(fd, "price_thb", "ราคาขาย")},
@@ -161,6 +166,18 @@ export async function createJobAction(fd: FormData): Promise<void> {
   `;
   await insertTemplateTasks(job.id, text(fd, "package"));
   await log("job", job.id, "created", null, "awaiting_brief");
+
+  if (linkLead) {
+    await sql`
+      UPDATE leads SET status = 'won', lost_reason = NULL,
+                       customer_id = COALESCE(customer_id, ${customerId}),
+                       closed_at = COALESCE(closed_at, now()), updated_at = now()
+      WHERE id = ${linkLead}
+    `;
+    await log("lead", linkLead, "status_changed", null, "won");
+    revalidatePath("/leads");
+  }
+
   refreshJobViews(job.id);
   redirect(`/jobs/${job.id}`);
 }
@@ -558,4 +575,103 @@ export async function sendTestNotificationAction(): Promise<void> {
     params.set("err", failed.map((r) => `${r.channel}: ${r.error}`).join(" | ").slice(0, 300));
   }
   redirect(`/renewals?${params}`);
+}
+
+/* ------------------------------------------------------------------ leads */
+
+/**
+ * เปิดคนทักใหม่ — ต้องเร็วพอที่จะทำระหว่างพิมพ์ตอบลูกค้าอยู่
+ * ชื่อกับช่องทางพอแล้ว ที่เหลือเติมทีหลังได้
+ */
+export async function createLeadAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const campaign = optionalNumber(fd, "campaign_id");
+  const [lead] = await sql<{ id: number }[]>`
+    INSERT INTO leads (contact_name, channel, campaign_id, ref_code, enquiry)
+    VALUES (
+      ${required(fd, "contact_name", "ชื่อคนทัก")},
+      ${text(fd, "channel") ?? "facebook_message"},
+      ${campaign && campaign > 0 ? campaign : null},
+      ${text(fd, "ref_code")},
+      ${text(fd, "enquiry")}
+    )
+    RETURNING id::int
+  `;
+  await log("lead", lead.id, "created", null, "new");
+  revalidatePath("/leads");
+  revalidatePath("/");
+}
+
+export async function setLeadStatusAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const leadId = id(fd, "lead_id");
+  const next = text(fd, "status");
+  if (!isLeadStatus(next)) throw new Error("สถานะไม่ถูกต้อง");
+
+  const [current] = await sql<{ status: string }[]>`
+    SELECT status::text FROM leads WHERE id = ${leadId}
+  `;
+  if (!current) throw new Error("ไม่พบคนทักรายนี้");
+  if (current.status === next) return;
+
+  // เปิดงานไปแล้วจะย้ายออกจาก "ปิดได้" ไม่ได้ ไม่งั้นตัวเศษกับตัวหารของอัตราปิดจะเพี้ยนเงียบ ๆ
+  // ซึ่งเป็นสิ่งเดียวที่หน้านี้มีไว้กันไม่ให้เกิด
+  if (current.status === "won" && next !== "won") {
+    const [job] = await sql<{ id: number }[]>`SELECT id::int FROM jobs WHERE lead_id = ${leadId}`;
+    if (job) {
+      throw new Error("รายการนี้เปิดงานไปแล้ว — ถ้างานไม่เกิดขึ้นจริง ให้ไปยกเลิกที่หน้างานแทน");
+    }
+  }
+
+  // ฐานข้อมูลบังคับว่า 'lost' ต้องมีเหตุผลเสมอ (lost_needs_reason)
+  // เหตุผลที่ไม่ซื้อคือข้อมูลที่แพงที่สุดที่ได้จากแชท จึงไม่ยอมให้ข้าม
+  const reason = text(fd, "lost_reason");
+  if (next === "lost" && !isLostReason(reason)) {
+    throw new Error("เลือกเหตุผลที่ไม่ซื้อด้วย — ตัวเลขนี้คือสิ่งที่บอกว่าต้องแก้โฆษณาหรือแก้ราคา");
+  }
+
+  await sql`
+    UPDATE leads SET
+      status      = ${next}::lead_status,
+      lost_reason = ${next === "lost" ? reason : null}::lead_lost_reason,
+      closed_at   = CASE WHEN ${next} IN ('won', 'lost', 'ghosted')
+                         THEN COALESCE(closed_at, now()) ELSE NULL END,
+      updated_at  = now()
+    WHERE id = ${leadId}
+  `;
+  await log("lead", leadId, "status_changed", current.status, next);
+  revalidatePath("/leads");
+  revalidatePath("/");
+}
+
+export async function updateLeadAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const leadId = id(fd, "lead_id");
+  const campaign = optionalNumber(fd, "campaign_id");
+  await sql`
+    UPDATE leads SET
+      contact_name = ${required(fd, "contact_name", "ชื่อคนทัก")},
+      channel      = ${text(fd, "channel") ?? "facebook_message"},
+      campaign_id  = ${campaign && campaign > 0 ? campaign : null},
+      ref_code     = ${text(fd, "ref_code")},
+      enquiry      = ${text(fd, "enquiry")},
+      updated_at   = now()
+    WHERE id = ${leadId}
+  `;
+  revalidatePath("/leads");
+}
+
+/**
+ * ลบได้เฉพาะรายการที่ยังไม่มีงานผูกอยู่ — กันไม่ให้ลบตัวหารของอัตราปิดทิ้ง
+ * มีไว้แก้รายการที่กดซ้ำ ไม่ได้มีไว้เก็บกวาดคนที่ไม่ซื้อ
+ */
+export async function deleteLeadAction(fd: FormData): Promise<void> {
+  await requireSession();
+  const leadId = id(fd, "lead_id");
+  const [job] = await sql<{ id: number }[]>`SELECT id::int FROM jobs WHERE lead_id = ${leadId}`;
+  if (job) throw new Error("รายการนี้เปิดงานไปแล้ว ลบไม่ได้ — ถ้างานยกเลิกให้ไปยกเลิกที่งาน");
+  await sql`DELETE FROM leads WHERE id = ${leadId}`;
+  await log("lead", leadId, "deleted");
+  revalidatePath("/leads");
+  revalidatePath("/");
 }

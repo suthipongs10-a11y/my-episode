@@ -1,6 +1,6 @@
 import "server-only";
 import { sql } from "./db";
-import { OPEN_STATUSES, type JobStatus, type WaitingOn } from "./status";
+import { OPEN_LEAD_STATUSES, OPEN_STATUSES, type JobStatus, type WaitingOn } from "./status";
 
 /**
  * เงินคำนวณด้วย numeric ใน SQL เสมอ แล้วค่อย cast เป็น float8 ตอนส่งออกมาแสดงผล
@@ -546,5 +546,105 @@ export async function listWebsitesForCustomer(customerId: number): Promise<Websi
 export async function listWebsitesForJob(jobId: number): Promise<WebsiteRow[]> {
   return sql<WebsiteRow[]>`
     ${WEBSITE_SELECT} WHERE w.origin_job_id = ${jobId} ORDER BY w.domain
+  `;
+}
+
+/* ------------------------------------------------------------------ leads */
+
+export type LeadRow = {
+  id: number;
+  contact_name: string;
+  channel: string;
+  campaign_id: number | null;
+  campaign_name: string | null;
+  ref_code: string | null;
+  enquiry: string | null;
+  status: string;
+  lost_reason: string | null;
+  contacted_at: string;
+  closed_at: string | null;
+  customer_id: number | null;
+  job_id: number | null;
+};
+
+const LEAD_SELECT = sql`
+  SELECT l.id::int, l.contact_name, l.channel, l.campaign_id::int, c.name AS campaign_name,
+         l.ref_code, l.enquiry, l.status::text, l.lost_reason::text,
+         l.contacted_at, l.closed_at, l.customer_id::int, j.id::int AS job_id
+  FROM leads l
+  LEFT JOIN ad_campaigns c ON c.id = l.campaign_id
+  LEFT JOIN jobs j ON j.lead_id = l.id
+`;
+
+/** เรียงจากคนที่ทักมานานที่สุดก่อน — คนที่รอนานที่สุดคือคนที่กำลังจะหายไป */
+export async function listLeads(): Promise<LeadRow[]> {
+  return sql<LeadRow[]>`${LEAD_SELECT} ORDER BY l.contacted_at`;
+}
+
+export async function getLead(id: number): Promise<LeadRow | null> {
+  const rows = await sql<LeadRow[]>`${LEAD_SELECT} WHERE l.id = ${id}`;
+  return rows[0] ?? null;
+}
+
+export type LeadSummary = {
+  open_count: number;
+  stale_count: number;
+  month_in: number;
+  month_won: number;
+  close_rate: number | null;
+  cpl: number | null;
+  cac: number | null;
+};
+
+/**
+ * อัตราปิดคิดจากคนที่ทักมา "เดือนนี้" ไม่ใช่คนที่ปิดได้เดือนนี้
+ * เพราะคนที่ทักมาเดือนที่แล้วแล้วเพิ่งปิดได้ ไม่ได้บอกว่าโฆษณาเดือนนี้ดีแค่ไหน
+ */
+export async function leadSummary(staleDays = 2): Promise<LeadSummary> {
+  const open = OPEN_LEAD_STATUSES as string[];
+  const [row] = await sql<LeadSummary[]>`
+    WITH month_leads AS (
+      SELECT status::text FROM leads
+      WHERE contacted_at >= date_trunc('month', CURRENT_DATE)
+    ),
+    spend AS (
+      SELECT COALESCE(sum(spend_thb), 0) AS thb FROM ad_spend_daily
+      WHERE spend_on >= date_trunc('month', CURRENT_DATE)
+    )
+    SELECT
+      (SELECT count(*) FROM leads WHERE status::text = ANY(${open}))::int   AS open_count,
+      (SELECT count(*) FROM leads
+        WHERE status::text = ANY(${open})
+          AND contacted_at < now() - make_interval(days => ${staleDays}))::int AS stale_count,
+      (SELECT count(*) FROM month_leads)::int                               AS month_in,
+      (SELECT count(*) FROM month_leads WHERE status = 'won')::int          AS month_won,
+      CASE WHEN (SELECT count(*) FROM month_leads) > 0
+           THEN round(100.0 * (SELECT count(*) FROM month_leads WHERE status = 'won')
+                            / (SELECT count(*) FROM month_leads), 1)::float8 END AS close_rate,
+      CASE WHEN (SELECT count(*) FROM month_leads) > 0
+           THEN round((SELECT thb FROM spend)
+                      / (SELECT count(*) FROM month_leads), 2)::float8 END  AS cpl,
+      CASE WHEN (SELECT count(*) FROM month_leads WHERE status = 'won') > 0
+           THEN round((SELECT thb FROM spend)
+                      / (SELECT count(*) FROM month_leads WHERE status = 'won'), 2)::float8 END AS cac
+  `;
+  return row;
+}
+
+/** เหตุผลที่ไม่ซื้อ นับรวมทั้งหมด — ตารางนี้คือสิ่งที่บอกว่าต้องแก้โฆษณาหรือแก้ราคา */
+export async function lostReasonBreakdown(): Promise<{ reason: string; n: number }[]> {
+  return sql<{ reason: string; n: number }[]>`
+    SELECT lost_reason::text AS reason, count(*)::int AS n
+    FROM leads WHERE lost_reason IS NOT NULL
+    GROUP BY 1 ORDER BY n DESC
+  `;
+}
+
+export type CampaignOption = { id: number; name: string; ref_code: string | null };
+
+export async function campaignOptions(): Promise<CampaignOption[]> {
+  return sql<CampaignOption[]>`
+    SELECT id::int, name, ref_code FROM ad_campaigns
+    WHERE is_active ORDER BY name
   `;
 }

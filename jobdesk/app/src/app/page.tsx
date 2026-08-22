@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
-import { getHomeSummary, listActiveJobs, upcomingRenewals, type JobRow } from "@/lib/queries";
+import {
+  getHomeSummary,
+  leadSummary,
+  listActiveJobs,
+  upcomingRenewals,
+  type JobRow,
+} from "@/lib/queries";
 import { OPEN_STATUSES } from "@/lib/status";
 import { daysSince, daysUntil, fmtDay, stallLabel, thb } from "@/lib/format";
 import { Shell } from "@/components/shell";
@@ -12,8 +18,9 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   await requireSession();
 
-  const [summary, jobs, renewals] = await Promise.all([
+  const [summary, leads, jobs, renewals] = await Promise.all([
     getHomeSummary(),
+    leadSummary(),
     listActiveJobs(),
     upcomingRenewals(30),
   ]);
@@ -26,6 +33,20 @@ export default async function HomePage() {
   return (
     <Shell>
       <div className="flex flex-col gap-5">
+        {/* คนทักที่รอเกิน 2 วันคืองานของ "วันนี้" พอ ๆ กับงานที่ค้าง — ขึ้นเฉพาะตอนที่มีจริง */}
+        {leads.stale_count > 0 ? (
+          <Link
+            href="/leads"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-crit bg-crit-tint px-3 py-2 text-sm hover:brightness-105"
+          >
+            <span>
+              มีคนทัก <span className="num font-semibold">{leads.stale_count}</span> คน
+              รอมาเกิน 2 วันแล้ว
+            </span>
+            <span className="text-xs text-muted">ยิ่งช้า ยิ่งปิดไม่ได้ →</span>
+          </Link>
+        ) : null}
+
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           <Kpi label="ต้องทำ" value={String(summary.need_to_do)} unit="งาน" />
           <Kpi label="ต้องทวง" value={String(summary.need_to_chase)} unit="งาน" />

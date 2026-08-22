@@ -84,3 +84,63 @@ export const RENEWAL_STATUS = {
 } as const;
 
 export type RenewalStatus = keyof typeof RENEWAL_STATUS;
+
+/* ------------------------------------------------------------------ leads */
+
+export const LEAD_STATUSES = [
+  "new",
+  "talking",
+  "quoted",
+  "awaiting_deposit",
+  "won",
+  "ghosted",
+  "lost",
+] as const;
+
+export type LeadStatus = (typeof LEAD_STATUSES)[number];
+
+export const LEAD_STATUS: Record<LeadStatus, { label: string; open: boolean }> = {
+  new: { label: "ทักมา ยังไม่ตอบ", open: true },
+  talking: { label: "คุยอยู่", open: true },
+  quoted: { label: "เสนอราคาแล้ว", open: true },
+  awaiting_deposit: { label: "รอโอนมัดจำ", open: true },
+  won: { label: "ปิดได้", open: false },
+  ghosted: { label: "เงียบหายไป", open: false },
+  lost: { label: "ไม่เอา", open: false },
+};
+
+/** สถานะที่ยังต้องตามต่อ — ใช้แยกกล่องในหน้าคนทัก และนับบนหน้าแรก */
+export const OPEN_LEAD_STATUSES: LeadStatus[] = LEAD_STATUSES.filter(
+  (s) => LEAD_STATUS[s].open,
+);
+
+export const LEAD_LOST_REASON = {
+  too_expensive: "แพงไป",
+  diy: "ทำเอง",
+  chose_competitor: "ไปเจ้าอื่น",
+  not_ready: "ยังไม่พร้อม",
+  wrong_fit: "ไม่ตรงกับที่ต้องการ",
+  other: "อื่น ๆ",
+} as const;
+
+export type LeadLostReason = keyof typeof LEAD_LOST_REASON;
+
+/** ช่องทางที่ทักเข้ามา — เก็บเป็น text ในฐานข้อมูล ตรงนี้คือรายการที่เลือกได้ */
+export const LEAD_CHANNELS = {
+  facebook_message: "ทักเพจ Facebook",
+  facebook_comment: "คอมเมนต์ใต้โฆษณา",
+  line: "LINE",
+  phone: "โทรเข้า",
+  referral: "คนแนะนำ",
+  other: "อื่น ๆ",
+} as const;
+
+export type LeadChannel = keyof typeof LEAD_CHANNELS;
+
+export function isLeadStatus(v: unknown): v is LeadStatus {
+  return typeof v === "string" && (LEAD_STATUSES as readonly string[]).includes(v);
+}
+
+export function isLostReason(v: unknown): v is LeadLostReason {
+  return typeof v === "string" && Object.hasOwn(LEAD_LOST_REASON, v);
+}

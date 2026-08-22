@@ -93,6 +93,42 @@ SELECT j.id, 'transaction_fee', 'ค่าธรรมเนียมโอน',
 INSERT INTO expenses (kind, description, amount_thb, spent_on)
 VALUES ('ads', 'ค่าโฆษณาเพจ', 3000, date_trunc('month', CURRENT_DATE)::date);
 
+-- แคมเปญโฆษณา + ค่าโฆษณารายวัน — ทำให้หน้าคนทักคำนวณ CPL ได้
+INSERT INTO ad_campaigns (name, ref_code, objective, started_on) VALUES
+  ('WebLeadCraft', 'camp_a1', 'MESSAGES', CURRENT_DATE - 60),
+  ('เว็บสองภาษา ภูเก็ต', 'camp_b1', 'MESSAGES', CURRENT_DATE - 20);
+
+INSERT INTO ad_spend_daily (campaign_id, spend_on, spend_thb, impressions, clicks, reported_results)
+SELECT c.id, d::date, 80, 320, 14, 1
+  FROM ad_campaigns c,
+       generate_series(date_trunc('month', CURRENT_DATE), CURRENT_DATE - 1, interval '1 day') d
+ WHERE c.ref_code = 'camp_a1';
+
+-- คนที่ทักมา: ปิดได้ 2 ไม่เอา 2 เงียบ 1 และยังค้างอยู่ 3 (หนึ่งในนั้นค้างเกิน 2 วัน)
+INSERT INTO leads (contact_name, channel, campaign_id, ref_code, enquiry, status, lost_reason, contacted_at, closed_at)
+SELECT v.name, v.channel, c.id, 'camp_a1', v.enquiry, v.status::lead_status,
+       v.reason::lead_lost_reason, now() - (v.age || ' days')::interval,
+       CASE WHEN v.status IN ('won','lost','ghosted')
+            THEN now() - (v.age || ' days')::interval + interval '1 day' END
+  FROM (VALUES
+    ('คุณนก ร้านกาแฟบ้านสวน', 'facebook_message', 'ถามราคาเว็บสองภาษา', 'won',     NULL,            12),
+    ('ช่างเอก อู่ช่างเอก',      'facebook_message', 'อยากได้เว็บอู่',        'won',     NULL,             8),
+    ('คุณแอน ร้านเสื้อผ้า',     'facebook_message', 'ถามราคา',              'lost',    'too_expensive', 10),
+    ('คุณโจ ร้านซ่อมมือถือ',    'facebook_comment', 'ทำเองได้ไหม',           'lost',    'diy',            7),
+    ('ไม่บอกชื่อ',              'facebook_message', 'ถามราคาแล้วหายไป',      'ghosted', NULL,             6),
+    ('คุณเมย์ สปาเชียงใหม่',    'facebook_message', 'ที่พัก อยากได้อังกฤษ',  'quoted',  NULL,             4),
+    ('คุณต้น ร้านอาหารป่าตอง',  'facebook_message', 'ร้านอาหาร ถามกี่วันเสร็จ','talking', NULL,           1),
+    ('คุณบี คลินิกเสริมความงาม','line',             'ขอดูตัวอย่างงาน',        'new',     NULL,             0)
+  ) AS v(name, channel, enquiry, status, reason, age)
+  CROSS JOIN (SELECT id FROM ad_campaigns WHERE ref_code = 'camp_a1') c;
+
+-- ผูกงานที่ปิดได้กลับไปหาคนที่ทักมา เพื่อให้ตัวเศษกับตัวหารของอัตราปิดตรงกัน
+UPDATE jobs j SET lead_id = l.id
+  FROM leads l
+ WHERE l.status = 'won'
+   AND ((l.contact_name LIKE 'คุณนก%'  AND j.title = 'เว็บร้านกาแฟบ้านสวน')
+     OR (l.contact_name LIKE 'ช่างเอก%' AND j.title = 'เว็บอู่ช่างเอก'));
+
 -- เดือนก่อน ๆ ไว้ให้กราฟในหน้าการเงินมีอะไรให้ดู
 INSERT INTO payments (customer_id, kind, amount_thb, method, paid_on, status)
 SELECT (SELECT id FROM customers WHERE display_name = 'คุณนก'), 'full', v.amount, 'promptpay',

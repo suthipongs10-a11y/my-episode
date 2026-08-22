@@ -60,6 +60,7 @@ DEV_ORIGINS=192.168.1.20
 | `npm run build` / `npm start` | build และรันแบบ production |
 | `npm run typecheck` | ตรวจ TypeScript ทั้งโปรเจกต์ |
 | `npm run smoke` | ทดสอบชั้นคำนวณเงินกับฐานข้อมูลจริง (สร้างและลบข้อมูลของตัวเอง) |
+| `npm run test:e2e` | ทดสอบผ่านเบราว์เซอร์จริงทั้ง 3 ชุด — ดู "ชุดทดสอบ" ข้างล่าง |
 | `npm run db -- init \| migrate \| seed \| reset` | จัดการฐานข้อมูล — `reset` ลบข้อมูลทั้งหมด |
 
 **ถ้ามีข้อมูลจริงอยู่แล้ว อย่าใช้ `reset`** ใช้ `npm run db -- migrate` แทน
@@ -83,6 +84,31 @@ src/app/        หน้าเว็บ (App Router)
 src/components/ ชิ้นส่วน UI ที่ใช้ซ้ำ
 proxy.ts        กันคนที่ยังไม่ล็อกอินออกจากทุกหน้า ยกเว้น /login
 tools/          สคริปต์ฐานข้อมูลและ smoke test
+tests/          ชุดทดสอบผ่านเบราว์เซอร์จริง (Playwright)
+```
+
+## ชุดทดสอบ
+
+| ชุด | ครอบคลุมอะไร |
+|---|---|
+| `tests/core.mjs` | ล็อกอิน · หน้าแรก · บอร์ด · เปิดงาน · รับเงิน · ลงต้นทุน · ลูกค้า |
+| `tests/leads.mjs` | หน้าคนทัก · อัตราปิด · CPL · เปิดงานจากคนทัก · เหตุผลที่ไม่ซื้อ |
+| `tests/renewals.mjs` | หน้าต่ออายุ · ชุดเตือน 30/14/7/1 · cron · การต่ออายุ |
+
+```bash
+npm run build && npm start &          # หรือ npm run dev
+npm run test:e2e                      # ทั้งหมด
+npm run test:e2e leads                # เฉพาะชุดเดียว
+```
+
+ทุกชุด **reset + seed ฐานข้อมูลก่อนรันเสมอ** จึงต้องชี้ไปที่ฐานข้อมูล dev เท่านั้น
+รหัสผ่านอ่านจาก `.env.local` ไม่ได้ฝังไว้ในไฟล์ทดสอบ
+
+ต้องมี Playwright กับ Chromium ในเครื่อง ถ้าติดตั้งไว้คนละที่:
+
+```bash
+export PLAYWRIGHT_PACKAGE=/path/to/playwright/index.js
+export CHROME_PATH=/path/to/chrome
 ```
 
 ## ไฟล์แนบเก็บไว้ที่ไหน
