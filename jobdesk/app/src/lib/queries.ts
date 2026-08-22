@@ -63,6 +63,39 @@ const JOB_SELECT = sql`
   ) t ON true
 `;
 
+/** ชิ้นส่วน SQL ที่เอาไปประกอบในคิวรีอื่นได้ (postgres.js fragment) */
+type Frag = Parameters<typeof sql>[1];
+
+/**
+ * ค่าโฆษณาในช่วง [from, to) — **นิยามเดียวที่ทุกหน้าต้องใช้**
+ *
+ * ค่าโฆษณาลงได้สองที่ และห้ามนับซ้ำ:
+ *   `ad_spend_daily`      รายวันรายแคมเปญ — ละเอียดกว่า มาจากการนำเข้า CSV (เฟส 4)
+ *   `expenses kind='ads'` กรอกมือ — ตอนนี้เป็นทางเดียวที่หน้าจอมีให้กรอก
+ *
+ * กติกา: เดือนไหนมีข้อมูลรายแคมเปญ ใช้อันนั้น เดือนไหนไม่มี ค่อยใช้รายจ่ายที่กรอกมือ
+ * ทำให้ CPL กับกำไรอ่านค่าโฆษณาก้อนเดียวกันเสมอ ไม่ว่าจะกรอกทางไหน
+ */
+function adSpendBetween(from: Frag, to: Frag) {
+  return sql`
+    CASE WHEN EXISTS (
+           SELECT 1 FROM ad_spend_daily WHERE spend_on >= ${from} AND spend_on < ${to})
+         THEN (SELECT COALESCE(sum(spend_thb), 0) FROM ad_spend_daily
+                WHERE spend_on >= ${from} AND spend_on < ${to})
+         ELSE (SELECT COALESCE(sum(amount_thb), 0) FROM expenses
+                WHERE kind = 'ads' AND spent_on >= ${from} AND spent_on < ${to})
+    END
+  `;
+}
+
+/** รายจ่ายอื่นที่ไม่ใช่ค่าโฆษณา — คู่กับ adSpendBetween เสมอ จะได้ไม่นับค่าโฆษณาซ้ำ */
+function otherCostBetween(from: Frag, to: Frag) {
+  return sql`
+    (SELECT COALESCE(sum(amount_thb), 0) FROM expenses
+      WHERE kind <> 'ads' AND spent_on >= ${from} AND spent_on < ${to})
+  `;
+}
+
 export type HomeSummary = {
   need_to_do: number;
   need_to_chase: number;
@@ -93,14 +126,14 @@ export async function getHomeSummary(): Promise<HomeSummary> {
       (SELECT COALESCE(sum(amount_thb), 0) FROM payments
         WHERE status = 'received'
           AND paid_on >= date_trunc('month', CURRENT_DATE))::float8        AS revenue_month,
-      (SELECT COALESCE(sum(amount_thb), 0) FROM expenses
-        WHERE spent_on >= date_trunc('month', CURRENT_DATE))::float8       AS cost_month,
+      (${adSpendBetween(sql`date_trunc('month', CURRENT_DATE)`, sql`date_trunc('month', CURRENT_DATE) + interval '1 month'`)}
+       + ${otherCostBetween(sql`date_trunc('month', CURRENT_DATE)`, sql`date_trunc('month', CURRENT_DATE) + interval '1 month'`)}
+      )::float8                                                            AS cost_month,
       (
         (SELECT COALESCE(sum(amount_thb), 0) FROM payments
           WHERE status = 'received' AND paid_on >= date_trunc('month', CURRENT_DATE))
-        -
-        (SELECT COALESCE(sum(amount_thb), 0) FROM expenses
-          WHERE spent_on >= date_trunc('month', CURRENT_DATE))
+        - ${adSpendBetween(sql`date_trunc('month', CURRENT_DATE)`, sql`date_trunc('month', CURRENT_DATE) + interval '1 month'`)}
+        - ${otherCostBetween(sql`date_trunc('month', CURRENT_DATE)`, sql`date_trunc('month', CURRENT_DATE) + interval '1 month'`)}
       )::float8                                                            AS profit_month
   `;
   return row;
@@ -295,15 +328,14 @@ export async function monthlySeries(n = 12): Promise<MonthRow[]> {
       COALESCE((SELECT sum(amount_thb) FROM payments
                  WHERE status = 'received' AND paid_on >= m
                    AND paid_on < m + interval '1 month'), 0)::float8 AS revenue,
-      COALESCE((SELECT sum(amount_thb) FROM expenses
-                 WHERE spent_on >= m AND spent_on < m + interval '1 month'), 0)::float8 AS cost,
+      (${adSpendBetween(sql`m`, sql`m + interval '1 month'`)}
+       + ${otherCostBetween(sql`m`, sql`m + interval '1 month'`)})::float8 AS cost,
       (
         COALESCE((SELECT sum(amount_thb) FROM payments
                    WHERE status = 'received' AND paid_on >= m
                      AND paid_on < m + interval '1 month'), 0)
-        -
-        COALESCE((SELECT sum(amount_thb) FROM expenses
-                   WHERE spent_on >= m AND spent_on < m + interval '1 month'), 0)
+        - ${adSpendBetween(sql`m`, sql`m + interval '1 month'`)}
+        - ${otherCostBetween(sql`m`, sql`m + interval '1 month'`)}
       )::float8 AS profit,
       (SELECT count(*) FROM jobs
         WHERE delivered_on >= m AND delivered_on < m + interval '1 month')::int AS jobs_delivered
@@ -319,11 +351,20 @@ export async function monthlySeries(n = 12): Promise<MonthRow[]> {
 export type ExpenseSlice = { kind: string; total: number };
 
 export async function expensesByKind(month: string): Promise<ExpenseSlice[]> {
+  const from = sql`${month}::date`;
+  const to = sql`${month}::date + interval '1 month'`;
+  // ค่าโฆษณาไม่ได้ดึงจาก expenses ตรง ๆ เพราะอาจอยู่ใน ad_spend_daily — ใช้นิยามเดียวกับทุกหน้า
   return sql<ExpenseSlice[]>`
-    SELECT kind::text, sum(amount_thb)::float8 AS total
-    FROM expenses
-    WHERE spent_on >= ${month}::date AND spent_on < ${month}::date + interval '1 month'
-    GROUP BY kind
+    SELECT * FROM (
+      SELECT 'ads' AS kind, (${adSpendBetween(from, to)})::float8 AS total
+      UNION ALL
+      SELECT kind::text, sum(amount_thb)::float8
+        FROM expenses
+       WHERE kind <> 'ads' AND spent_on >= ${month}::date
+         AND spent_on < ${month}::date + interval '1 month'
+       GROUP BY kind
+    ) x
+    WHERE total > 0
     ORDER BY total DESC
   `;
 }
@@ -384,12 +425,26 @@ export async function ledger(from: string, to: string): Promise<LedgerRow[]> {
       LEFT JOIN jobs j ON j.id = p.job_id
      WHERE p.status = 'received' AND p.paid_on >= ${from}::date AND p.paid_on <= ${to}::date
     UNION ALL
+    -- เดือนไหนค่าโฆษณามาจาก ad_spend_daily ให้ข้าม expenses kind='ads' ของเดือนนั้น
+    -- ไม่งั้นยอดรวมในไฟล์ส่งออกจะไม่ตรงกับหน้าการเงิน (ดู adSpendBetween)
     SELECT e.spent_on, 'รายจ่าย', e.kind::text, e.description,
            c.display_name, j.title, -e.amount_thb::float8
       FROM expenses e
       LEFT JOIN jobs j ON j.id = e.job_id
       LEFT JOIN customers c ON c.id = j.customer_id
      WHERE e.spent_on >= ${from}::date AND e.spent_on <= ${to}::date
+       AND NOT (e.kind = 'ads' AND EXISTS (
+             SELECT 1 FROM ad_spend_daily d
+              WHERE date_trunc('month', d.spend_on) = date_trunc('month', e.spent_on)))
+    UNION ALL
+    -- ค่าโฆษณารายวันรายแคมเปญ รวมเป็นรายการเดียวต่อเดือนต่อแคมเปญ จะได้ไม่ยาวเป็นหางว่าว
+    SELECT max(d.spend_on), 'รายจ่าย', 'ads',
+           COALESCE(ca.name, 'ค่าโฆษณา') || ' (' || count(*) || ' วัน)',
+           NULL, NULL, -sum(d.spend_thb)::float8
+      FROM ad_spend_daily d
+      LEFT JOIN ad_campaigns ca ON ca.id = d.campaign_id
+     WHERE d.spend_on >= ${from}::date AND d.spend_on <= ${to}::date
+     GROUP BY date_trunc('month', d.spend_on), ca.name
     ORDER BY entry_date, direction
   `;
 }
@@ -608,8 +663,7 @@ export async function leadSummary(staleDays = 2): Promise<LeadSummary> {
       WHERE contacted_at >= date_trunc('month', CURRENT_DATE)
     ),
     spend AS (
-      SELECT COALESCE(sum(spend_thb), 0) AS thb FROM ad_spend_daily
-      WHERE spend_on >= date_trunc('month', CURRENT_DATE)
+      SELECT (${adSpendBetween(sql`date_trunc('month', CURRENT_DATE)`, sql`date_trunc('month', CURRENT_DATE) + interval '1 month'`)}) AS thb
     )
     SELECT
       (SELECT count(*) FROM leads WHERE status::text = ANY(${open}))::int   AS open_count,

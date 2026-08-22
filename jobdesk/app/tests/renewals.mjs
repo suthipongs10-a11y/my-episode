@@ -11,6 +11,7 @@ const OUT = process.argv[2];
 const BASE = process.env.BASE_URL ?? 'http://localhost:3000';
 // รหัสผ่านไม่ฝังในโค้ด — มาจาก .env.local เหมือนที่แอปใช้ (tests/run.sh ส่งให้)
 const APP_PASSWORD = process.env.APP_PASSWORD;
+const CRON_SECRET = process.env.CRON_SECRET;
 if (!APP_PASSWORD) {
   console.error('ต้องตั้ง APP_PASSWORD ก่อน — รันผ่าน tests/run.sh หรือ export เอง');
   process.exit(2);
@@ -121,11 +122,31 @@ await p.waitForTimeout(1800);
 t = await p.locator('body').innerText();
 ok('เปลี่ยนสถานะเป็นลูกค้าไม่ต่อได้', t.includes('ลูกค้าไม่ต่อ'));
 
+// ---------- API ต้องกันตัวเอง: proxy ไม่ได้ครอบ /api/* (พิสูจน์ด้วย cron ที่เรียกได้โดยไม่มี cookie)
+{
+  const anon = await b.newContext();               // ไม่มี cookie เลย
+  const req = anon.request;
+  const ex = await req.get(BASE + '/api/export?from=2026-01-01&to=2026-12-31');
+  ok('ไม่ล็อกอินโหลดไฟล์การเงินไม่ได้', ex.status() === 401, String(ex.status()));
+  const fl = await req.get(BASE + '/api/files/1');
+  ok('ไม่ล็อกอินโหลดไฟล์แนบไม่ได้', fl.status() === 401, String(fl.status()));
+  const pg = await req.get(BASE + '/leads', { maxRedirects: 0 });
+  ok('ไม่ล็อกอินเข้าหน้าคนทักไม่ได้', [302, 307].includes(pg.status()), String(pg.status()));
+  const cronNoKey = await req.get(BASE + '/api/cron/renewals');
+  ok('cron ที่ไม่มีกุญแจถูกปฏิเสธ แม้จะไม่มี cookie', cronNoKey.status() === 401, String(cronNoKey.status()));
+  const cronOk = await req.get(BASE + '/api/cron/renewals', {
+    headers: { Authorization: `Bearer ${CRON_SECRET}` },
+  });
+  ok('cron ที่มีกุญแจเรียกได้โดยไม่ต้องล็อกอิน (Vercel Cron เรียกแบบนี้)',
+     [200, 500].includes(cronOk.status()), String(cronOk.status()));
+  await anon.close();
+}
+
 // ---------- cron endpoint auth
 const noAuth = await p.request.get(BASE + '/api/cron/renewals');
 ok('cron ต้องมีกุญแจ', noAuth.status() === 401, String(noAuth.status()));
 const withAuth = await p.request.get(BASE + '/api/cron/renewals', {
-  headers: { Authorization: 'Bearer dev-cron-secret-for-local-testing' },
+  headers: { Authorization: `Bearer ${CRON_SECRET}` },
 });
 const body = await withAuth.json();
 ok('cron ที่มีกุญแจถูกทำงานได้', typeof body.due === 'number', JSON.stringify(body).slice(0,120));

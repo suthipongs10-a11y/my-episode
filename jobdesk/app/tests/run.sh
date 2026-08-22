@@ -17,6 +17,12 @@ if [ -z "${APP_PASSWORD:-}" ] && [ -f .env.local ]; then
   export APP_PASSWORD
 fi
 : "${APP_PASSWORD:?ตั้ง APP_PASSWORD หรือใส่ไว้ใน .env.local ก่อน}"
+
+if [ -z "${CRON_SECRET:-}" ] && [ -f .env.local ]; then
+  CRON_SECRET=$(grep -E '^CRON_SECRET=' .env.local | head -1 | cut -d= -f2- | tr -d '"'"'"'')
+  export CRON_SECRET
+fi
+: "${CRON_SECRET:?ตั้ง CRON_SECRET หรือใส่ไว้ใน .env.local ก่อน}"
 export BASE_URL="${BASE_URL:-http://localhost:3000}"
 
 OUT="${OUT:-$(mktemp -d)}"

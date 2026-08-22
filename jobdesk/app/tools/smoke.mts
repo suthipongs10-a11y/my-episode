@@ -158,10 +158,59 @@ try {
   const summary = await q.renewalSummary();
   check("สรุปนับเว็บนี้ด้วย", summary.active_sites >= 1, true);
 
+  /* ---- ค่าโฆษณาต้องมีนิยามเดียว ไม่ว่าจะกรอกทางไหน ---------------------- */
+  // เดือนนี้ในข้อมูลตัวอย่างมีแต่ ad_spend_daily — CPL กับกำไรต้องอ่านก้อนเดียวกัน
+  const home = await q.getHomeSummary();
+  const adSeries = await q.monthlySeries(2);
+  const curMonth = adSeries[adSeries.length - 1];
+  check("หน้าแรกกับหน้าการเงินคิดต้นทุนเดือนนี้ตรงกัน", home.cost_month, curMonth.cost);
+  check("หน้าแรกกับหน้าการเงินคิดกำไรเดือนนี้ตรงกัน", home.profit_month, curMonth.profit);
+
+  const [{ daily, viaExpense }] = await sql<{ daily: number; viaExpense: number }[]>`
+    SELECT (SELECT COALESCE(sum(spend_thb),0) FROM ad_spend_daily
+             WHERE spend_on >= date_trunc('month', CURRENT_DATE))::float8 AS daily,
+           (SELECT COALESCE(sum(amount_thb),0) FROM expenses
+             WHERE kind = 'ads' AND spent_on >= date_trunc('month', CURRENT_DATE))::float8 AS "viaExpense"
+  `;
+  const lead = await q.leadSummary();
+  const expectedSpend = daily > 0 ? daily : viaExpense;
+  check("CPL ใช้ค่าโฆษณาก้อนเดียวกับที่หักออกจากกำไร",
+        lead.cpl, lead.month_in > 0 ? Number((expectedSpend / lead.month_in).toFixed(2)) : null);
+
+  // ลงค่าโฆษณาเป็นรายจ่ายทับเดือนที่มีรายวันอยู่แล้ว ต้องไม่ถูกนับซ้ำ
+  const [dup] = await sql<{ id: number }[]>`
+    INSERT INTO expenses (kind, description, amount_thb, spent_on)
+    VALUES ('ads', ${tag}, 999, date_trunc('month', CURRENT_DATE)::date) RETURNING id::int`;
+  const afterDup = await q.getHomeSummary();
+  check("ลงค่าโฆษณาซ้ำอีกทางแล้วต้นทุนไม่บวกเพิ่ม", afterDup.cost_month, home.cost_month);
+  await sql`DELETE FROM expenses WHERE id = ${dup.id}`;
+
+  // เดือนที่ไม่มีรายวันเลย ต้องถอยไปใช้รายจ่ายที่กรอกมือ
+  const [{ prevAds }] = await sql<{ prevAds: number }[]>`
+    SELECT COALESCE(sum(amount_thb),0)::float8 AS "prevAds" FROM expenses
+     WHERE kind = 'ads' AND spent_on >= date_trunc('month', CURRENT_DATE) - interval '1 month'
+       AND spent_on < date_trunc('month', CURRENT_DATE)`;
+  const prevMonth = adSeries[adSeries.length - 2];
+  check("เดือนที่ไม่มีข้อมูลรายแคมเปญ ยังนับค่าโฆษณาที่กรอกมือ",
+        prevMonth.cost >= prevAds && prevAds > 0, true);
+
   const rows = await q.ledger("1900-01-01", "2999-12-31");
   check("ledger มีทั้งรายรับและรายจ่าย",
         new Set(rows.map((r) => r.direction)).size, 2);
   check("รายจ่ายใน ledger ติดลบ", rows.every((r) => r.direction !== "รายจ่าย" || r.amount < 0), true);
+
+  // ยอดรวมในไฟล์ส่งออกต้องตรงกับหน้าการเงิน ไม่งั้นกระทบยอดไม่ได้
+  const monthKey = new Date().toISOString().slice(0, 8) + "01";
+  const lastDay = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+    .toISOString().slice(0, 10);
+  const monthRows = await q.ledger(monthKey, lastDay);
+  const ledgerCost = -monthRows
+    .filter((r) => r.direction === "รายจ่าย")
+    .reduce((n, r) => n + r.amount, 0);
+  check("ยอดรายจ่ายในไฟล์ส่งออกตรงกับหน้าการเงิน",
+        Math.round(ledgerCost), Math.round(curMonth.cost));
+  check("ไฟล์ส่งออกมีรายการค่าโฆษณาจากแคมเปญด้วย",
+        monthRows.some((r) => r.kind === "ads" && r.amount < 0), true);
 } finally {
   if (websiteId) {
     await sql`DELETE FROM payments WHERE website_id = ${websiteId}`;

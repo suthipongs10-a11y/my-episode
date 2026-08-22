@@ -18,13 +18,18 @@ export default function ErrorPage({
     console.error(error);
   }, [error]);
 
+  // production Next.js กลืนข้อความจริงจาก server action แล้วใส่ error ภายในของ React มาแทน
+  // ("Minified React error #…") ซึ่งไม่มีประโยชน์กับผู้ใช้เลย
+  // ข้อความของเราเป็นภาษาไทยเสมอ จึงแสดงเฉพาะตอนที่มีอักษรไทยอยู่จริง
+  const ours = /[\u0E00-\u0E7F]/.test(error.message ?? "");
+
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-3 px-4">
       <h1 className="text-xl font-semibold">ทำรายการนี้ไม่สำเร็จ</h1>
       <p className="text-sm text-muted">
-        {error.message && !error.message.startsWith("An error occurred")
+        {ours
           ? error.message
-          : "อาจเป็นเพราะข้อมูลไม่ครบ หรือรายการนี้ถูกแก้ไปแล้วจากอีกหน้าจอหนึ่ง ลองใหม่อีกครั้งได้เลย"}
+          : "อาจเป็นเพราะกรอกข้อมูลไม่ครบ หรือรายการนี้ถูกแก้ไปแล้วจากอีกหน้าจอหนึ่ง ลองกดย้อนกลับไปตรวจข้อมูลอีกครั้งได้เลย"}
       </p>
       <div className="flex gap-2">
         <button className="btn btn-primary" onClick={reset}>

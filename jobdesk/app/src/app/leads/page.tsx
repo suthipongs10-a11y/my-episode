@@ -2,7 +2,13 @@ import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { campaignOptions, leadSummary, listLeads, lostReasonBreakdown } from "@/lib/queries";
 import { createLeadAction, deleteLeadAction } from "@/lib/actions";
-import { LEAD_CHANNELS, LEAD_LOST_REASON, LEAD_STATUS, type LeadStatus } from "@/lib/status";
+import {
+  LEAD_CHANNELS,
+  LEAD_LOST_REASON,
+  LEAD_STALE_DAYS,
+  LEAD_STATUS,
+  type LeadStatus,
+} from "@/lib/status";
 import { daysSince, fmtDay, thb } from "@/lib/format";
 import { Shell } from "@/components/shell";
 import { Chip, Empty, Field, Kpi, Panel, Row } from "@/components/ui";
@@ -11,14 +17,11 @@ import { Submit } from "@/components/submit";
 
 export const dynamic = "force-dynamic";
 
-/** ทักมาแล้วเกินกี่วันถือว่าช้าเกินไป — คู่มือแชทบอกให้ตอบใน 5 นาที นี่คือเส้นที่ปล่อยไม่ได้แล้ว */
-const STALE_DAYS = 2;
-
 export default async function LeadsPage() {
   await requireSession();
   const [leads, summary, campaigns, lostReasons] = await Promise.all([
     listLeads(),
-    leadSummary(STALE_DAYS),
+    leadSummary(LEAD_STALE_DAYS),
     campaignOptions(),
     lostReasonBreakdown(),
   ]);
@@ -42,7 +45,7 @@ export default async function LeadsPage() {
         <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           <Kpi label="ยังต้องตามต่อ" value={String(summary.open_count)} unit="คน" />
           <Kpi
-            label={`ค้างเกิน ${STALE_DAYS} วัน`}
+            label={`ค้างเกิน ${LEAD_STALE_DAYS} วัน`}
             value={String(summary.stale_count)}
             unit="คน"
             tone={summary.stale_count > 0 ? "alert" : undefined}
@@ -117,7 +120,16 @@ export default async function LeadsPage() {
             {closed.length === 0 ? (
               <Empty>ยังไม่มีรายการที่ปิด</Empty>
             ) : (
-              closed.slice(0, 20).map((l) => <LeadLine key={l.id} lead={l} closed />)
+              <>
+                {closed.slice(0, 20).map((l) => (
+                  <LeadLine key={l.id} lead={l} closed />
+                ))}
+                {closed.length > 20 ? (
+                  <p className="border-t border-line-soft px-3 py-2 text-xs text-muted">
+                    แสดง 20 รายการล่าสุด จากทั้งหมด {closed.length} รายการ
+                  </p>
+                ) : null}
+              </>
             )}
           </Panel>
 
@@ -161,7 +173,7 @@ function LeadLine({
   closed?: boolean;
 }) {
   const waited = daysSince(lead.contacted_at);
-  const stale = !closed && waited !== null && waited >= STALE_DAYS;
+  const stale = !closed && waited !== null && waited >= LEAD_STALE_DAYS;
 
   return (
     <Row id={`lead-${lead.id}`}>

@@ -144,3 +144,9 @@ export function isLeadStatus(v: unknown): v is LeadStatus {
 export function isLostReason(v: unknown): v is LeadLostReason {
   return typeof v === "string" && Object.hasOwn(LEAD_LOST_REASON, v);
 }
+
+/**
+ * คนทักที่รอเกินกี่วันถือว่าช้าเกินไป — คู่มือแชทบอกให้ตอบใน 5 นาที
+ * นี่คือเส้นที่ปล่อยต่อไม่ได้แล้ว ใช้ทั้งหน้าแรกและหน้าคนทัก จึงอยู่ที่เดียว
+ */
+export const LEAD_STALE_DAYS = 2;

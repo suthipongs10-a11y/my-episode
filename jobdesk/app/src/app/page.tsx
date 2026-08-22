@@ -7,7 +7,7 @@ import {
   upcomingRenewals,
   type JobRow,
 } from "@/lib/queries";
-import { OPEN_STATUSES } from "@/lib/status";
+import { LEAD_STALE_DAYS, OPEN_STATUSES } from "@/lib/status";
 import { daysSince, daysUntil, fmtDay, stallLabel, thb } from "@/lib/format";
 import { Shell } from "@/components/shell";
 import { Chip, Empty, Kpi, Panel, Row } from "@/components/ui";
@@ -20,7 +20,7 @@ export default async function HomePage() {
 
   const [summary, leads, jobs, renewals] = await Promise.all([
     getHomeSummary(),
-    leadSummary(),
+    leadSummary(LEAD_STALE_DAYS),
     listActiveJobs(),
     upcomingRenewals(30),
   ]);
@@ -33,7 +33,7 @@ export default async function HomePage() {
   return (
     <Shell>
       <div className="flex flex-col gap-5">
-        {/* คนทักที่รอเกิน 2 วันคืองานของ "วันนี้" พอ ๆ กับงานที่ค้าง — ขึ้นเฉพาะตอนที่มีจริง */}
+        {/* คนทักที่รอนานคืองานของ "วันนี้" พอ ๆ กับงานที่ค้าง — ขึ้นเฉพาะตอนที่มีจริง */}
         {leads.stale_count > 0 ? (
           <Link
             href="/leads"
@@ -41,7 +41,7 @@ export default async function HomePage() {
           >
             <span>
               มีคนทัก <span className="num font-semibold">{leads.stale_count}</span> คน
-              รอมาเกิน 2 วันแล้ว
+              รอมาเกิน {LEAD_STALE_DAYS} วันแล้ว
             </span>
             <span className="text-xs text-muted">ยิ่งช้า ยิ่งปิดไม่ได้ →</span>
           </Link>

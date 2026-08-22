@@ -90,8 +90,8 @@ INSERT INTO expenses (job_id, kind, description, amount_thb, spent_on)
 SELECT j.id, 'theme_plugin', 'ธีม', 60, CURRENT_DATE - 11 FROM jobs j WHERE j.title = 'เว็บร้านกาแฟบ้านสวน';
 INSERT INTO expenses (job_id, kind, description, amount_thb, spent_on)
 SELECT j.id, 'transaction_fee', 'ค่าธรรมเนียมโอน', 10, CURRENT_DATE - 10 FROM jobs j WHERE j.title = 'เว็บร้านกาแฟบ้านสวน';
-INSERT INTO expenses (kind, description, amount_thb, spent_on)
-VALUES ('ads', 'ค่าโฆษณาเพจ', 3000, date_trunc('month', CURRENT_DATE)::date);
+-- เดือนนี้ค่าโฆษณาอยู่ใน ad_spend_daily (รายแคมเปญ) ไม่ลงซ้ำใน expenses อีก
+-- เดือนก่อน ๆ ข้างล่างลงเป็น expenses อย่างเดียว — ตัวอย่างของทั้งสองทางที่ระบบรองรับ
 
 -- แคมเปญโฆษณา + ค่าโฆษณารายวัน — ทำให้หน้าคนทักคำนวณ CPL ได้
 INSERT INTO ad_campaigns (name, ref_code, objective, started_on) VALUES

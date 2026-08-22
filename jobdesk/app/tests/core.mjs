@@ -119,6 +119,41 @@ await p.goto(BASE + '/customers?q=ช่างเอก', { waitUntil: 'networki
 t = await p.locator('body').innerText();
 ok('ค้นหาลูกค้าได้', t.includes('ช่างเอก') && !t.includes('คุณแอม'));
 
+// ---------- หน้าการเงิน (SQL ของหน้านี้อ่านค่าโฆษณาจากสองที่ ต้องไม่นับซ้ำ)
+await p.goto(BASE + '/money', { waitUntil: 'load' });
+await p.locator('h1:has-text("การเงิน")').waitFor({ timeout: 15000 });
+t = (await p.locator('body').innerText()).replace(/\s+/g, ' ');
+ok('หน้าการเงินโหลดได้', t.includes('กำไรสุทธิ'));
+
+// ทดสอบความสัมพันธ์ ไม่ใช่ตัวเลขตายตัว — ชุดนี้สร้างงานกับรายจ่ายของตัวเองไปแล้ว
+const num = (s) => Number(String(s).replace(/[^\d.-]/g, ''));
+const money = await p.evaluate(() => {
+  const body = document.body.innerText.replace(/\s+/g, ' ');
+  const profit = body.match(/กำไรสุทธิ [^฿]*฿([\-\d,]+)/);
+  const rev = body.match(/รายรับ ฿([\-\d,]+)/);
+  const cost = body.match(/รายจ่าย ฿([\-\d,]+)/);
+  return { profit: profit?.[1], rev: rev?.[1], cost: cost?.[1] };
+});
+ok('อ่านรายรับ/รายจ่าย/กำไรจากหน้าได้ครบ',
+   Boolean(money.profit && money.rev && money.cost), JSON.stringify(money));
+ok('กำไร = รายรับ − รายจ่าย',
+   num(money.profit) === num(money.rev) - num(money.cost),
+   `${money.rev} - ${money.cost} != ${money.profit}`);
+ok('ค่าโฆษณาถูกนับอยู่ในรายจ่าย (มาจาก ad_spend_daily ที่ไม่ได้อยู่ในตาราง expenses)',
+   num(money.cost) >= 1680, money.cost);
+ok('สัดส่วนรายจ่ายมีก้อนค่าโฆษณา', t.includes('ค่าโฆษณา'));
+
+await p.goto(BASE + '/', { waitUntil: 'load' });
+await p.locator('main').first().waitFor({ timeout: 15000 });
+const homeProfit = await p.evaluate(() => {
+  const tiles = [...document.querySelectorAll('div')].filter(d =>
+    d.children.length === 2 && d.firstElementChild.textContent.trim() === 'กำไรเดือนนี้');
+  return tiles[0]?.lastElementChild.textContent.replace(/[^\d.,-]/g, '');
+});
+ok('หน้าแรกกับหน้าการเงินบอกกำไรเดือนนี้ตรงกัน',
+   homeProfit !== undefined && num(homeProfit) === num(money.profit),
+   `หน้าแรก=${homeProfit} หน้าการเงิน=${money.profit}`);
+
 // ---------- mobile + dark
 const m = await b.newContext({ viewport: { width: 390, height: 844 }, colorScheme: 'dark', storageState: await ctx.storageState() });
 const mp = await m.newPage();
