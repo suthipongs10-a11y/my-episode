@@ -146,6 +146,28 @@ Two knock-on effects to plan for:
 
 ## 4. Layers
 
+> ### ⬛ The image model defaults to EUROPE. Say Thailand, or you get Devon.
+>
+> Bitten twice. vox-16 asked for "a durian orchard in Thailand" and got a temperate plantation
+> with bare trunks; vox-17 asked for a farm shed, a pickup and a rural road and got stone
+> walls, hedgerows and a green vintage truck in an English lane. **A Thai farming channel
+> showing somebody else's country is a quiet credibility leak**, and it costs a regeneration
+> each time.
+>
+> Naming the country is not enough — the model reads it as a hint. State the *visual
+> consequences*, and state what to avoid:
+>
+> ```
+> This is rural THAILAND in Southeast Asia — humid tropical air, banana and coconut palms,
+> corrugated zinc roofing, red-brown laterite soil, dense green tropical vegetation.
+> NOT Europe: no stone walls, no hedgerows, no oak or beech trees, no temperate farmland,
+> no European road markings.
+> ```
+>
+> Same shape as the full-bleed cover fix: describe the thing you want *and* name the wrong
+> thing the model keeps producing.
+
+
 **Information is real, texture is generated. Never swap.**
 
 | Kind | How |

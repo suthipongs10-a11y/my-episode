@@ -96,6 +96,34 @@ as a film. The fix is one full-frame photograph per scene, dimmed back until the
 - **Places: no landmarks.** A recognisable skyline or monument claims a location the script has
   no source for. Anonymous is both safer and more reusable (PIPELINE.md §4, the vox-7 case).
 
+## 4b. **PhotoCard** — when the photograph is the point, stop dimming it
+
+Added 2026-08-21 (vox-17), on the operator's request for real photographs in the films. The
+honest reading of that request was that §4a had produced none: a plate dimmed to 0.84 behind
+type is *atmosphere*. It sets a mood; it never shows anything. When the narration says "this is
+what a foam sleeve is", a dim suggestion of one is not an answer.
+
+A **PhotoCard** is the same generated photograph at **full brightness**, on a pale mount, with
+its caption on the mount rather than floating on the board — shadowed and slightly rotated so it
+reads as a print lying on the surface. It is deliberately the brightest thing in its frame.
+
+> **A plate is scenery. A PhotoCard is the subject.** Use at most two or three per chapter, or
+> it stops being an event.
+
+Three things measured the hard way in vox-17:
+
+- **It is ~480px tall at w=620**, roughly `w × 0.62` for the image plus ~85px of mount and
+  caption. **Two of them do not stack under a headline in a 1080 frame** — three chapters tried
+  and the lower card ran off the bottom and covered the upper card's caption. Put pairs **side
+  by side** (x≈640 and x≈1290 at w=540), never one above the other.
+- **`check-scene-imagery.mjs` had to be taught about it.** It counted only `<Prop>`, so it
+  reported six of vox-17's ten chapters as propless. A new foreground element means updating
+  the checker in the same commit, or the checker starts lying.
+- **The channel rule that bans generated test-result images binds harder here.** A bright,
+  undimmed photograph is precisely what a viewer holds their own result up against. PhotoCards
+  show **materials and technique**; anything that is a *measurement* — a symptom, a culture
+  colour, a degree of damage — stays drawn, where it is obviously a drawing.
+
 ## 5. Motion language — calm & premium
 
 - **Entrances:** fade + rise. `opacity 0→1` and `translateY 24px→0` over ~7 frames at the shorts'
