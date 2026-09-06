@@ -17,6 +17,7 @@ import { buildFacts } from "./11-rules.ts";
 import { TOP_N } from "../rules/competitor.ts";
 import { scoreOpportunity } from "../scoring/opportunity.ts";
 import type { PresenceResult } from "./09-presence.ts";
+import type { Finding } from "../types/index.ts";
 import { fetchedPages } from "../rules/context.ts";
 
 /** Top 3 is where the clicks are; the split matters to the formula. */
@@ -41,19 +42,32 @@ export const scoringStage: PipelineStage = {
     // The seller's number, kept in its own snapshot: it must never leak into
     // the client-facing report, and it changes for different reasons.
     const pages = fetchedPages(facts);
+    const byType: Partial<Record<string, number>> = {};
+    for (const p of pages) byType[p.pageType] = (byType[p.pageType] ?? 0) + 1;
+
     const opportunity = scoreOpportunity({
-      overall: scores.overall,
-      findings: (ctx.state.get("findings") as import("../types/index.ts").Finding[] | undefined) ?? [],
+      // Spread: `Scores` is an interface, and an interface has no implicit
+      // index signature to satisfy the scorer's `Record<string, number>`.
+      scores: { ...scores },
+      measured: {
+        visibility: input.visibility !== undefined,
+        psi: (input.psi?.length ?? 0) > 0,
+      },
+      findings: (ctx.state.get("findings") as Finding[] | undefined) ?? [],
       presence: (ctx.state.get("presence") as PresenceResult | undefined) ?? null,
+      pages: { total: pages.length, byType },
       contact: {
         tel: pages.some((p) => p.hasTelLink),
         line: pages.some((p) => p.hasLineLink),
       },
+      gbp: null, // 08-gbp is not built yet; the rows it feeds show as unmeasured
     });
     ctx.state.set("opportunity", opportunity);
     await saveSnapshot(ctx.db, ctx.run.id, "site", "opportunity", opportunity);
     ctx.log.info("opportunity", {
       score: opportunity.score, pitch: opportunity.pitch,
+      hits: opportunity.signals.filter((s) => s.status === "hit").map((s) => s.key).join(",") || "-",
+      unmeasured: opportunity.signals.filter((s) => s.status === "unmeasured").map((s) => s.key).join(",") || "-",
       quickWins: opportunity.quickWins.length, vetoes: opportunity.vetoes.length,
     });
   },

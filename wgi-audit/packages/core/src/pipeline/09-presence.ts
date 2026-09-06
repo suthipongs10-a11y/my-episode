@@ -43,6 +43,19 @@ export interface PresenceResult {
     yearsStale: number | null;
     pagesCrawled: number;
   };
+  /**
+   * What the business says about its own size. Self-reported, from JSON-LD
+   * and the page text, so the opportunity score reads it as a hint; Google's
+   * own numbers replace it when the Places key exists.
+   */
+  business: {
+    reviewCount: number | null;
+    /** Distinct addresses in structured data; the largest any one page lists. */
+    addresses: number;
+    locationPages: number;
+    /** The biggest "N สาขา" claim on the site; 0 when it makes none. */
+    branchMentions: number;
+  };
 }
 
 export const presenceStage: PipelineStage = {
@@ -67,6 +80,8 @@ export const presenceStage: PipelineStage = {
       social: Object.keys(result.social).join(",") || "-",
       parked: result.activity.parked,
       copyright: result.activity.copyrightYear ?? "-",
+      reviews: result.business.reviewCount ?? "-",
+      branches: Math.max(result.business.addresses, result.business.locationPages, result.business.branchMentions),
     });
   },
 };
@@ -79,6 +94,9 @@ export interface SummariseInput {
     copyrightYear: number | null;
     pageType: string;
     isCompetitor: boolean;
+    reviewCount?: number | null;
+    addressCount?: number;
+    branchMentions?: number;
   }[];
   reachable: boolean;
   serp: { term: string; ownPaid: boolean }[];
@@ -116,6 +134,17 @@ export function summarise(input: SummariseInput): PresenceResult {
   const copyrightYear = years.length ? Math.max(...years) : null;
   const yearsStale = copyrightYear === null ? null : Math.max(0, now.getFullYear() - copyrightYear);
 
+  // -- business ---------------------------------------------------------------
+  // Max, not sum: the same address and the same review count repeat in the
+  // footer of every page, and summing them would turn one shop into a chain.
+  const reviews = own.map((p) => p.reviewCount ?? null).filter((n): n is number => n !== null);
+  const business = {
+    reviewCount: reviews.length ? Math.max(...reviews) : null,
+    addresses: Math.max(0, ...own.map((p) => p.addressCount ?? 0)),
+    locationPages: own.filter((p) => p.pageType === "location").length,
+    branchMentions: Math.max(0, ...own.map((p) => p.branchMentions ?? 0)),
+  };
+
   return {
     ads: {
       verdict,
@@ -132,5 +161,6 @@ export function summarise(input: SummariseInput): PresenceResult {
       yearsStale,
       pagesCrawled: own.length,
     },
+    business,
   };
 }

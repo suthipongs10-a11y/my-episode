@@ -9,7 +9,7 @@
 import * as cheerio from "cheerio";
 import type { PageRecord } from "../types/index.ts";
 import {
-  detectAdTags, detectCopyrightYear, detectSocialLinks, looksParked,
+  detectBranchMentions, detectAdTags, detectCopyrightYear, detectSocialLinks, looksParked,
   type AdTag, type SocialPlatform,
 } from "./signals.ts";
 
@@ -66,6 +66,12 @@ export interface ExtractedPage extends PageRecord {
   socialLinks: Partial<Record<SocialPlatform, string>>;
   looksParked: boolean;
   copyrightYear: number | null;
+  /** Self-reported in JSON-LD `aggregateRating`; null when the page says nothing. */
+  reviewCount: number | null;
+  /** Distinct postal addresses in JSON-LD — two of them is a second branch. */
+  addressCount: number;
+  /** The largest "N สาขา" claim in the text; 0 when there is none. */
+  branchMentions: number;
 }
 
 export function extractPage(
@@ -159,6 +165,7 @@ export function extractPage(
 
   // -- structured data ------------------------------------------------------
   const schemaTypes = collectSchemaTypes($, html);
+  const jsonLd = collectJsonLdFacts($);
 
   // -- conversion signals ---------------------------------------------------
   const lowerHtml = html.toLowerCase();
@@ -203,6 +210,9 @@ export function extractPage(
     socialLinks: detectSocialLinks(allUrls),
     looksParked: looksParked(title, bodyText, wordCount),
     copyrightYear: detectCopyrightYear(bodyText),
+    reviewCount: jsonLd.reviewCount,
+    addressCount: jsonLd.addressCount,
+    branchMentions: detectBranchMentions(bodyText),
   };
 }
 
@@ -307,6 +317,61 @@ function collectSchemaTypes($: cheerio.CheerioAPI, html: string): string[] {
   }
 
   return unique(types);
+}
+
+/**
+ * Two facts a business states about itself in JSON-LD: how many reviews it
+ * has, and how many addresses it lists. Self-reported, so the opportunity
+ * score treats them as a hint, not as Google's word — but a site that says
+ * "5 branches, 240 reviews" in structured data is telling us something.
+ */
+function collectJsonLdFacts($: cheerio.CheerioAPI): { reviewCount: number | null; addressCount: number } {
+  let reviewCount: number | null = null;
+  const addresses = new Set<string>();
+
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) { for (const n of node) walk(n); return; }
+    if (!node || typeof node !== "object") return;
+    const obj = node as Record<string, unknown>;
+
+    const rating = obj.aggregateRating;
+    if (rating && typeof rating === "object" && !Array.isArray(rating)) {
+      const r = rating as Record<string, unknown>;
+      const n = toCount(r.reviewCount ?? r.ratingCount);
+      if (n !== null) reviewCount = Math.max(reviewCount ?? 0, n);
+    }
+
+    const addr = obj.address;
+    for (const a of Array.isArray(addr) ? addr : [addr]) {
+      if (typeof a === "string" && a.trim()) addresses.add(a.trim());
+      else if (a && typeof a === "object") {
+        const fields = Object.entries(a as Record<string, unknown>)
+          .filter(([k]) => !k.startsWith("@")).sort();
+        if (fields.length) addresses.add(JSON.stringify(fields));
+      }
+    }
+
+    for (const v of Object.values(obj)) walk(v);
+  };
+
+  $('script[type="application/ld+json"]').each((_, el) => {
+    const raw = $(el).text().trim();
+    if (!raw) return;
+    try {
+      walk(JSON.parse(raw));
+    } catch {
+      // Broken JSON-LD: the schema-type fallback above still runs; these
+      // two facts are simply unknown.
+    }
+  });
+
+  return { reviewCount, addressCount: addresses.size };
+}
+
+function toCount(v: unknown): number | null {
+  const n = typeof v === "number" ? v
+    : typeof v === "string" ? Number(v.replace(/[^\d.]/g, "")) : NaN;
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
 }
 
 function collectTypes(node: unknown, out: string[]): void {

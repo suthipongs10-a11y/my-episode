@@ -200,3 +200,67 @@ describe("extractPage — resilience", () => {
     expect(extractPage("https://x.com/", html, { domain: "x.com" }).isNoindex).toBe(true);
   });
 });
+
+describe("extractPage — what the business says about itself", () => {
+  it("reads the review count and distinct addresses out of JSON-LD", () => {
+    const html = `<html><body><h1>ร้าน</h1>
+      <script type="application/ld+json">${JSON.stringify({
+        "@context": "https://schema.org", "@type": "LocalBusiness", name: "ร้าน",
+        aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", reviewCount: "128" },
+        address: { "@type": "PostalAddress", streetAddress: "1 ถนนเทพกระษัตรี", addressLocality: "ภูเก็ต" },
+        department: [
+          { "@type": "LocalBusiness", address: { "@type": "PostalAddress", streetAddress: "1 ถนนเทพกระษัตรี", addressLocality: "ภูเก็ต" } },
+          { "@type": "LocalBusiness", address: { "@type": "PostalAddress", streetAddress: "99 ถนนป่าตอง", addressLocality: "กะทู้" } },
+        ],
+      })}</script>
+      <p>เปิดแล้ว 2 สาขา</p></body></html>`;
+    const p = extractPage("https://shop.example/", html, { domain: "shop.example" });
+    expect(p.reviewCount).toBe(128);
+    expect(p.addressCount).toBe(2);
+    expect(p.branchMentions).toBe(2);
+  });
+
+  it("says nothing rather than zero when there is no structured data", () => {
+    const p = extractPage("https://shop.example/", "<html><body><h1>ร้าน</h1><p>ยินดีต้อนรับ</p></body></html>", { domain: "shop.example" });
+    expect(p.reviewCount).toBeNull();
+    expect(p.addressCount).toBe(0);
+    expect(p.branchMentions).toBe(0);
+  });
+
+  it("survives broken JSON-LD", () => {
+    const p = extractPage("https://shop.example/", `<html><body><script type="application/ld+json">{"@type": "LocalBusiness", "aggregateRating": {</script></body></html>`, { domain: "shop.example" });
+    expect(p.reviewCount).toBeNull();
+  });
+});
+
+describe("extractPage — what the business says about its own size", () => {
+  const ld = (obj: unknown) =>
+    `<html><body><h1>ร้าน</h1><script type="application/ld+json">${JSON.stringify(obj)}</script>
+     <p>ติดต่อเรา</p></body></html>`;
+
+  it("reads the review count and distinct addresses out of JSON-LD", () => {
+    const p = extractPage("https://shop.example/", ld({
+      "@type": "LocalBusiness",
+      aggregateRating: { "@type": "AggregateRating", ratingValue: "4.8", reviewCount: "128" },
+      address: [
+        { "@type": "PostalAddress", streetAddress: "1 ถนนเทพกระษัตรี", addressLocality: "ภูเก็ต" },
+        { "@type": "PostalAddress", streetAddress: "99 ถนนวิชิต", addressLocality: "ภูเก็ต" },
+        { "@type": "PostalAddress", streetAddress: "1 ถนนเทพกระษัตรี", addressLocality: "ภูเก็ต" },
+      ],
+    }), { domain: "shop.example" });
+    expect(p.reviewCount).toBe(128);
+    expect(p.addressCount).toBe(2);
+  });
+
+  it("reports nothing when the page says nothing", () => {
+    const p = extractPage("https://shop.example/", "<html><body><h1>ร้าน</h1><p>ยินดีต้อนรับ</p></body></html>", { domain: "shop.example" });
+    expect(p.reviewCount).toBeNull();
+    expect(p.addressCount).toBe(0);
+    expect(p.branchMentions).toBe(0);
+  });
+
+  it("carries the branch claim from the text", () => {
+    const p = extractPage("https://shop.example/", "<html><body><h1>ร้าน</h1><p>เปิดให้บริการแล้ว 4 สาขา ทั่วภูเก็ต</p></body></html>", { domain: "shop.example" });
+    expect(p.branchMentions).toBe(4);
+  });
+});

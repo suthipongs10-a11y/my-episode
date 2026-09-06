@@ -14,10 +14,14 @@ export const thWeb = {
   tagline: "ตรวจเว็บลูกค้า แล้วรู้ว่าจะขายอะไรได้",
 
   nav: {
+    home: "งานตรวจ",
+    newAudit: "ตรวจเว็บใหม่",
     back: "← กลับหน้ารายการ",
-    openReport: "เปิดรายงานสำหรับลูกค้า →",
+    openReport: "เปิดรายงานสำหรับลูกค้า",
     print: "พิมพ์ / บันทึกเป็น PDF",
     operatorView: "← กลับไปหน้าของเรา",
+    brandSub: "เครื่องมือหาลูกค้าจากเว็บที่ยังไม่ทำงาน",
+    signedIn: "ล็อกอินอยู่",
   },
 
   login: {
@@ -30,6 +34,7 @@ export const thWeb = {
   },
 
   form: {
+    title: "ตรวจเว็บใหม่",
     domain: "โดเมนของลูกค้า",
     domainHint: "เช่น phuketmaidservice.com",
     area: "พื้นที่ให้บริการ",
@@ -43,13 +48,32 @@ export const thWeb = {
     errorArea: "ต้องใส่พื้นที่ หรือเลือก “ทั่วประเทศ”",
   },
 
+  kpi: {
+    total: "งานตรวจทั้งหมด",
+    running: "กำลังตรวจ",
+    hot: "โอกาสสูง",
+    hotSub: "โอกาส ≥ 70",
+    spend: "ต้นทุนรวม",
+    baht: "บาท",
+    findings: "ที่ต้องแก้",
+    critical: "วิกฤต",
+    quickWins: "Quick wins",
+    effort: "ชั่วโมงงานรวม",
+    pages: "จำนวนหน้า",
+    cost: "ต้นทุนงานนี้",
+  },
+
   list: {
     title: "งานตรวจทั้งหมด",
+    count: (n: number) => `${n} งาน`,
+    search: "ค้นหาโดเมนหรือพื้นที่…",
+    sortHint: "กดหัวตารางเพื่อเรียง",
     empty: "ยังไม่มีงานตรวจ — ใส่โดเมนด้านบนแล้วกดเริ่มตรวจได้เลย",
+    noMatch: "ไม่มีงานที่ตรงกับคำค้น",
     colDomain: "โดเมน",
     colArea: "พื้นที่",
     colWhen: "เมื่อ",
-    colScore: "คะแนน",
+    colScore: "คะแนนเว็บ",
     colOpportunity: "โอกาส",
     colFindings: "ที่ต้องแก้",
     colCritical: "วิกฤต",
@@ -97,7 +121,8 @@ export const thWeb = {
     waiting: "รอ worker หยิบงาน…",
     workerHint: "ถ้าค้างอยู่ตรงนี้นาน แปลว่ายังไม่มี worker รันอยู่",
     failed: "การตรวจไม่สำเร็จ",
-    scoreTitle: "คะแนน",
+    scoreTitle: "คะแนนเว็บ",
+    scoreNote: "มุมของลูกค้า — ตัวเลขนี้อยู่ในรายงาน",
     findingsTitle: "สิ่งที่ต้องแก้ เรียงตามความคุ้มค่า",
     findingsNote: "เรียงจากผลกระทบต่อชั่วโมงที่ต้องลงแรง — แก้จากบนลงล่างได้เลย",
     evidence: "ดูหลักฐาน",
@@ -130,17 +155,38 @@ export const thWeb = {
     colCached: "ใช้แคช",
     colCost: "บาท",
     freeRun: "งานนี้ไม่มีค่าใช้จ่าย — ยังไม่ได้ต่อ API ที่เสียเงิน",
+    checkedOn: "ตรวจเมื่อ",
   },
 
   opportunity: {
     title: "โอกาสในการขาย",
     note: "มุมของเรา ไม่ใช่ของลูกค้า — ตัวเลขนี้ไม่ไปโผล่ในรายงาน",
-    components: {
-      pain: "ปัญหาที่ขายแก้ได้",
-      budget: "มีงบโฆษณาอยู่แล้ว",
-      alive: "ธุรกิจยังมีชีวิต",
-      reach: "ติดต่อได้",
+    /** The nine rows, worded exactly as the operator scores them by hand. */
+    signals: {
+      ads: "กำลังยิง Ads",
+      conversion: "Website มีปัญหา Conversion",
+      mobile: "Mobile มีปัญหา",
+      seo: "SEO อ่อน",
+      landing: "ไม่มี Landing Page",
+      gbp: "GBP Active",
+      facebook: "Facebook Active",
+      reviews: "มี Review จำนวนมาก",
+      branches: "มีหลายสาขา",
     } as Record<string, string>,
+    signalHead: "Signal",
+    pointsHead: "คะแนน",
+    total: "รวม",
+    status: {
+      hit: "พบ",
+      partial: "พบบางส่วน",
+      miss: "ไม่พบ",
+      unmeasured: "ยังไม่ได้วัด",
+    } as Record<string, string>,
+    coverageNote: (max: number) =>
+      max >= 100
+        ? "ให้คะแนนครบทั้งตาราง"
+        : `แถวที่ยังไม่ได้วัดไม่ถูกนับ — คะแนนคิดเทียบจาก ${max} ไม่ใช่ 100`,
+    open: "เปิดดู",
     pitch: {
       ads_leak: "ยิง Ads อยู่แต่เว็บรับไม่ได้ — เงินรั่วทุกวัน",
       cannot_be_contacted: "ลูกค้าอยากทักแต่ไม่มีทางติดต่อ",
@@ -149,6 +195,11 @@ export const thWeb = {
       not_a_lead: "ไม่ใช่ลูกค้าเป้าหมาย",
     } as Record<string, string>,
     pitchLabel: "มุมที่ควรเปิดเรื่อง",
+    band: {
+      hot: "น่าติดต่อ",
+      warm: "พอมีโอกาส",
+      cold: "ยังไม่น่าลงแรง",
+    },
     quickWins: "Quick wins — แก้ได้ในสัปดาห์นี้",
     quickWinsNote: "ผลกระทบสูง ใช้เวลาน้อย เรียงตามผลต่อชั่วโมง",
     noQuickWins: "ไม่มีข้อไหนที่ทั้งผลสูงและใช้เวลาน้อย",
@@ -161,6 +212,29 @@ export const thWeb = {
       parked: "โดเมนว่าง / หน้า placeholder",
       stale: (year: number) => `ปีลิขสิทธิ์ท้ายเว็บ ${year}`,
     },
+    oldSnapshot: "งานนี้ให้คะแนนด้วยสูตรเก่า — รันใหม่เพื่อดูตารางสัญญาณ",
+  },
+
+  brief: {
+    title: "สรุปสำหรับส่งต่อ",
+    note: "รวบรวมไว้ให้ก็อปไปใส่อีเมลหรือ LINE เอง — ระบบไม่ส่งให้ใครทั้งนั้น (กฎข้อ 8)",
+    copy: "คัดลอกทั้งหมด",
+    copied: "คัดลอกแล้ว",
+    heading: (domain: string, date: string) => `${domain} — สรุปจาก WGI Audit (${date})`,
+    pitchLine: "มุมเปิดเรื่อง",
+    scoreLine: (opportunity: number, overall: number | null, findings: number, critical: number) =>
+      `โอกาส ${opportunity}/100 · คะแนนเว็บ ${overall === null ? "—" : `${overall}/100`} · ปัญหา ${findings} เรื่อง (วิกฤต ${critical})`,
+    signalsFound: "สัญญาณที่พบ",
+    signalsNone: "ไม่พบสัญญาณที่ให้คะแนนได้",
+    quickWinsTitle: "Quick wins (แก้ได้ในสัปดาห์นี้)",
+    quickWinsNone: "ไม่มีข้อที่แก้เร็วและได้ผลมาก",
+    contactFound: "ช่องทางติดต่อที่พบบนเว็บ",
+    tel: "โทร",
+    line: "LINE",
+    facebook: "Facebook",
+    yes: "มี",
+    no: "ไม่มี",
+    attach: "รายงานฉบับลูกค้า: เปิดหน้ารายงาน แล้วกด “พิมพ์ / บันทึกเป็น PDF” เพื่อแนบ",
   },
 
   report: {

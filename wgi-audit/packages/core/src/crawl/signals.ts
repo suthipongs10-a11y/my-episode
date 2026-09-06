@@ -175,3 +175,32 @@ export function detectCopyrightYear(text: string, now = new Date()): number | nu
   }
   return candidates.length ? Math.max(...candidates) : null;
 }
+
+// ---------------------------------------------------------------------------
+// branches
+// ---------------------------------------------------------------------------
+/**
+ * How many branches the page *claims*. "5 สาขา", "สาขาทั้งหมด 12 แห่ง",
+ * "สาขา 3" (a third branch implies at least three), or a phrase that only a
+ * multi-branch business writes ("ทุกสาขา", "เลือกสาขา"), which counts as two.
+ *
+ * `สาขาวิชา` (a field of study) and `สาขาอาชีพ` are the same word and are
+ * excluded, or every school and job board would look like a chain.
+ */
+export function detectBranchMentions(text: string): number {
+  let best = 0;
+  const word = "สาขา(?!วิชา|อาชีพ)";
+  for (const m of text.matchAll(new RegExp(`(\\d{1,4})\\s*${word}`, "g"))) {
+    best = Math.max(best, Number(m[1]));
+  }
+  for (const m of text.matchAll(new RegExp(`${word}(?:ทั้งหมด|รวม)?\\s*(\\d{1,4})\\s*(?:แห่ง|ที่|สาขา)`, "g"))) {
+    best = Math.max(best, Number(m[1]));
+  }
+  for (const m of text.matchAll(new RegExp(`${word}(?:ที่)?\\s*(\\d{1,2})(?!\\d)`, "g"))) {
+    best = Math.max(best, Number(m[1]));
+  }
+  if (best === 0 && new RegExp(`ทุก${word}|เลือก${word}|${word}ใกล้บ้าน|${word}ทั้งหมด|all branches|our branches|our locations`, "i").test(text)) {
+    best = 2;
+  }
+  return Math.min(best, 9999);
+}

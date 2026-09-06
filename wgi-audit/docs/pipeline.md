@@ -45,11 +45,29 @@ LLM และ DataForSEO เป็นของเสริม · 07 และ 10
 
 คนละตัวกับ site score: ถาม "ควรเสียเวลาเขียน proposal ให้รายนี้ไหม" ไม่ใช่ "เว็บดีไหม"
 
-    pain    0–40   (100 − site score) × 0.3 + วิกฤต + ปัญหา conversion
-    budget  0–25   paid SERP +15 · pixel โฆษณา +10 (+5 ต่อแพลตฟอร์ม) · GTM อย่างเดียว +4
-    alive   0–20   reachable +8 · ปีลิขสิทธิ์ ≤1 ปี +6 / ≤3 +3 · social +3 ต่อช่องทาง (สูงสุด 6)
-    reach   0–15   tel +6 · LINE +6 · Facebook +3
-    veto           เข้าไม่ได้ → 0 · parked → ≤10
+**v2 (2026-09-06) = ตาราง 9 สัญญาณที่ผู้ใช้ให้คะแนน lead ด้วยมืออยู่แล้ว** บวกกันเต็ม 100
 
-`pitch` (มุมเปิดเรื่อง เลือกด้วยโค้ด): ads_leak · cannot_be_contacted · invisible · fix_list · not_a_lead
+| Signal | คะแนน | วัดจาก | บางส่วน |
+|---|---|---|---|
+| กำลังยิง Ads | +25 | pixel Meta / Google Ads / TikTok / LINE บนเว็บ หรือโดเมนโผล่ในผล paid ของ DataForSEO | GTM อย่างเดียว = +10 |
+| Website มีปัญหา Conversion | +20 | finding หมวด conversion — วิกฤต 20 · สูง 15 | กลาง 10 · ต่ำ 5 |
+| Mobile มีปัญหา | +10 | TEC-002, TEC-003, TEC-007, CVR-001, CVR-003 — วิกฤต/สูง = เต็ม | กลาง/ต่ำ = +5 · ไม่มี PSI key = บอกไว้ในหลักฐาน |
+| SEO อ่อน | +10 | onpage < 50 · หรือ visibility ที่*วัดจริง* < 40 · หรือ finding SEO ระดับสูงขึ้นไป ≥ 2 | มี finding SEO บ้าง หรือ onpage < 70 = +5 |
+| ไม่มี Landing Page | +15 | crawl ได้หน้าเดียว หรือไม่มีหน้า service/location เลย | มีหน้าบริการ 1 หน้า = +8 |
+| GBP Active | +5 | Google Places — **ยังไม่ได้วัด** จนกว่าจะมี key | — |
+| Facebook Active | +5 | มีลิงก์เพจบนเว็บ (ความเคลื่อนไหวให้คนกดดูเอง มีปุ่มเปิด) | — |
+| มี Review จำนวนมาก | +5 | Places · หรือ `aggregateRating.reviewCount` ใน JSON-LD ≥ 20 · ถ้าเว็บไม่บอก = ยังไม่ได้วัด | — |
+| มีหลายสาขา | +5 | Places · หน้า location ≥ 2 · ที่อยู่ใน JSON-LD ≥ 2 · ข้อความ "N สาขา" (ไม่นับ "สาขาวิชา") | — |
+
+    score       = round(points / measuredMax × 100)
+    measuredMax = 100 − Σ max ของแถวที่ "ยังไม่ได้วัด"   (ไม่มี Places = 90 หรือ 95)
+    veto          เข้าไม่ได้ → 0 · parked → ≤ 10
+
+สถานะของแถว: `hit` · `partial` · `miss` (ดูแล้วไม่มี) · `unmeasured` (ยังไม่ได้ดู — **คนละความหมาย** จึงไม่นับในตัวหาร)
+ทุกแถวมี `evidence[]` ภาษาไทย · แถวที่มาจาก finding มี `codes[]` · Facebook มี `link`
+
+`pitch` (มุมเปิดเรื่อง เลือกด้วยโค้ด): ads_leak (Ads hit + conversion ≥ 15 หรือไม่มี landing) ·
+cannot_be_contacted (ไม่มี tel/LINE/FB) · invisible (SEO hit และไม่ยิง Ads) · fix_list · not_a_lead (veto หรือไม่มีอะไรเลย)
 `quickWins`: impact ≥ 6 และ ≤ 3 ชม. เรียงตาม impact/ชม.
+
+v1 (pain/budget/alive/reach) ถูกแทนก่อนมี run จริง — snapshot ที่ไม่มี `version` คือ v1 dashboard จะบอกให้รันใหม่
