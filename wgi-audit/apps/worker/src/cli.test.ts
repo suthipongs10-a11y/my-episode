@@ -235,3 +235,74 @@ describe("the whole pipeline, against a local copy of the fixture site", () => {
     await db.close();
   });
 });
+
+// ---------------------------------------------------------------------------
+/**
+ * The readability gate. A fetch can "succeed" without ever seeing the site —
+ * a bot wall answering 200 with its own page, or a JavaScript shell with no
+ * text in it — and a run that scored either would report confident findings
+ * about a page nobody saw. Both must stop at intake, with the reason stored,
+ * and nothing written down as a fact about the site.
+ */
+describe("the readability gate — pages that are not the site are never scored", () => {
+  async function serve(handler: (path: string, res: import("node:http").ServerResponse) => void) {
+    const server = createServer((req, res) => handler((req.url ?? "/").split("?")[0]!, res));
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const addr = server.address();
+    const port = typeof addr === "object" && addr ? addr.port : 0;
+    return {
+      origin: `127.0.0.1:${port}`,
+      close: () => new Promise<void>((r) => server.close(() => r())),
+    };
+  }
+
+  async function failedRun() {
+    const db = await openDb();
+    const run = await db.one<{ status: string; error: string }>(`select * from audit_runs`);
+    const pages = await db.query(`select id from pages`);
+    const findings = await db.query(`select id from findings`);
+    await db.close();
+    return { run, pages: pages.length, findings: findings.length };
+  }
+
+  it("stops at a bot wall and names it, instead of scoring the wall's page", async () => {
+    const site = await serve((_path, res) => {
+      res.writeHead(503, { "content-type": "text/html", "cf-mitigated": "challenge" });
+      res.end(`<html><head><title>Just a moment...</title></head><body>
+        <div id="cf-chl-widget"></div>
+        <script src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1"></script></body></html>`);
+    });
+    try {
+      expect(await main([`--domain=${site.origin}`, "--area=ภูเก็ต"])).toBe(1);
+      const { run, pages, findings } = await failedRun();
+      expect(run?.status).toBe("failed");
+      expect(run?.error).toContain("กันบอท");
+      expect(run?.error).toContain("Cloudflare");
+      expect(run?.error).not.toContain("เปิดเว็บไซต์ไม่ได้");
+      expect(pages).toBe(0);
+      expect(findings).toBe(0);
+    } finally {
+      await site.close();
+    }
+  });
+
+  it("stops at a JavaScript app shell instead of reporting an empty page as a bad one", async () => {
+    const site = await serve((path, res) => {
+      if (path === "/robots.txt") { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, { "content-type": "text/html" });
+      res.end(`<!doctype html><html><head><title>Shop</title></head><body>
+        <noscript>You need to enable JavaScript to run this app.</noscript>
+        <div id="root"></div><script src="/static/js/main.3f2a.js"></script></body></html>`);
+    });
+    try {
+      expect(await main([`--domain=${site.origin}`, "--area=ภูเก็ต"])).toBe(1);
+      const { run, pages, findings } = await failedRun();
+      expect(run?.status).toBe("failed");
+      expect(run?.error).toContain("JavaScript");
+      expect(pages).toBe(0);
+      expect(findings).toBe(0);
+    } finally {
+      await site.close();
+    }
+  });
+});

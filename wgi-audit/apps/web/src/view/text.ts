@@ -121,6 +121,16 @@ export const thWeb = {
     waiting: "รอ worker หยิบงาน…",
     workerHint: "ถ้าค้างอยู่ตรงนี้นาน แปลว่ายังไม่มี worker รันอยู่",
     failed: "การตรวจไม่สำเร็จ",
+    whatNow: "ทำอย่างไรต่อ",
+    /**
+     * A gated run is not a verdict on the site. These are the three things
+     * that actually cause one, in the order they happen.
+     */
+    failedNext: [
+      "เปิดโดเมนในเบราว์เซอร์ก่อน ถ้าเว็บแสดงผลปกติแปลว่าเนื้อหาถูกประกอบด้วย JavaScript หรือมีระบบกันบอทกั้นอยู่ — ทั้งสองอย่างต้องรอตัวอ่านแบบเบราว์เซอร์จริง (แผน M5)",
+      "ถ้าเปิดไม่ขึ้นเหมือนกัน ให้ตรวจว่าโดเมนสะกดถูกและเว็บออนไลน์อยู่",
+      "ระบบไม่ให้คะแนนหน้าที่อ่านไม่ได้โดยตั้งใจ — คะแนนจากหน้าว่างจะกลายเป็นรายงานที่ผิดทั้งฉบับ",
+    ] as readonly string[],
     scoreTitle: "คะแนนเว็บ",
     scoreNote: "มุมของลูกค้า — ตัวเลขนี้อยู่ในรายงาน",
     findingsTitle: "สิ่งที่ต้องแก้ เรียงตามความคุ้มค่า",
@@ -156,6 +166,7 @@ export const thWeb = {
     colCost: "บาท",
     freeRun: "งานนี้ไม่มีค่าใช้จ่าย — ยังไม่ได้ต่อ API ที่เสียเงิน",
     checkedOn: "ตรวจเมื่อ",
+    check: "ตรวจซ้ำเองได้โดย",
   },
 
   opportunity: {

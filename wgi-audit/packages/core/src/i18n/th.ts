@@ -15,6 +15,14 @@ export const th = {
   intake: {
     offline: "เปิดเว็บไซต์ไม่ได้ ตรวจสอบว่าโดเมนถูกต้องและเว็บออนไลน์อยู่",
     redirected: "เว็บไซต์เปลี่ยนเส้นทางไปโดเมนอื่น",
+    // The two ways a fetch "succeeds" without ever seeing the site. Both stop
+    // the run: a score for a page nobody saw is worse than no score.
+    blocked: (vendor: string) =>
+      `เว็บมีระบบกันบอท (${vendor}) ส่งหน้าของมันมาแทนหน้าเว็บจริง — ต้องเปิดด้วยเบราว์เซอร์จริงก่อน ระบบไม่ให้คะแนนหน้าที่ไม่ใช่ของธุรกิจ`,
+    unrendered:
+      "หน้าแรกไม่มีเนื้อหาให้อ่าน เพราะเว็บประกอบหน้าด้วย JavaScript ในเบราว์เซอร์ — ต้องเปิดด้วยเบราว์เซอร์จริงก่อน ระบบไม่ให้คะแนนหน้าว่าง",
+    empty: (words: number) =>
+      `หน้าแรกแทบไม่มีเนื้อหา (${words} คำ) — ไม่มีอะไรให้ตรวจ ถ้าเว็บแสดงผลปกติในเบราว์เซอร์ แปลว่าต้องเปิดด้วยเบราว์เซอร์จริงก่อน`,
   },
   cost: {
     overBudget: "ต้นทุนเกินงบที่ตั้งไว้",
@@ -60,8 +68,8 @@ export const th = {
       fix: "เพิ่มลิงก์ไปหน้าบริการที่เกี่ยวข้องและหน้าติดต่อ",
     },
     "ONP-008": {
-      title: "Google ยังไม่รู้ว่าธุรกิจของคุณอยู่ที่ไหนและให้บริการอะไร",
-      fix: "เพิ่มข้อมูลธุรกิจแบบที่ Google อ่านได้ (schema LocalBusiness) ในหน้าแรก",
+      title: "หน้าแรกไม่ได้ระบุข้อมูลธุรกิจในรูปแบบที่ Google อ่านได้",
+      fix: "เพิ่ม schema LocalBusiness ในหน้าแรก ระบุชื่อธุรกิจ ที่อยู่ เบอร์โทร และเวลาทำการ",
     },
     "ONP-009": {
       title: "เว็บไม่มีส่วนคำถามที่พบบ่อยแบบที่ Google แสดงผลได้",
@@ -89,8 +97,8 @@ export const th = {
       fix: "แก้ robots.txt ให้เปิดหน้าบริการและหน้าพื้นที่ให้ Google เข้าอ่านได้",
     },
     "TEC-006": {
-      title: "หน้าเว็บจำนวนมากยังไม่ถูก Google เก็บเข้าระบบ",
-      fix: "ตรวจการตั้งค่า noindex และส่ง sitemap ให้ Google อีกครั้ง",
+      title: "หน้าจำนวนมากถูกตั้งค่าห้าม Google เก็บเข้าระบบ (noindex)",
+      fix: "ตรวจว่า noindex ตั้งใจหรือไม่ ถ้าไม่ ให้เอาออกจากหน้าที่ต้องการให้ติดอันดับ แล้วส่ง sitemap ให้ Google อีกครั้ง",
     },
     "TEC-007": {
       title: "เว็บไซต์ยังไม่รองรับการแสดงผลบนมือถือ",
@@ -110,16 +118,18 @@ export const th = {
       fix: "เพิ่มปุ่ม LINE OA ให้เห็นชัดในทุกหน้า",
     },
     "CVR-003": {
-      title: "บนมือถือไม่มีปุ่มติดต่อค้างอยู่บนหน้าจอ",
+      title: "ไม่พบปุ่มติดต่อแบบค้างบนจอมือถือในโค้ดของหน้า",
       fix: "เพิ่มแถบปุ่มโทร/LINE ค้างด้านล่างจอสำหรับมือถือ",
+      check: "เปิดเว็บบนมือถือแล้วเลื่อนลง ถ้ามีปุ่มโทร/LINE ค้างอยู่ด้านล่างจอ ให้ตัดข้อนี้ออก",
     },
     "CVR-004": {
       title: "แบบฟอร์มติดต่อมีช่องให้กรอกมากเกินไป",
       fix: "ลดเหลือชื่อ เบอร์โทร และข้อความ ที่เหลือถามตอนโทรกลับ",
     },
     "CVR-005": {
-      title: "เปิดหน้าเว็บมาแล้วไม่เห็นว่าต้องกดตรงไหนเพื่อติดต่อ",
+      title: "ไม่พบปุ่มติดต่อในส่วนบนของหน้า (ส่วนที่เห็นก่อนเลื่อน)",
       fix: "ใส่ปุ่มติดต่อในส่วนบนสุดของหน้าที่เห็นทันทีโดยไม่ต้องเลื่อน",
+      check: "เปิดหน้าแรกบนมือถือ ถ้าเห็นปุ่มโทร/LINE/ติดต่อโดยไม่ต้องเลื่อน ให้ตัดข้อนี้ออก",
     },
     "CVR-006": {
       title: "เว็บไม่บอกราคาหรือช่วงราคาเลย",
@@ -184,3 +194,20 @@ export const th = {
 } as const;
 
 export type FindingCode = keyof typeof th.findings;
+
+export interface FindingCopy {
+  title: string;
+  fix: string;
+  /**
+   * How the owner confirms it by eye. Present only on rules that read the
+   * page's code rather than a rendered screen — CVR-003, CVR-005 — because a
+   * sticky button drawn by an external stylesheet is invisible to the crawler
+   * and the report must say so instead of insisting.
+   */
+  check?: string;
+}
+
+/** Finding copy by code, typed for the fields every entry may carry. */
+export function findingCopy(code: string): FindingCopy | undefined {
+  return (th.findings as Record<string, FindingCopy>)[code];
+}

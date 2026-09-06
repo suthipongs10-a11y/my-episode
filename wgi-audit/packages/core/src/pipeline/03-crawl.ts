@@ -13,6 +13,7 @@
 import type { PipelineStage, StageContext } from "./runner.ts";
 import { saveSnapshot } from "../db/queries.ts";
 import { extractPage, sameDomain, type ExtractedPage } from "../crawl/extract.ts";
+import { detectChallenge } from "../crawl/gate.ts";
 import type { DiscoverResult } from "./02-discover.ts";
 import type { IntakeResult } from "./01-intake.ts";
 
@@ -24,6 +25,11 @@ export interface CrawlResult {
   pages: ExtractedPage[];
   brokenUrls: { url: string; status: number; linkedFrom: string[] }[];
   emptyPages: string[];
+  /**
+   * URLs a bot wall answered instead of the site — a rate limit that kicked in
+   * mid-crawl, usually. Never parsed, never scored, never counted as broken.
+   */
+  walledUrls: string[];
 }
 
 export interface CrawlOptions {
@@ -43,7 +49,7 @@ export const crawlStage: PipelineStage = {
   name: "03-crawl",
   async run(ctx: StageContext) {
     if (ctx.dryRun) {
-      ctx.state.set("crawl", { pages: [], brokenUrls: [], emptyPages: [] } as CrawlResult);
+      ctx.state.set("crawl", { pages: [], brokenUrls: [], emptyPages: [], walledUrls: [] } as CrawlResult);
       return;
     }
     const intake = ctx.state.get("intake") as IntakeResult | undefined;
@@ -67,7 +73,13 @@ export const crawlStage: PipelineStage = {
       pages: result.pages.length,
       broken: result.brokenUrls.length,
       empty: result.emptyPages.length,
+      walled: result.walledUrls.length,
     });
+    if (result.walledUrls.length > 0) {
+      ctx.log.warn("some pages were answered by a bot wall and were not read", {
+        walled: result.walledUrls.length, example: result.walledUrls[0],
+      });
+    }
   },
 };
 
@@ -82,6 +94,7 @@ export async function crawlSite(
   const pages: ExtractedPage[] = [];
   const broken = new Map<string, { status: number; linkedFrom: string[] }>();
   const emptyPages: string[] = [];
+  const walledUrls: string[] = [];
 
   while (queue.length > 0 && pages.length < maxPages) {
     const item = queue.shift()!;
@@ -92,6 +105,12 @@ export async function crawlSite(
     const res = await ctx.http.get(url, {
       kind: "html", respectRobots: opts.respectRobots,
     });
+
+    // The wall's page is not the site's page: not a finding, not a 404.
+    if (detectChallenge(res.body ?? "", res.headers ?? {}, res.status)) {
+      walledUrls.push(url);
+      continue;
+    }
 
     if (!res.ok) {
       // A page robots.txt closed is not a broken link on the site — recording
@@ -124,6 +143,7 @@ export async function crawlSite(
     pages,
     brokenUrls: [...broken.entries()].map(([url, b]) => ({ url, ...b })),
     emptyPages,
+    walledUrls,
   };
 }
 

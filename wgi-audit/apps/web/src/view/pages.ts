@@ -15,8 +15,7 @@
  * client's, and neither page shows the other's: the opportunity score and the
  * outreach brief exist only here, never on anything a customer receives.
  */
-import { th } from "@core/i18n/th.ts";
-import type { FindingCode } from "@core/i18n/th.ts";
+import { findingCopy } from "@core/i18n/th.ts";
 import { STAGES } from "@core/types/index.ts";
 import type { Finding } from "@core/types/index.ts";
 import { SIGNAL_ORDER, type Opportunity, type Signal } from "@core/scoring/opportunity.ts";
@@ -185,9 +184,20 @@ export function runPage(a: AuditDetail): string {
     }),
   ];
 
+  // A failed run shows the reason and stops. Every card below assumes the site
+  // was read; on a run that never got past the gate they would say "no problems
+  // found" and "0 pages" about a site nobody looked at — which is the exact
+  // confusion the gate exists to prevent.
   if (a.status === "failed") {
-    blocks.push(`<div class="banner bad" style="margin-bottom:16px">${esc(thWeb.run.failed)}${
+    blocks.push(`<div class="banner bad">${esc(thWeb.run.failed)}${
       a.error ? ` — ${esc(a.error)}` : ""}</div>`);
+    blocks.push(card(thWeb.run.whatNow, `<ul class="why" style="margin:0">${
+      thWeb.run.failedNext.map((line) => `<li>${esc(line)}</li>`).join("")
+    }</ul>`));
+    return page(
+      { title: `${a.domain} — ${thWeb.app}`, shell: { active: "run" } },
+      `<div class="stack-v">${blocks.join("\n")}</div>`,
+    );
   }
 
   if (!finished) blocks.push(card(thWeb.run.progress, progress(a)));
@@ -404,16 +414,21 @@ function scoreBlock(a: AuditDetail): string {
 }
 
 function findingRow(f: Finding, rank: number, withEvidence: boolean): string {
-  const copy = th.findings[f.code as FindingCode];
+  const copy = findingCopy(f.code);
   if (!copy) return "";
   const hours = f.effortHours;
+  // A rule that read code rather than a screen says how to confirm it by eye —
+  // on both pages, because the owner is the one who can look.
+  const check = copy.check
+    ? `<div class="finding-check">${esc(thWeb.run.check)}: ${esc(copy.check)}</div>`
+    : "";
   return `<div class="finding">
   <div class="finding-head">
     <span class="finding-rank">${rank}</span>
     <span class="finding-title">${esc(copy.title)}</span>
     ${severityBadge(f.severity)}
   </div>
-  <div class="finding-fix">${esc(copy.fix)}</div>
+  <div class="finding-fix">${esc(copy.fix)}</div>${check}
   ${withEvidence ? `<div class="finding-meta"><code>${esc(f.code)}</code>${
     hours === undefined ? "" : ` · ${esc(thWeb.run.effort)} ~${hours} ${esc(thWeb.run.hours)}`
   }${
@@ -571,7 +586,7 @@ function signalWhy(s: Signal): string {
   const parts = s.evidence.map(esc);
   const titles = (s.codes ?? [])
     .flatMap((code) => {
-      const title = th.findings[code as FindingCode]?.title;
+      const title = findingCopy(code)?.title;
       return title ? [String(title)] : [];
     })
     .slice(0, 2);
@@ -583,7 +598,7 @@ function signalWhy(s: Signal): string {
 function quickWinsBlock(o: Opportunity): string {
   if (o.quickWins.length === 0) return `<p class="note" style="margin:0">${esc(thWeb.opportunity.noQuickWins)}</p>`;
   const wins = o.quickWins.map((w, i) => {
-    const copy = th.findings[w.code as FindingCode];
+    const copy = findingCopy(w.code);
     return [
       String(i + 1),
       copy ? esc(copy.title) : esc(w.code),
@@ -623,7 +638,7 @@ export function briefText(a: AuditDetail, o: Opportunity): string {
     `${t.quickWinsTitle}:`,
     ...(o.quickWins.length
       ? o.quickWins.flatMap((w, i) => {
-          const copy = th.findings[w.code as FindingCode];
+          const copy = findingCopy(w.code);
           return [
             `${i + 1}. ${copy?.title ?? w.code} — ~${w.effortHours} ${thWeb.run.hours}`,
             ...(copy ? [`   → ${copy.fix}`] : []),

@@ -424,6 +424,7 @@ input.search:focus { outline: 2px solid var(--blue); outline-offset: -1px; borde
 }
 .finding-title { font-size: 15px; font-weight: 620; flex: 1; min-width: 260px; }
 .finding-fix { color: var(--ink-2); margin: 7px 0 0 30px; font-size: 13.5px; }
+.finding-check { margin: 6px 0 0 30px; font-size: 12.5px; color: var(--muted); }
 .finding-meta { margin: 8px 0 0 30px; font-size: 12.5px; color: var(--muted); }
 .finding-meta code {
   font-family: var(--mono);

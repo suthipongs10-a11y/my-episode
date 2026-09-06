@@ -102,6 +102,7 @@ packages/core/src/
   keywords/  seed.ts          ← สร้าง keyword จากเว็บลูกค้า (pure)
   serp/      dataforseo.ts    ← อันดับ + volume, ยิงเป็น batch
   crawl/     extract.ts · classify.ts · signals.ts (ads/social/parked — ฝั่งคนขาย)
+             gate.ts ← หน้ากันบอท / app shell = หยุด run ไม่ให้คะแนน (ไม่รัน JS ห้ามเดา)
   pipeline/  runner.ts · index.ts (STAGE_REGISTRY) · 01-intake.ts … 09-presence.ts …
   rules/     1 ไฟล์ = 1 หมวด (pure functions) · catalog.ts
   scoring/   index.ts (เลือกเวอร์ชัน) · v1.ts · v2.ts · v3.ts ← ห้ามแก้ไฟล์เวอร์ชันเก่า

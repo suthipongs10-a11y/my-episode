@@ -6,6 +6,29 @@
 **ทุก rule เป็น pure function** ไม่มี network ไม่มี LLM ไม่มี random
 ทุก finding ต้องมี `evidence` ที่ชี้ได้ว่ามาจาก URL ไหน ค่าอะไร
 
+## ประตูก่อนตรวจ — `crawl/gate.ts` (2026-09-06)
+
+กฎทุกข้อข้างล่างอ่านจาก HTML ที่ดึงมาด้วย cheerio **ไม่รัน JavaScript** ดังนั้นมี 2 กรณีที่
+fetch "สำเร็จ" แต่หน้าที่ได้ไม่ใช่หน้าของธุรกิจ และถ้าให้คะแนนต่อจะได้รายงานที่ผิดทั้งฉบับ
+(ไม่มี H1, ไม่มีปุ่มติดต่อ, เนื้อหาบาง — ของหน้าที่ไม่มีใครเห็น):
+
+| กรณี | จับจาก | ผล |
+|---|---|---|
+| **หน้ากันบอท** (Cloudflare "Just a moment…", Imperva, Sucuri, Akamai, DDoS-Guard, CAPTCHA) | header `cf-mitigated: challenge` หรือข้อความที่ระบบพวกนั้นเขียนเอง **และ** body บาง (< 80 คำ) หรือ status 401/403/429/503 | `01-intake` หยุด run: "เว็บมีระบบกันบอท (vendor) …" · หน้าในที่โดนกลางทาง `03-crawl` ทิ้ง ไม่นับเป็น 404 |
+| **หน้าว่าง / app shell** (React, Next, Nuxt, Vue, Angular ที่ประกอบหน้าในเบราว์เซอร์) | หน้าแรก < 20 คำ **และ** < 3 ลิงก์ภายใน | `01-intake` หยุด run: "หน้าแรกไม่มีเนื้อหาให้อ่าน … ต้องเปิดด้วยเบราว์เซอร์จริงก่อน" |
+
+หน้าแรกที่บางแต่มีเมนู (≥ 3 ลิงก์) ผ่านประตู เพราะมีของให้ตรวจจริง · เว็บที่ติดประตูต้องรอ
+Playwright (M5) ไม่ใช่ปรับเกณฑ์ให้ผ่าน
+
+## ระดับความน่าเชื่อถือของกฎ
+
+- **วัดจากข้อเท็จจริง** (ให้ลูกค้าดูได้เลย): TEC-001/004/005/006/007/008 · ONP-001/002/003/004/006/008/009 · CVR-001/002/004 · CON-002/004
+- **heuristic — อ่านจากโค้ด ไม่ได้ render** (ต้องเปิดดูตาเปล่าก่อนพูดกับลูกค้า): CVR-003, CVR-005 (มีบรรทัด "ตรวจซ้ำเองได้โดย" ในรายงาน) · CVR-006/007 (หาคำว่า ราคา/รีวิว) · CVR-008 (โดเมนรูป stock) · CVR-009 · ONP-005 (นับคำไทยจากตัวอักษร÷4)
+- **เงียบจนกว่าจะมีข้อมูล**: TEC-002/003 (PSI) · CON-001/003/005, CMP-* (DataForSEO) · LOC-*, CVR-010 (Places)
+
+**ข้อความต้องพูดเท่าที่วัด** — TEC-006 วัด noindex ไม่ได้ถาม Google จึงพูดว่า "ตั้งค่าห้ามเก็บ" ไม่ใช่ "ยังไม่ถูกเก็บ" ·
+ONP-008 วัด schema จึงพูดว่า "ไม่มี schema" ไม่ใช่ "Google ไม่รู้จัก" · CVR-003/005 พูดว่า "ไม่พบในโค้ด" และบอกวิธีตรวจซ้ำ
+
 ## ONP — On-page (M1)
 | code | เงื่อนไข | severity |
 |---|---|---|
@@ -16,7 +39,7 @@
 | ONP-005 | หน้าบริการเนื้อหา < 300 คำ | high |
 | ONP-006 | รูปไม่มี alt > 50% | low |
 | ONP-007 | internal link ขาออก < 3 ในหน้าบริการ | medium |
-| ONP-008 | ไม่มี schema LocalBusiness ในหน้าแรก | high |
+| ONP-008 | ไม่มี schema LocalBusiness/Organization ในหน้าแรก (วัดจาก JSON-LD เท่านั้น) | high |
 | ONP-009 | ไม่มี FAQ schema ทั้งเว็บ | medium |
 
 ## TEC — Technical (M1)
@@ -27,7 +50,7 @@
 | TEC-003 | LCP > 4 วิ (mobile) | high |
 | TEC-004 | ไม่มี sitemap.xml | medium |
 | TEC-005 | robots.txt บล็อกหน้าสำคัญ | critical |
-| TEC-006 | หน้าที่ index < 50% ของหน้าที่มี | high |
+| TEC-006 | หน้าที่**ไม่มี** `noindex` < 50% ของหน้าที่ crawl ได้ (ไม่ได้ถาม Google index จริง) | high |
 | TEC-007 | ไม่มี viewport meta / ไม่ responsive | critical |
 | TEC-008 | พบ 404 จาก internal link ≥ 1 | medium |
 
@@ -36,9 +59,9 @@
 |---|---|---|
 | CVR-001 | เบอร์โทรไม่ได้เป็น `tel:` link | critical |
 | CVR-002 | ไม่มีปุ่ม LINE OA | high |
-| CVR-003 | ไม่มี sticky CTA บนมือถือ | high |
+| CVR-003 | ไม่พบ `position:fixed/sticky` + tel/LINE ใน HTML (heuristic — CSS ไฟล์แยกมองไม่เห็น) | high |
 | CVR-004 | ฟอร์มมีช่องกรอก > 4 ช่อง | high |
-| CVR-005 | ไม่มี CTA ในหน้าจอแรก | critical |
+| CVR-005 | ไม่พบ CTA ใน header/hero/6 บล็อกแรกของ body (heuristic — ไม่ได้ render) | critical |
 | CVR-006 | ไม่แสดงราคาเลย | medium |
 | CVR-007 | ไม่มีรีวิว/testimonial | high |
 | CVR-008 | ใช้ภาพ stock ล้วน | medium |
