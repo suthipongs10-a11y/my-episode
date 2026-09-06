@@ -12,6 +12,8 @@
 import type { Db } from "@core/db/client.ts";
 import { getFindings } from "@core/db/queries.ts";
 import type { AreaScope, Finding, RunStatus, Stage } from "@core/types/index.ts";
+import type { Opportunity } from "@core/scoring/opportunity.ts";
+import type { PresenceResult } from "@core/pipeline/09-presence.ts";
 
 export interface ScoreSnapshot {
   scoring_version: number;
@@ -34,6 +36,9 @@ export interface AuditSummary {
   scoringVersion: number;
   /** Null while the run has not reached 12-scoring yet. */
   overall: number | null;
+  /** The seller's score — never shown to the client. Null until scored. */
+  opportunity: number | null;
+  pitch: string | null;
   findingsTotal: number;
   criticalTotal: number;
 }
@@ -43,7 +48,8 @@ interface SummaryRow {
   status: RunStatus; stage: Stage | null; error: string | null;
   created_at: string | null; started_at: string | null; finished_at: string | null;
   cost_thb: string | number | null; scoring_version: number;
-  scores: unknown; findings_total: string | number; critical_total: string | number;
+  scores: unknown; opportunity: unknown;
+  findings_total: string | number; critical_total: string | number;
 }
 
 const SUMMARY_SELECT = `
@@ -53,6 +59,9 @@ const SUMMARY_SELECT = `
          (select s.data from snapshots s
            where s.audit_run_id = r.id and s.kind = 'site' and s.target = 'scores'
            order by s.collected_at desc limit 1)                       as scores,
+         (select s.data from snapshots s
+           where s.audit_run_id = r.id and s.kind = 'site' and s.target = 'opportunity'
+           order by s.collected_at desc limit 1)                       as opportunity,
          (select count(*) from findings f where f.audit_run_id = r.id) as findings_total,
          (select count(*) from findings f
            where f.audit_run_id = r.id and f.severity = 'critical')    as critical_total
@@ -61,6 +70,7 @@ const SUMMARY_SELECT = `
 
 function toSummary(r: SummaryRow): AuditSummary {
   const snap = parseJson<ScoreSnapshot>(r.scores);
+  const opp = parseJson<{ score: number; pitch: string }>(r.opportunity);
   return {
     id: r.id,
     domain: r.domain,
@@ -75,6 +85,8 @@ function toSummary(r: SummaryRow): AuditSummary {
     costThb: Number(r.cost_thb ?? 0),
     scoringVersion: r.scoring_version,
     overall: snap?.scores.overall ?? null,
+    opportunity: opp?.score ?? null,
+    pitch: opp?.pitch ?? null,
     findingsTotal: Number(r.findings_total),
     criticalTotal: Number(r.critical_total),
   };
@@ -96,6 +108,8 @@ export async function getAuditSummary(db: Db, id: string): Promise<AuditSummary 
 // ---------------------------------------------------------------------------
 export interface AuditDetail extends AuditSummary {
   snapshot: ScoreSnapshot | null;
+  opportunityDetail: Opportunity | null;
+  presence: PresenceResult | null;
   findings: Finding[];
   pages: { pageType: string; count: number }[];
   keywords: { term: string; intent: string | null; volume: number | null; position: number | null }[];
@@ -110,6 +124,19 @@ export async function getAuditDetail(db: Db, id: string): Promise<AuditDetail | 
   const snapshotRow = await db.one<{ data: unknown }>(
     `select data from snapshots
       where audit_run_id = $1 and kind = 'site' and target = 'scores'
+      order by collected_at desc limit 1`,
+    [id],
+  );
+
+  const oppRow = await db.one<{ data: unknown }>(
+    `select data from snapshots
+      where audit_run_id = $1 and kind = 'site' and target = 'opportunity'
+      order by collected_at desc limit 1`,
+    [id],
+  );
+  const presenceRow = await db.one<{ data: unknown }>(
+    `select data from snapshots
+      where audit_run_id = $1 and kind = 'presence'
       order by collected_at desc limit 1`,
     [id],
   );
@@ -159,6 +186,8 @@ export async function getAuditDetail(db: Db, id: string): Promise<AuditDetail | 
   return {
     ...summary,
     snapshot: parseJson<ScoreSnapshot>(snapshotRow?.data),
+    opportunityDetail: parseJson<Opportunity>(oppRow?.data),
+    presence: parseJson<PresenceResult>(presenceRow?.data),
     findings: await getFindings(db, id),
     pages: pages.map((p) => ({ pageType: p.page_type, count: Number(p.n) })),
     keywords,

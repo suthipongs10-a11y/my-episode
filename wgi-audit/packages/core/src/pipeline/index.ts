@@ -12,6 +12,7 @@ import { classifyStage } from "./04-classify.ts";
 import { psiStage } from "./05-psi.ts";
 import { keywordsStage } from "./06-keywords.ts";
 import { serpStage } from "./07-serp.ts";
+import { presenceStage } from "./09-presence.ts";
 import { competitorsStage } from "./10-competitors.ts";
 import { rulesStage } from "./11-rules.ts";
 import { scoringStage } from "./12-scoring.ts";
@@ -24,6 +25,7 @@ export const STAGE_REGISTRY: PipelineStage[] = [
   psiStage,         // M1 — skipped without PSI_API_KEY
   keywordsStage,    // M3 — seeds from code always; LLM and volume are optional
   serpStage,        // M3 — skipped without DataForSEO credentials
+  presenceStage,    // pivot — ads, social, alive? (free signals; Places joins in M4)
   competitorsStage, // M3 — needs 07 to have found somebody
   rulesStage,       // M1 (ONP, TEC) + M2 (CVR) + M3 (CON, CMP)
   scoringStage,     // M2

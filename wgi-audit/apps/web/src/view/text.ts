@@ -50,6 +50,7 @@ export const thWeb = {
     colArea: "พื้นที่",
     colWhen: "เมื่อ",
     colScore: "คะแนน",
+    colOpportunity: "โอกาส",
     colFindings: "ที่ต้องแก้",
     colCritical: "วิกฤต",
     colCost: "ต้นทุน",
@@ -129,6 +130,37 @@ export const thWeb = {
     colCached: "ใช้แคช",
     colCost: "บาท",
     freeRun: "งานนี้ไม่มีค่าใช้จ่าย — ยังไม่ได้ต่อ API ที่เสียเงิน",
+  },
+
+  opportunity: {
+    title: "โอกาสในการขาย",
+    note: "มุมของเรา ไม่ใช่ของลูกค้า — ตัวเลขนี้ไม่ไปโผล่ในรายงาน",
+    components: {
+      pain: "ปัญหาที่ขายแก้ได้",
+      budget: "มีงบโฆษณาอยู่แล้ว",
+      alive: "ธุรกิจยังมีชีวิต",
+      reach: "ติดต่อได้",
+    } as Record<string, string>,
+    pitch: {
+      ads_leak: "ยิง Ads อยู่แต่เว็บรับไม่ได้ — เงินรั่วทุกวัน",
+      cannot_be_contacted: "ลูกค้าอยากทักแต่ไม่มีทางติดต่อ",
+      invisible: "Google มองไม่เห็นธุรกิจนี้",
+      fix_list: "มีรายการแก้ชัดเจน เสนอเป็นแพ็กเกจได้",
+      not_a_lead: "ไม่ใช่ลูกค้าเป้าหมาย",
+    } as Record<string, string>,
+    pitchLabel: "มุมที่ควรเปิดเรื่อง",
+    quickWins: "Quick wins — แก้ได้ในสัปดาห์นี้",
+    quickWinsNote: "ผลกระทบสูง ใช้เวลาน้อย เรียงตามผลต่อชั่วโมง",
+    noQuickWins: "ไม่มีข้อไหนที่ทั้งผลสูงและใช้เวลาน้อย",
+    leverage: "ผล/ชม.",
+    adsYes: "ยิง Ads อยู่",
+    adsMaybe: "อาจยิง Ads (มี GTM)",
+    adsNo: "ไม่พบสัญญาณโฆษณา",
+    socialTitle: "ช่องทางอื่นที่พบ",
+    activity: {
+      parked: "โดเมนว่าง / หน้า placeholder",
+      stale: (year: number) => `ปีลิขสิทธิ์ท้ายเว็บ ${year}`,
+    },
   },
 
   report: {

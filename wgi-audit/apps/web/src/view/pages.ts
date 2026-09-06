@@ -56,6 +56,10 @@ export function dashboardPage(
     a.overall === null
       ? '<span style="color:var(--muted)">—</span>'
       : `<strong style="color:${scoreTone(a.overall)}">${a.overall}</strong>`,
+    a.opportunity === null
+      ? '<span style="color:var(--muted)">—</span>'
+      : `<strong style="color:${opportunityTone(a.opportunity)}" title="${esc(
+          thWeb.opportunity.pitch[a.pitch ?? ""] ?? "")}">${a.opportunity}</strong>`,
     a.findingsTotal ? String(a.findingsTotal) : "—",
     a.criticalTotal
       ? `<strong style="color:var(--critical)">${a.criticalTotal}</strong>`
@@ -84,6 +88,7 @@ export function dashboardPage(
               { label: thWeb.list.colArea },
               { label: thWeb.list.colWhen },
               { label: thWeb.list.colScore, num: true },
+              { label: thWeb.list.colOpportunity, num: true },
               { label: thWeb.list.colFindings, num: true },
               { label: thWeb.list.colCritical, num: true },
               { label: thWeb.list.colCost, num: true },
@@ -153,6 +158,10 @@ export function runPage(a: AuditDetail): string {
 
   if (a.snapshot) {
     blocks.push(card(thWeb.run.scoreTitle, scoreBlock(a)));
+  }
+
+  if (a.opportunityDetail) {
+    blocks.push(card(thWeb.opportunity.title, opportunityBlock(a)));
   }
 
   const chart = findingsByCategory(a);
@@ -454,6 +463,88 @@ export function reportPage(a: AuditDetail): string {
   ].join("\n");
 
   return page({ title: thWeb.report.title(a.domain), narrow: true }, body);
+}
+
+// ---------------------------------------------------------------------------
+// opportunity — the seller's view, never on the client report
+// ---------------------------------------------------------------------------
+export function opportunityTone(score: number): string {
+  // Inverted from the site score: here, high is *good for us*.
+  if (score >= 70) return "var(--good)";
+  if (score >= 45) return "var(--warning)";
+  return "var(--muted)";
+}
+
+function opportunityBlock(a: AuditDetail): string {
+  const o = a.opportunityDetail!;
+  const p = a.presence;
+  const t = thWeb.opportunity;
+
+  const rows: MeterRow[] = (["pain", "budget", "alive", "reach"] as const).map((k) => {
+    const c = o.components[k];
+    return {
+      name: t.components[k] ?? k,
+      value: c.max > 0 ? (c.value / c.max) * 100 : 0,
+      label: `${Math.round(c.value)}/${c.max}`,
+    };
+  });
+
+  const evidence = (["pain", "budget", "alive", "reach"] as const)
+    .flatMap((k) => o.components[k].evidence)
+    .map((e) => `<li>${esc(e)}</li>`).join("");
+
+  const ads = p
+    ? p.ads.verdict === "yes" ? t.adsYes : p.ads.verdict === "maybe" ? t.adsMaybe : t.adsNo
+    : t.adsNo;
+  const adsTone = p?.ads.verdict === "yes" ? "var(--good)" : p?.ads.verdict === "maybe" ? "var(--warning)" : "var(--muted)";
+  const adsEvidence = p ? [...p.ads.evidence, ...(p.ads.googleSerp ? [`Google Ads: ${p.ads.googleSerpTerms.join(", ")}`] : [])] : [];
+
+  const socials = p ? Object.entries(p.social) : [];
+  const flags: string[] = [];
+  if (p?.activity.parked) flags.push(t.activity.parked);
+  if (p?.activity.copyrightYear) flags.push(t.activity.stale(p.activity.copyrightYear));
+
+  const wins = o.quickWins.map((w, i) => {
+    const copy = th.findings[w.code as FindingCode];
+    return [
+      String(i + 1),
+      copy ? esc(copy.title) : esc(w.code),
+      `~${w.effortHours} ${esc(thWeb.run.hours)}`,
+      String(w.leverage),
+    ];
+  });
+
+  return [
+    `<p class="note" style="margin:-8px 0 14px">${esc(t.note)}</p>`,
+    `<div class="hero" style="margin-bottom:18px">
+  <div class="count-item"><div class="n" style="font-size:44px;color:${opportunityTone(o.score)}">${o.score}</div>
+    <div class="l">/ 100</div></div>
+  <div class="hero-side">
+    <div class="hero-verdict">${esc(t.pitch[o.pitch] ?? o.pitch)}</div>
+    <div class="hero-note">${esc(t.pitchLabel)}</div>
+  </div>
+</div>`,
+    o.vetoes.length
+      ? `<div class="banner bad" style="margin-bottom:14px">${o.vetoes.map(esc).join("<br>")}</div>`
+      : "",
+    meters(rows),
+    `<ul class="why">${evidence}</ul>`,
+    `<div style="height:18px"></div>`,
+    `<div class="counts">
+  <div class="count-item"><div class="n" style="font-size:16px;color:${adsTone}">${esc(ads)}</div>
+    <div class="l">${adsEvidence.map(esc).join(" · ") || "—"}</div></div>
+  ${socials.length ? `<div class="count-item"><div class="n" style="font-size:16px">${esc(t.socialTitle)}</div>
+    <div class="l">${socials.map(([k, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(" · ")}</div></div>` : ""}
+  ${flags.length ? `<div class="count-item"><div class="n" style="font-size:16px;color:var(--warning)">${esc(flags[0]!)}</div>
+    <div class="l">${flags.slice(1).map(esc).join(" · ")}</div></div>` : ""}
+</div>`,
+    `<div style="height:22px"></div>`,
+    `<h2 style="margin-bottom:6px">${esc(t.quickWins)}</h2>
+<p class="note" style="margin:0 0 12px">${esc(t.quickWinsNote)}</p>`,
+    wins.length
+      ? table([{ label: "" }, { label: "" }, { label: thWeb.run.effort }, { label: t.leverage, num: true }], wins)
+      : `<p class="note">${esc(t.noQuickWins)}</p>`,
+  ].join("\n");
 }
 
 // ---------------------------------------------------------------------------

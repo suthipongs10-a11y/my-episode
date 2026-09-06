@@ -140,6 +140,8 @@ export interface MeterRow {
   value: number;
   /** True when the data behind this score was never collected. */
   unmeasured?: boolean;
+  /** Shown instead of the number — "30/40" for a component with its own max. */
+  label?: string;
 }
 
 /**
@@ -168,7 +170,7 @@ export function meters(rows: MeterRow[]): string {
     return `<div class="meter-row" style="--tone:${scoreTone(pct)}">
   <div class="meter-name">${esc(r.name)}</div>
   <div class="meter-track"><div class="meter-fill" style="width:${pct}%"></div></div>
-  <div class="meter-value">${pct}</div>
+  <div class="meter-value">${r.label === undefined ? pct : esc(r.label)}</div>
 </div>`;
   }).join("\n");
   return `<div class="meters">${body}</div>`;

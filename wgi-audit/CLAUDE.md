@@ -18,6 +18,8 @@
    > **บังคับด้วย zod ไม่ใช่ด้วย prompt** — schema ที่ส่งให้ `llm/router.ts`
    > ต้องไม่มี field ตัวเลขเลย โมเดลที่แถม `"volume": 5400` มาจะถูกตัดทิ้งก่อนถึง caller
    > (มีเทสต์คุมไว้ที่ `llm/router.test.ts` หมวด "rule #1")
+   > ใช้กับ **opportunity score และ `pitch`** ด้วย — `scoring/opportunity.ts` เป็น pure function
+   > LLM ได้รับมุมที่จะเล่า ไม่ได้เป็นคนเลือก
 2. **เก็บ raw data เสมอ คำนวณคะแนนตอนอ่าน** — ห้ามมีตาราง `scores`
    ทุก snapshot มี `scoring_version` คำนวณผ่าน `scoring/v{n}.ts` ตอน query
    > **ข้อมูลที่ไม่ได้เก็บ ≠ ข้อมูลที่วัดแล้วแย่** — rule ต้องเงียบ คะแนนต้องเป็น 50
@@ -97,12 +99,13 @@ packages/core/src/
   http/      cached-fetch.ts  ← ทางเดียวที่โค้ดนี้ออกเน็ต
   cost/      ledger.ts (บันทึก + บังคับเพดาน) · pricing.ts (ราคาที่เดียว)
   log/       logger.ts        ← ห้าม console.log
-  crawl/     extract.ts · classify.ts
   keywords/  seed.ts          ← สร้าง keyword จากเว็บลูกค้า (pure)
   serp/      dataforseo.ts    ← อันดับ + volume, ยิงเป็น batch
-  pipeline/  runner.ts · index.ts (STAGE_REGISTRY) · 01-intake.ts …
+  crawl/     extract.ts · classify.ts · signals.ts (ads/social/parked — ฝั่งคนขาย)
+  pipeline/  runner.ts · index.ts (STAGE_REGISTRY) · 01-intake.ts … 09-presence.ts …
   rules/     1 ไฟล์ = 1 หมวด (pure functions) · catalog.ts
-  scoring/   index.ts (เลือกเวอร์ชัน) · v1.ts · v2.ts ← ห้ามแก้ไฟล์เวอร์ชันเก่า
+  scoring/   index.ts (เลือกเวอร์ชัน) · v1.ts · v2.ts · v3.ts ← ห้ามแก้ไฟล์เวอร์ชันเก่า
+             opportunity.ts ← คะแนนฝั่งเรา (ขายได้ไหม) + quick wins + pitch · ห้ามโผล่ในรายงานลูกค้า
   llm/       router.ts · prompts/*.md
   i18n/      th.ts            ← ข้อความไทยทั้งหมดอยู่ที่นี่
   types/     index.ts
@@ -176,6 +179,10 @@ pnpm ctx                                   # สถานะโปรเจก�
 ## 8. ข้อควรระวังด้านกฎหมาย/จริยธรรม
 
 - ส่งรายงานให้เฉพาะคนที่กรอกฟอร์มเอง **ห้ามยิง audit แล้วส่งหาคนที่ไม่ได้ขอ** (PDPA)
+  > **⚠️ ขัดกับ flow outbound ที่ผู้ใช้ต้องการ (2026-08-04) — ยังไม่ได้ตัดสินใจ**
+  > ข้อเสนอให้อยู่ร่วมกัน: อีเมลออกไปเป็น *ข้อเสนอ* ไม่ใช่รายงาน · รายงานเต็มส่งเมื่อขอ ·
+  > role address เท่านั้น · ฉบับเดียว มี opt-out · คนกดส่งเอง — รายละเอียดใน STATUS.md
+  > **ห้ามสร้าง email sender จนกว่าข้อนี้จะถูกแก้ให้ตรงกับที่ตัดสินใจ**
 - เก็บข้อมูลติดต่อเท่าที่จำเป็น มีปุ่มขอลบข้อมูล
 - ข้อมูลคู่แข่งใช้เฉพาะข้อมูลสาธารณะ ห้าม bypass paywall/login
 - เคารพ robots.txt ของคู่แข่งเสมอ (ดูกฎข้อ 6 สำหรับข้อยกเว้นเว็บลูกค้า)

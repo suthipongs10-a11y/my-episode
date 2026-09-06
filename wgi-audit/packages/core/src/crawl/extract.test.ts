@@ -127,6 +127,14 @@ describe("extractPage — the site done well", () => {
     expect(page.hasLineLink).toBe(true);
   });
 
+  it("counts a LINE Official Account short link (lin.ee) as a LINE button", () => {
+    const html = `<html><body><h1>ร้านของเรา</h1>
+      <p>ทักเราได้ที่ <a href="https://lin.ee/abc123">เพิ่มเพื่อน</a></p></body></html>`;
+    const p = extractPage("https://shop.example/", html, { domain: "shop.example" });
+    expect(p.hasLineLink).toBe(true);
+    expect(p.socialLinks.line).toBe("https://lin.ee/abc123");
+  });
+
   it("reads JSON-LD including nested types", () => {
     expect(page.schemaTypes).toContain("LocalBusiness");
     expect(page.schemaTypes).toContain("AggregateRating");

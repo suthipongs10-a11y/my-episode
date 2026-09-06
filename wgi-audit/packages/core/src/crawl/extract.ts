@@ -8,6 +8,10 @@
  */
 import * as cheerio from "cheerio";
 import type { PageRecord } from "../types/index.ts";
+import {
+  detectAdTags, detectCopyrightYear, detectSocialLinks, looksParked,
+  type AdTag, type SocialPlatform,
+} from "./signals.ts";
 
 /** Whatever `$(...)` returns. Derived from cheerio's own API type so this
  *  keeps compiling across cheerio versions without naming its internals. */
@@ -54,6 +58,14 @@ export interface ExtractedPage extends PageRecord {
   /** Above-the-fold CTA detection needs the first chunk of body HTML. */
   hasAboveFoldCta: boolean;
   hasStickyCta: boolean;
+  /**
+   * Seller-side signals (crawl/signals.ts). Kept off `PageRecord` so the
+   * `pages` table is unchanged; they travel in the page snapshot instead.
+   */
+  adTags: AdTag[];
+  socialLinks: Partial<Record<SocialPlatform, string>>;
+  looksParked: boolean;
+  copyrightYear: number | null;
 }
 
 export function extractPage(
@@ -115,7 +127,7 @@ export function extractPage(
   });
 
   // LINE can also appear as a bare id, a QR image, or an onclick handler.
-  if (!hasLineLink) hasLineLink = /line\.me|@line|line\s*id|ไลน์ไอดี/i.test(html);
+  if (!hasLineLink) hasLineLink = /line\.me|lin\.ee|@line|line\s*id|ไลน์ไอดี/i.test(html);
 
   // -- images ---------------------------------------------------------------
   const imageHosts: string[] = [];
@@ -187,6 +199,10 @@ export function extractPage(
     isNoindex,
     hasAboveFoldCta: detectAboveFoldCta($),
     hasStickyCta: detectStickyCta($, html),
+    adTags: detectAdTags(html),
+    socialLinks: detectSocialLinks(allUrls),
+    looksParked: looksParked(title, bodyText, wordCount),
+    copyrightYear: detectCopyrightYear(bodyText),
   };
 }
 
@@ -228,8 +244,14 @@ export function countWords(text: string): number {
   return latinWords + Math.round(thaiChars / 4);
 }
 
+/**
+ * `lin.ee` is the short domain LINE Official Account hands every business for
+ * its "add friend" button, and it is what most Thai SMEs actually paste into
+ * their sites — a LINE check that only knows `line.me` misses the common case.
+ */
 function isLineLink(href: string): boolean {
-  return href.includes("line.me") || href.includes("liff.line") || href.startsWith("line://");
+  return href.includes("line.me") || href.includes("lin.ee")
+    || href.includes("liff.line") || href.startsWith("line://");
 }
 
 export function absolute(href: string, base: string): string | null {
@@ -328,7 +350,7 @@ function hasCta($: cheerio.CheerioAPI, $scope: Selection): boolean {
 
   // A tap-to-call or LINE link is a real call to action wherever it sits —
   // tapping it starts the conversation.
-  if ($scope.find('a[href^="tel:"], a[href*="line.me"]').length > 0) return true;
+  if ($scope.find('a[href^="tel:"], a[href*="line.me"], a[href*="lin.ee"]').length > 0) return true;
 
   // A worded link or button only counts outside the menu. Every site has
   // "ติดต่อเรา" in its navigation; if that counted, CVR-005 would never fire
@@ -359,7 +381,7 @@ function detectStickyCta($: cheerio.CheerioAPI, html: string): boolean {
   $(selector).each((_, el) => {
     if (found) return;
     const $el = $(el);
-    if ($el.find('a[href^="tel:"], a[href*="line.me"]').length > 0) found = true;
+    if ($el.find('a[href^="tel:"], a[href*="line.me"], a[href*="lin.ee"]').length > 0) found = true;
     else {
       const label = collapse($el.text()).toLowerCase();
       if (label && CTA_WORDS.some((w) => label.includes(w))) found = true;
@@ -367,5 +389,5 @@ function detectStickyCta($: cheerio.CheerioAPI, html: string): boolean {
   });
   if (found) return true;
   return /position\s*:\s*(fixed|sticky)[^;}]*/i.test(html) &&
-    /tel:|line\.me/i.test(html);
+    /tel:|line\.me|lin\.ee/i.test(html);
 }

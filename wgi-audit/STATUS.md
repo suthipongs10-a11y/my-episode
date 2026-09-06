@@ -11,12 +11,12 @@
 
 | หัวข้อ | ค่า |
 |---|---|
-| Milestone ปัจจุบัน | **M3 + Dashboard** (สลับมาทำ UI ก่อน M4/M5 — ดูเหตุผลด้านล่าง) |
+| Milestone ปัจจุบัน | **Pivot → outbound prospecting** (ดู "ทิศทางใหม่" ด้านล่าง) |
 | สถานะ | M0–M3 ผ่าน acceptance · dashboard ใช้งานได้จริงแล้ว |
 | อัปเดตล่าสุด | 2026-08-04 |
 | git tag ล่าสุด | `wgi-m3` |
 | เทสต์ | 360 ผ่าน / 11 ข้าม (offline) · 25/25 ผ่านกับ Postgres 16 จริง |
-| pipeline | 10 ขั้น · rules 35 ข้อ · **scoring v3** · หน้าจอทำงาน `pnpm dash` |
+| pipeline | **11 ขั้น** · rules 35 ข้อ · scoring v3 · **opportunity score** · `pnpm dash` |
 | เอาขึ้นเว็บ | **ได้แล้ว** — มีล็อกอิน + Dockerfile · วิธีทำ → `docs/deploy.md` |
 | ต้นทุน API สะสม | 0 บาท (ยังไม่ได้สมัคร vendor ใดเลย) |
 
@@ -24,7 +24,41 @@
 
 ## รอบล่าสุดทำอะไรไป
 
-### scoring v3 — คะแนนรวม 30 จาก 62 แต้มเป็นค่าสมมติ (รอบนี้)
+### ทิศทางใหม่ — จาก audit ที่ลูกค้าขอ ไปเป็น outbound prospecting (รอบนี้)
+
+ผู้ใช้ต้องการ flow: **ค้นหาธุรกิจ → Active? → ยิง Ads? → เปิดเว็บ → Audit →
+Opportunity score → Problems → Quick wins → Proposal → ส่ง Email**
+
+| ขั้น | สถานะ | ทำอะไรรอบนี้ |
+|---|---|---|
+| เปิดเว็บ · Audit · Problems | มีอยู่แล้ว | — |
+| **ยิง Ads?** | ✅ ฟรี | `crawl/signals.ts` จับ Meta Pixel / Google Ads tag / TikTok / LINE Tag / GTM จาก HTML · `07-serp` บันทึก `ownPaid` (ลูกค้าโผล่ในผล paid) |
+| **Active?** | ✅ ครึ่งแรก ฟรี | parked/placeholder (ไทย+อังกฤษ) · ปีลิขสิทธิ์ (แปลง พ.ศ.) · ลิงก์ social · reachable — **อีกครึ่ง (รีวิวล่าสุด, เวลาทำการ) รอ Places key ใน M4** |
+| **Opportunity score** | ✅ | `scoring/opportunity.ts` — deterministic, 4 ส่วน (pain/budget/alive/reach) + veto (parked/เข้าไม่ได้) + **`pitch`** = มุมที่ควรเปิดเรื่อง เลือกจากข้อเท็จจริง ไม่ใช่ให้ LLM เดา |
+| **Quick wins** | ✅ | `quickWins()` = impact ≥ 6 และ ≤ 3 ชม. เรียงตามผล/ชม. |
+| ค้นหาธุรกิจ | ❌ รอ Places key | Text Search ตามหมวด+พื้นที่ → คิวงานอัตโนมัติ |
+| Proposal | ❌ รอ LLM key (M5) | LLM เขียนจาก `pitch` + quick wins + findings — **ห้ามผลิตตัวเลข** เหมือนเดิม |
+| ส่ง Email | ❌ **ต้องตัดสินใจก่อน** | ดูหัวข้อถัดไป |
+
+stage ใหม่ `09-presence` (ตามสเปกเดิมของ M4 แต่ทำเฉพาะสัญญาณที่ฟรี) ·
+opportunity เก็บเป็น snapshot แยก `site/opportunity` **ไม่มีวันไปโผล่ในรายงานลูกค้า** ·
+dashboard มีคอลัมน์ "โอกาส" + การ์ดพร้อม pitch, ads, social, quick wins
+
+### ⚠️ ขั้น "ส่ง Email" ชนกับกฎข้อ 8 ของโปรเจกต์ — ต้องให้ผู้ใช้ตัดสินใจ
+
+`CLAUDE.md §8` เขียนไว้ว่า *"ส่งรายงานให้เฉพาะคนที่กรอกฟอร์มเอง ห้ามยิง audit แล้วส่งหาคนที่ไม่ได้ขอ (PDPA)"*
+flow ใหม่คือ audit คนที่ไม่ได้ขอแล้วส่งอีเมลหา — ตรงข้ามกัน
+
+**ข้อเสนอที่ทำให้อยู่ร่วมกันได้** (ยังไม่ได้ implement รอตัดสินใจ):
+1. อีเมลที่ส่งออกเป็น **ข้อเสนอสั้น ๆ + quick win 1–2 ข้อ** ไม่ใช่รายงานเต็ม
+   → รายงานเต็มส่งเมื่อเขาตอบกลับ/ขอ = กฎเดิมยังอยู่ครบ
+2. ส่งเฉพาะ **อีเมลธุรกิจ/role** (info@, contact@, sales@) ไม่ส่งหาชื่อบุคคล
+3. **ฉบับเดียว** มี opt-out ชัดเจน จดรายชื่อที่ปฏิเสธถาวร
+4. **คนกดส่งเองทีละฉบับ** หลังอ่าน draft — ไม่ auto-send · เก็บ log ว่าส่งอะไรหาใครเมื่อไหร่
+
+ถ้าตกลงตามนี้ ให้แก้ §8 ของ CLAUDE.md ให้ตรงกัน แล้วค่อยสร้าง email queue
+
+### scoring v3 — คะแนนรวม 30 จาก 62 แต้มเป็นค่าสมมติ (รอบก่อนหน้า)
 
 ผู้ใช้รันกับเว็บลูกค้าจริงแล้วส่งภาพมา: **เปลี่ยนคนดูเป็นคนทัก 78 · โครงสร้าง 82 ·
 เทคนิค 80 แต่คะแนนรวมได้ 62** — ต่ำกว่าทุกแท่งบนหน้าจอ บอกว่า "งง"
@@ -244,7 +278,14 @@ CON-005 เป็น severity `high` ที่บอกเจ้าของว�
 
 ## งานถัดไปที่ต้องทำ (เรียงตามลำดับ)
 
-### M4 — GBP + Presence  ← ถัดไป (dashboard ทำเสร็จแล้ว กลับมาลำดับเดิม)
+### ถัดไปตาม flow ใหม่ (เรียงตามที่ปลดล็อกได้)
+- [ ] **ตัดสินใจเรื่อง Email/PDPA** (หัวข้อด้านบน) — ไม่มีโค้ดที่ต้องรอ แค่ต้องตอบ
+- [ ] **ค้นหาธุรกิจ** — Places Text Search "<หมวด> <พื้นที่>" → สร้าง client + คิวอัตโนมัติ · ต้อง `GOOGLE_PLACES_KEY`
+- [ ] **Active ครึ่งหลัง** — Places: business_status, รีวิวล่าสุด, เวลาทำการ → เข้า `09-presence`
+- [ ] **Proposal** — `13-narrative` ใช้ `pitch` + quick wins · LLM เขียนอย่างเดียว ห้ามผลิตตัวเลข
+- [ ] **Email queue** — draft → คนอนุมัติ → ส่ง · suppression list · log
+
+### M4 — GBP + Presence (ส่วนที่เหลือ)
 - [ ] pipeline 08-gbp: Places — verified, หมวด, รีวิว, % ตอบกลับ, รูป, เวลาทำการ, NAP ตรงกับเว็บไหม
 - [ ] Rank Grid — **เริ่มที่ 3×3 (9 จุด) ไม่ใช่ 5×5** จนกว่าจะรู้ราคาจริง (`docs/pipeline.md`)
 - [ ] pipeline 09-presence: FB / LINE OA / TikTok / IG / Wongnai / Bing Places — เก็บแค่ มี-ไม่มี
@@ -297,6 +338,11 @@ CON-005 เป็น severity `high` ที่บอกเจ้าของว�
 |---|---|---|
 | 2026-08-03 | ~~แยก repo ใหม่ ไม่ใช้ `my-episode`~~ | **กลับคำ — ดูบรรทัดถัดไป** เหตุผลเดิมตั้งอยู่บนความเข้าใจผิดว่า `my-episode` เป็น repo ของโปรเจกต์ RO อย่างเดียว |
 | 2026-08-04 | **อยู่เป็นโฟลเดอร์ `wgi-audit/` ใน `my-episode`** | repo นั้นเป็น multi-project อยู่แล้ว (`shorts-factory/`, `seo-backlink-finder/` ต่างมี CLAUDE.md และ CI ของตัวเอง) · pattern ที่ต้องใช้มีครบแล้ว · 167 MB มาจาก `shorts-factory` ไม่ใช่ RO และเป็นต้นทุนตอน clone ครั้งเดียว · **และ push ได้จริงวันนี้** ซึ่ง repo ใหม่ทำไม่ได้ (integration ตอบ 403) |
+| 2026-09-06 | **Opportunity score แยกจาก site score คนละ snapshot** | คนละคำถาม (ขายได้ไหม vs เว็บดีไหม) คนละคนอ่าน · ถ้าอยู่ก้อนเดียวกัน ตัวเลขฝั่งเราจะหลุดไปรายงานลูกค้าสักวัน |
+| 2026-09-06 | `pitch` เลือกจากข้อเท็จจริงด้วยโค้ด ไม่ให้ LLM เลือกมุม | มุมที่ผิด (ไปพูดเรื่อง SEO กับคนที่ยิง Ads แล้วเว็บรับไม่ได้) เสียโอกาสทั้งใบ · กฎข้อ 3: pipeline ไม่ใช่ agent |
+| 2026-09-06 | GTM = "อาจยิง Ads" ไม่ใช่ "ไม่ยิง" | SME ไทยจำนวนมากให้เอเจนซี่ติด pixel ผ่าน GTM เราเห็นแค่ container · ตอบ "ไม่" จะผิดบ่อย |
+| 2026-09-06 | parked ตัดสินจากหน้าแรกเท่านั้น | "coming soon" ในหน้าใน = section ยังไม่เสร็จ ไม่ใช่ธุรกิจร้าง |
+| 2026-09-06 | `lin.ee` นับเป็นปุ่ม LINE เท่ากับ `line.me` | LINE OA แจกลิงก์ `lin.ee/xxx` ให้ทุกร้าน และนั่นคือสิ่งที่ SME ไทยวางบนเว็บจริง · ก่อนแก้ เว็บที่มีปุ่ม LINE โดน "ไม่มีปุ่มติดต่อทาง LINE" และ reach ต่ำผิด — เจอตอนรัน fixture ผ่าน dashboard ครั้งแรก |
 | 2026-08-04 | **scoring v3: เฉลี่ยเฉพาะหมวดที่วัดได้ แล้ว renormalise** | v2 คืน 50 ให้หมวดที่ไม่ได้วัด แต่ 50 ยังถ่วงน้ำหนักเต็ม · เคสจริง 30 จาก 62 แต้มเป็นค่าสมมติ · คะแนนรวมต่ำกว่าทุกแท่งบนจอ = คนอ่านรู้ทันทีว่าพัง |
 | 2026-08-04 | แสดง coverage % คู่กับคะแนนเสมอ | 79 ที่วัดครบ กับ 79 ที่วัดไป 40% เป็นคนละคำกล่าวอ้าง ห้ามให้หน้าตาเหมือนกัน |
 | 2026-08-04 | เช็ค entry point ด้วย `pathToFileURL` ไม่ใช่ต่อสตริง | `file://` + `argv[1]` ตรงบน posix โดยบังเอิญ และไม่มีวันตรงบน Windows · ล้มแบบเงียบสนิท exit 0 ไม่มี error · เทสต์บน Linux อย่างเดียวพิสูจน์เรื่องนี้ไม่ได้ ต้องมี grep ทั้ง repo กันไว้ |
@@ -360,8 +406,8 @@ CON-005 เป็น severity `high` ที่บอกเจ้าของว�
 
 ## ไฟล์ที่แก้ล่าสุด
 
-`apps/web/src/**` (ใหม่ทั้งโฟลเดอร์) · `packages/core/src/crawl/domain.ts` ·
-`apps/worker/src/cli.ts` · `package.json` (`pnpm dash`)
+`packages/core/src/crawl/{signals,extract}.ts` · `packages/core/src/pipeline/{09-presence,07-serp,12-scoring,index}.ts` ·
+`packages/core/src/scoring/opportunity.ts` · `apps/web/src/queries.ts` · `apps/web/src/view/{pages,text,components}.ts` · `docs/pipeline.md`
 
 ## คำสั่งที่ใช้รันต่อจากจุดนี้
 

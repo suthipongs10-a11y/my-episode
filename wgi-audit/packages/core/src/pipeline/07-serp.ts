@@ -31,7 +31,10 @@ export interface SerpResult {
     url: string | null;
     /** Rivals above us on this term, nearest first. */
     ahead: { domain: string; position: number }[];
+    /** Other advertisers on this term. The client is deliberately excluded… */
     paidDomains: string[];
+    /** …and recorded here instead: are *they* buying this keyword? */
+    ownPaid: boolean;
   }[];
   competitors: { domain: string; appearances: number; bestPosition: number }[];
   checked: number;
@@ -106,12 +109,17 @@ export function summarise(rows: SerpRow[], clientDomain: string): SerpResult {
       .filter((o) => mine === undefined || o.position < mine.position)
       .map((o) => ({ domain: bare(o.domain), position: o.position }));
 
+    const paid = row.paidDomains.map(bare);
     rankings.push({
       term: row.keyword,
       position: mine?.position ?? null,
       url: mine?.url ?? null,
       ahead: ahead.slice(0, 10),
-      paidDomains: row.paidDomains.map(bare).filter((d) => d !== own),
+      paidDomains: paid.filter((d) => d !== own),
+      // Whether the client is running Google Ads is a seller-side signal —
+      // a business already paying for clicks has a budget and a landing page
+      // that every finding in this audit is leaking through.
+      ownPaid: paid.includes(own),
     });
 
     for (const o of row.organic) {

@@ -12,7 +12,7 @@
 | 06 | keywords | seed จากโค้ด → LLM cheap เสนอเพิ่ม (ห้ามใส่ volume) → DataForSEO ดึง volume จริง → คัด 30 คำ | M3 |
 | 07 | serp | เช็คอันดับ 30 คำบน google.co.th + หาคู่แข่งจาก domain ที่โผล่บ่อย | M3 |
 | 08 | gbp | Places: verified, หมวด, รีวิว, % ตอบกลับ, รูป, เวลาทำการ, NAP ตรงกับเว็บไหม + Rank Grid | M4 |
-| 09 | presence | FB / LINE OA / TikTok / IG / Wongnai / Bing Places / Google Ads — เก็บแค่ มี-ไม่มี | M4 |
+| 09 | presence | **ทำแล้ว (ส่วนฟรี):** ad pixel/tag บนเว็บ + paid SERP · social links · parked · ปีลิขสิทธิ์ · **รอ Places:** รีวิวล่าสุด เวลาทำการ | pivot |
 | 10 | competitors | 3 ราย รันขั้น 03-09 แบบย่อ → ตารางเทียบ | M3 |
 | 11 | rules | `rules/index.ts` → `Finding[]` · pure · ทุก finding มี evidence | M1-M2 |
 | 12 | scoring | 6 หมวดจาก findings + metrics ดิบ | M2 |
@@ -39,3 +39,17 @@ LLM และ DataForSEO เป็นของเสริม · 07 และ 10
 
 5×5 = 25 Places calls ต่อ **1 keyword เท่านั้น** (เลือกคำหลักคำเดียว)
 เริ่มที่ 3×3 (9 จุด) ก่อน ขยายเป็น 5×5 เฉพาะลูกค้าที่จ่ายเงินแล้ว
+
+
+## Opportunity score (ฝั่งคนขาย) — คำนวณใน 12-scoring เก็บที่ `site/opportunity`
+
+คนละตัวกับ site score: ถาม "ควรเสียเวลาเขียน proposal ให้รายนี้ไหม" ไม่ใช่ "เว็บดีไหม"
+
+    pain    0–40   (100 − site score) × 0.3 + วิกฤต + ปัญหา conversion
+    budget  0–25   paid SERP +15 · pixel โฆษณา +10 (+5 ต่อแพลตฟอร์ม) · GTM อย่างเดียว +4
+    alive   0–20   reachable +8 · ปีลิขสิทธิ์ ≤1 ปี +6 / ≤3 +3 · social +3 ต่อช่องทาง (สูงสุด 6)
+    reach   0–15   tel +6 · LINE +6 · Facebook +3
+    veto           เข้าไม่ได้ → 0 · parked → ≤10
+
+`pitch` (มุมเปิดเรื่อง เลือกด้วยโค้ด): ads_leak · cannot_be_contacted · invisible · fix_list · not_a_lead
+`quickWins`: impact ≥ 6 และ ≤ 3 ชม. เรียงตาม impact/ชม.
