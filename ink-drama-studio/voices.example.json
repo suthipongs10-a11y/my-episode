@@ -1,0 +1,10 @@
+{"_comment":"Cartesia Thai voices (sonic-3.6, language th). Map each character code in lines.json to a voice id.",
+ "MALE_Somchai_upbeat":"5de076e9-7b28-4442-b279-e7d80d573505",
+ "MALE_Krit":"a50a04b8-35ee-487e-8b87-97f0eee68a64",
+ "MALE_Chakrit_calm":"aaa0bf6d-bc07-40f2-bc6b-66afc5fd42f6",
+ "MALE_Thaksin_deadpan":"db938869-18b5-4c21-be8b-2ffdfba6d8d4",
+ "FEMALE_Suda_expressive":"ccc7bb22-dcd0-42e4-822e-0731b950972f",
+ "FEMALE_Narin_warm":"273193f7-dbff-438e-b8af-fcc499200b1c",
+ "FEMALE_Nisa":"d051b675-6863-44cc-b7ba-356858ed7df8",
+ "FEMALE_Supannee":"4ff0f045-c140-4aa3-9210-529083f86fca",
+ "FEMALE_Kanya_gentle":"8810fbfa-b317-4503-9974-9774d08b5897"}

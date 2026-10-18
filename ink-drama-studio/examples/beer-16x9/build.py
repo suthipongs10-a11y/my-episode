@@ -1,0 +1,45 @@
+import re,json,base64
+L=open('/home/claude/khao-niao-ep7.html',encoding='utf-8').read().split('\n')
+def idx(p,start=0):
+    for i in range(start,len(L)):
+        if L[i].startswith(p):return i
+    raise Exception(p)
+sc=idx('<script>');au=idx('const AU=');sa=idx('function stopAll');ju=idx('let LIVE=true');hs=idx('const hitstop');st=idx('/* ---------- STAGE');pb=idx('/* ---------- PLAYBACK');rg=idx('function rng(')
+head='\n'.join(L[:sc])
+lines=[{'who':l['who'],'text':l['text']} for l in json.load(open('lines.json'))];durs=json.load(open('durs.json'));envs=json.load(open('envs.json'))
+END=int(-(-(0)))  # placeholder
+head=head.replace('<title>ไอ้หนุ่มพันธุ์ข้าวเหนียว EP7</title>','<title>มูลค่าของฟองเบียร์</title>')
+head=re.sub(r'<div class="eyebrow">.*?</div>','<div class="eyebrow">ละครสั้น · และรถเบนซ์ในจินตนาการ · ราว 4 นาที · พากย์เสียงครบทุกบรรทัด</div>',head,flags=re.S)
+head=re.sub(r'<h1>.*?</h1>','<h1>มูลค่าของ<span class="p">ฟองเบียร์</span></h1>',head,flags=re.S)
+head=re.sub(r'<p class="lede">.*?</p>','<p class="lede">ที่ม้าหินอ่อนหน้าบ้านตอนหนึ่งทุ่ม เอโค้ชการเงินกดเครื่องคิดเลขให้ต้นดูว่าเบียร์วันละสองป๋องตลอดสิบห้าปีเท่ากับรถเบนซ์หนึ่งคัน จนกระทั่งต้นถามกลับว่า คนที่ไม่เคยแตะเบียร์มาสามสิบปีอย่างเอ แล้วเบนซ์อยู่ไหน?</p>',head,flags=re.S)
+head=head.replace('--pink:#ff7eb6;','--pink:#ffb84d;')
+head=re.sub(r'<h2>บทพูด EP\d · \d+ ช่องพากย์</h2>','<h2>บทพูด · 33 บรรทัด พากย์แล้ว</h2>',head)
+head=re.sub(r'<p class="note">.*?</p>','<p class="note">พากย์ครบทุกบรรทัดด้วยเสียง AI ภาษาไทย (Cartesia) ปากตัวละครขยับตามเสียง แตะแถวเพื่อฟังบรรทัดนั้น ปิดเสียงพากย์ได้ที่ปุ่ม เสียงพากย์</p>',head,flags=re.S)
+head=head.replace('<button id="sfx" aria-pressed="true">เอฟเฟ็คเสียง</button>','<button id="sfx" aria-pressed="true">เอฟเฟ็คเสียง</button><button id="voice" aria-pressed="true">เสียงพากย์</button>')
+head=head.replace('<button id="subs" aria-pressed="false">ซับตัวอย่าง</button>','<button id="subs" aria-pressed="true">ซับไตเติล</button>')
+head=re.sub(r'aria-label="การ์ตูนตอนที่ 7[^"]*"','aria-label="การ์ตูน หมูกระทะมื้อสุดท้าย"',head)
+consts='''(()=>{
+const W=960,H=540,D=Math.PI/180,TAU=Math.PI*2,BAR=58;
+const C={bg:'#0d0e14',ink:'#ece8dc'};
+const lerp=(a,b,u)=>a+(b-a)*u, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+'''
+rng=L[rg]
+audio='\n'.join(L[au:sa+1])
+audio=audio.replace('function audioInit(){','var audioInit=function(){',1)
+# remove ep7 sf definition duplicates if present
+juice='\n'.join(L[ju:hs+1])
+stage='\n'.join(L[st:st+5])
+tail='\n'.join(L[pb:])
+main=open('assetsb.js').read()+'\n'+open('beer.js').read().replace('__LINES__',json.dumps(lines,ensure_ascii=False)).replace('__DURS__',json.dumps(durs)).replace('__ENVS__',json.dumps(envs))
+V=[base64.b64encode(open(f'enc/l{i:02d}.mp3','rb').read()).decode() for i in range(1,len(lines)+1)]
+rend=open('voice.js').read().replace('__VOICE__',json.dumps(V))
+tail=tail.replace("function pushTrails(){const r=J(Hh,T);","function pushTrails(){return;const r=J(Hh,T);").replace('khao-niao-ep7','beer-foam').replace('(82 วินาที)','(ราว 4 นาที)')
+tail=tail.replace("q.F===M?'m':q.F===Hh?'h':q.F===RV?'r':'b'","q.F===A?'h':'m'")
+tail=tail.replace("เอาไปใส่เสียงพากย์ต่อได้เลย","พร้อมเสียงพากย์แล้ว")
+tail=tail.replace("tog('subs',v=>showSubs=v);","tog('voice',v=>{AU.voiceOn=v;if(AU.vg)AU.vg.gain.value=v?1.25:0});tog('subs',v=>showSubs=v);")
+tail=tail.replace("resetTo(1.6);syncUI();","seekEl.max=END;resetTo(0);syncUI();")
+assert "seekEl.max=END" in tail and "tog('voice'" in tail
+src='\n'.join(['<script>',consts,rng,juice,audio,main,stage,rend,tail])
+src=src.replace('rng(seed){','rng(seed){',1)
+out=head+'\n'+src
+open('/home/claude/beer-foam.html','w',encoding='utf-8').write(out);print(len(out))
