@@ -5,8 +5,9 @@
 ## ตั้งค่า (ครั้งเดียว)
 
 **ถ้าใช้ Claude Code บนเว็บ/แอป (cloud)** ตั้ง 2 อย่างใน environment settings (เมนู environment บนแถบชื่อ session → Edit):
-1. **Network access** → เพิ่ม `api.cartesia.ai` ใน Allowed domains (ตอนนี้ยังถูกบล็อก ทำเสียงพากย์ไม่ได้จนกว่าจะเพิ่ม)
-2. เพิ่มคีย์ Cartesia ชื่อ `CARTESIA_API_KEY` (เป็น network secret หรือ environment variable) **สร้างคีย์ใหม่ อย่าใช้คีย์ที่เคยพิมพ์ในแชท และอย่าวางคีย์ในแชท** แล้วเปิด session ใหม่
+1. **Network access** → `Full` (หรือเพิ่ม `api.cartesia.ai` ใน Allowed domains)
+2. **Network secrets** → Add secret · Allowed websites: `api.cartesia.ai` · Custom headers: Name `X-API-Key` ลบคำว่า `Bearer` ในช่อง Prefix ออก · Value: คีย์ Cartesia → กด Add
+   **อย่าวางคีย์ในแชท** ระบบจะไม่ยอมให้ Claude ใช้คีย์ที่วางในแชท
 
 ส่วนการติดตั้งโปรแกรม (`pip install -r ink-drama-studio/requirements.txt`) Claude ทำเองได้ทุกครั้ง
 

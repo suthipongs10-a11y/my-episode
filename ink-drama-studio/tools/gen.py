@@ -1,6 +1,8 @@
 # run from episodes/<slug>/:  python3 ../../tools/gen.py [n ...]   (n = force-regenerate those lines)
 import json,sys,urllib.request,os,subprocess
-K=os.environ.get('CARTESIA_API_KEY') or sys.exit('CARTESIA_API_KEY is not set: export it locally, or add it to the cloud environment settings (never into a file)')
+# locally: export CARTESIA_API_KEY. In a cloud session leave it unset: the environment's network secret
+# for api.cartesia.ai adds the X-API-Key header after the request leaves the VM, so the key is never in it.
+K=os.environ.get('CARTESIA_API_KEY')
 V=json.load(open('voices.json'))  # {"WHO":"cartesia-voice-id"}
 L=json.load(open('lines.json'));only=[int(a) for a in sys.argv[1:] if a.isdigit()]
 from concurrent.futures import ThreadPoolExecutor
@@ -11,11 +13,13 @@ def go(it):
   if (os.path.exists(out) or os.path.exists(f"enc/l{it['n']:02d}.mp3")) and it['n'] not in only: return
   body={"model_id":"sonic-3.6","transcript":it.get('tts',it['text']),"voice":{"mode":"id","id":V[it['who']]},"language":"th",
    "output_format":{"container":"wav","encoding":"pcm_s16le","sample_rate":44100},"generation_config":{"speed":it.get('speed',1.0),"volume":it.get('vol',1.0)}}
-  r=urllib.request.Request("https://api.cartesia.ai/tts/bytes",data=json.dumps(body).encode(),method='POST',headers={"X-API-Key":K,"Cartesia-Version":"2025-04-16","Content-Type":"application/json"})
+  r=urllib.request.Request("https://api.cartesia.ai/tts/bytes",data=json.dumps(body).encode(),method='POST',headers={"Cartesia-Version":"2025-04-16","Content-Type":"application/json"}|({"X-API-Key":K} if K else {}))
   try:
     b=urllib.request.urlopen(r,timeout=90).read();open(out,"wb").write(b)
   except urllib.error.HTTPError as e: print(it['n'],'ERR',e.code,e.read()[:200])
 with ThreadPoolExecutor(2) as ex: list(ex.map(go,L))
+miss=[it['n'] for it in L if not os.path.exists(f"vo/l{it['n']:02d}.wav") and not os.path.exists(f"enc/l{it['n']:02d}.mp3")]
+if miss: sys.exit(f'no audio for lines {miss} (a 401 means no key: set CARTESIA_API_KEY, or the network secret)')
 os.makedirs('enc',exist_ok=True);D=[]
 for it in L:
   i=it['n']

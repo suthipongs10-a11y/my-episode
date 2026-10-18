@@ -3,7 +3,7 @@
 | step | state |
 |---|---|
 | 1 script analysed, `lines.json` (10 lines, 293 TTS chars) | done 2026-10-18 |
-| 2 voices (`gen.py`, `envs.py`) | **blocked** — `api.cartesia.ai` denied by the environment's network policy (CONNECT 403). Nothing bought yet. |
+| 2 voices (`gen.py`, `envs.py`) | **waiting for the key** — network fixed (owner set Network access = Full; Cartesia answers). Requests without a key get 401; the key goes in as a network secret for `api.cartesia.ai` (header `X-API-Key`). Nothing bought yet; 293 chars to spend. |
 | 3 art pack (5 prompts) | sent to the owner 2026-10-18 — `python3 mkpack.py` rebuilds the zip |
 | 4 owner makes images → `raw/out-rc-0{1..5}-*.png` | waiting |
 | 5 build from `examples/beer-16x9` | not started — **must not start before step 4** |

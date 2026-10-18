@@ -54,8 +54,8 @@ Everything needed to rebuild an episode: script, lines/voices/durs/envs JSON, `e
 
 ## Running in a Claude Code cloud session
 - Deps are not preinstalled: `pip install -r requirements.txt` (add `--break-system-packages` if pip refuses). Playwright is pinned to 1.56.0 to match the preinstalled Chromium (`/opt/pw-browsers/chromium-1194`) — never run `playwright install`. ffmpeg is present.
-- **`api.cartesia.ai` must be in the environment's allowed domains** (environment settings → Network access). As of 2026-10-18 it is not: CONNECT returns 403, so gen.py cannot run until the owner adds it.
-- The key goes in the environment settings as `CARTESIA_API_KEY` (network secret or environment variable), picked up by the next session. Never in chat, never in a file.
+- **`api.cartesia.ai` must be reachable.** The owner's environment is on Network access = Full since 2026-10-18; a stricter level needs the host in its allowed domains. Changes reach a running session within about a minute.
+- **The key is a network secret, not an environment variable:** Edit cloud environment → Network secrets → Add secret · Allowed websites `api.cartesia.ai` · Custom header name `X-API-Key`, prefix cleared, value = the key. gen.py then runs with `CARTESIA_API_KEY` unset. Check it for free first: `curl -s -o /dev/null -w '%{http_code}' https://api.cartesia.ai/voices -H 'Cartesia-Version: 2025-04-16'` → 200, not 401. A key pasted into chat cannot be used (the session's safety layer refuses it) — ask for the secret instead.
 - The owner's images arrive as chat uploads (or a push to the repo): copy them into `raw/` under the `out-<slug>-NN-*.png` names the art pack asked for.
 
 ## Lessons learned
