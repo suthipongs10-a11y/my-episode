@@ -3,7 +3,7 @@ import os,shutil,zipfile
 S='out/artpack/'
 B=S+'test-rice-cooker-art-pack';shutil.rmtree(B,ignore_errors=True);os.makedirs(B+'/refs');os.makedirs(B+'/prompts')
 R='../../refs/'  # style sheets from earlier episodes, see refs/README.md
-refs={k:R+k for k in ['ref-dg-00-style-cast.png','ref-dg-01-style-cast2.png','ref-dg-02-style-poses.png','ref-dg-03-style-poses-sitting.png',
+refs={k:R+k for k in ['ref-dg-00-style-cast.png','ref-dg-01-style-cast2.png','ref-dg-03-style-poses-sitting.png',
 'ref-dg-05-style-props.png','ref-dg-06-style-props2.png','ref-dg-07-style-bg.png','ref-dg-08-style-bg-night.png']}
 for k,v in refs.items():shutil.copy(v,f'{B}/refs/{k}')
 # the poses go on a #00FF00 screen and tools/extract.py keys g>200,r<130,b<110: nothing in this episode may be saturated green
@@ -61,7 +61,28 @@ for n,th,att,out,body in P:
     rows.append(f"| {n} | {th} | {atts} | {out} |")
 open(f'{B}/ALL-PROMPTS.md','w',encoding='utf-8').write('\n'.join(allmd))
 open(f'{B}/README.md','w',encoding='utf-8').write(open('README-src.md',encoding='utf-8').read().replace('{{ROWS}}','\n'.join(rows)))
-z=zipfile.ZipFile(S+'test-rice-cooker-art-pack.zip','w',zipfile.ZIP_DEFLATED)
+# the owner drops the whole zip into ChatGPT, so it carries its own brief for ChatGPT, in English
+steps='\n'.join(f"| {n} | prompts/{n}-prompt.txt | "+', '.join('your image 01' if 'ที่เพิ่งได้' in a else 'refs/'+a for a in att)+f" | {out} |" for n,th,att,out,body in P)
+open(f'{B}/00-START-HERE-for-ChatGPT.md','w',encoding='utf-8').write(f'''# For ChatGPT: make 5 images for my animated short
+
+Short: "The Dream Rice Cooker" (Thai family comedy, 16:9). Everything is in this zip:
+- `refs/` — finished sheets from my series. Copy their art style EXACTLY.
+- `prompts/01-prompt.txt` … `05-prompt.txt` — the exact prompt for each image.
+
+How to work:
+1. Unzip, open the images in `refs/`, and study the style before drawing anything.
+2. Make the images ONE AT A TIME, in order 01 → 05. After each image, stop and wait for my OK or my fixes.
+3. Image 01 (model sheet) defines both characters. Images 02 and 03 must use your image 01 as the character reference.
+4. For each step, use the reference images listed below and follow its prompt file word for word.
+5. Give each result the file name listed below.
+
+| step | prompt | reference images | save as |
+|---|---|---|---|
+{steps}
+
+Rules for every image: no text, letters, numbers or logos anywhere · characters face RIGHT · mouths small and closed · no glow or halo · nothing green on characters or props (02, 03 and 05 are on a flat #00FF00 green background) · image 04 is an extra-wide 2:1 panorama with an empty floor strip.
+''')
+z=zipfile.ZipFile(S+'test-rice-cooker-for-chatgpt.zip','w',zipfile.ZIP_DEFLATED)
 for r,d,fs in os.walk(B):
     for f in sorted(fs):p=os.path.join(r,f);z.write(p,os.path.relpath(p,S))
-z.close();print(os.path.getsize(S+'test-rice-cooker-art-pack.zip'))
+z.close();print(os.path.getsize(S+'test-rice-cooker-for-chatgpt.zip'))
