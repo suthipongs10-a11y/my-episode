@@ -2,10 +2,9 @@
 import os,shutil,zipfile
 S='out/artpack/'
 B=S+'dragon-art-pack';shutil.rmtree(B,ignore_errors=True);os.makedirs(B+'/refs');os.makedirs(B+'/prompts')
-R=RB='../../refs/'  # style sheets from earlier episodes, see refs/README.md
-refs={'ref-dg-00-style-cast.png':R+'out-mk-01-model-sheet.png','ref-dg-01-style-cast2.png':RB+'out-beer-01-model-sheet.png','ref-dg-02-style-poses.png':RB+'out-beer-02-poses-A.png',
-'ref-dg-03-style-poses-sitting.png':R+'out-mk-04-poses-TON-TAN.png','ref-dg-04-style-faces.png':R+'out-mk-05-faces.png','ref-dg-05-style-props.png':RB+'out-beer-05-props.png',
-'ref-dg-06-style-props2.png':RB+'out-beer-06-props-gags.png','ref-dg-07-style-bg.png':R+'out-mk-11-bg-classroom.png','ref-dg-08-style-bg-night.png':R+'out-mk-08-bg-shop.png'}
+R='../../refs/'  # style sheets from earlier episodes, see refs/README.md
+refs={k:R+k for k in ['ref-dg-00-style-cast.png','ref-dg-01-style-cast2.png','ref-dg-02-style-poses.png','ref-dg-03-style-poses-sitting.png',
+'ref-dg-04-style-faces.png','ref-dg-05-style-props.png','ref-dg-06-style-props2.png','ref-dg-07-style-bg.png','ref-dg-08-style-bg-night.png']}
 for k,v in refs.items():shutil.copy(v,f'{B}/refs/{k}')
 STYLE='''STYLE (identical to the attached style references from my series — same artist, same world):
 - Premium hand-drawn ink brush line art, bold tapered strokes with thick-thin variation.

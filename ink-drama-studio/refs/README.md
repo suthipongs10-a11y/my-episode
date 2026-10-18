@@ -1,26 +1,26 @@
 # refs/ — style references for the art pack
 
 Every art-pack prompt says "same style as the attached references". These are
-those references: finished ChatGPT sheets from earlier episodes. The kit
-arrived without them, so **this folder is empty until the owner adds them**.
+those references: finished ChatGPT sheets from earlier episodes, added by the
+owner on 2026-10-18 (`ink-style-refs.zip`). They already carry the names the
+prompts attach them by, so a pack's builder just copies them:
+`refs={k:'../../refs/'+k for k in [...]}`.
 
-`artpack/mkpack_example.py` (the dragon pack) attached these nine. Put them
-here under the same names and the example builder runs as-is:
-
-| file | what it shows | from |
+| file | what it shows | use it for |
 |---|---|---|
-| `out-mk-01-model-sheet.png` | cast model sheet | หมูกระทะมื้อสุดท้าย |
-| `out-beer-01-model-sheet.png` | cast model sheet | มูลค่าของฟองเบียร์ |
-| `out-beer-02-poses-A.png` | full-body pose sheet | มูลค่าของฟองเบียร์ |
-| `out-mk-04-poses-TON-TAN.png` | pose sheet with sitting poses | หมูกระทะมื้อสุดท้าย |
-| `out-mk-05-faces.png` | face close-up sheet | หมูกระทะมื้อสุดท้าย |
-| `out-beer-05-props.png` | prop sheet | มูลค่าของฟองเบียร์ |
-| `out-beer-06-props-gags.png` | gag-prop sheet | มูลค่าของฟองเบียร์ |
-| `out-mk-11-bg-classroom.png` | background, day | หมูกระทะมื้อสุดท้าย |
-| `out-mk-08-bg-shop.png` | background, night | หมูกระทะมื้อสุดท้าย |
+| `ref-dg-00-style-cast.png` | cast of four, navy background | 01 model sheet |
+| `ref-dg-01-style-cast2.png` | second cast sheet | 01 model sheet |
+| `ref-dg-09-style-cast-dragon.png` | the มังกรซ่อนลาย cast | 01 model sheet, formal clothes |
+| `ref-dg-02-style-poses.png` | 3×3 full-body pose sheet (has soft glows — ask for none) | pose sheets |
+| `ref-dg-03-style-poses-sitting.png` | pose sheet with sitting poses | pose sheets with sitting |
+| `ref-dg-04-style-faces.png` | face close-up sheet | face sheets |
+| `ref-dg-05-style-props.png` | prop sheet | props |
+| `ref-dg-06-style-props2.png` | gag-prop sheet | props |
+| `ref-dg-07-style-bg.png` | background, day, 16:9 | 16:9 sets |
+| `ref-dg-08-style-bg-night.png` | background, night, 2:1 | night sets, wide pans |
+| `ref-dg-10-style-bg-vertical.png` | background, 9:16 | vertical episodes |
 
-The `out-dragon-*` sheets (มังกรซ่อนลาย EP1) are good references too, and
-from now on every episode's `raw/` is committed, so a new pack can also point
-at `../<earlier-slug>/raw/` directly.
+Every episode's `raw/` is committed too, so a new pack can also attach
+`../<earlier-slug>/raw/out-*.png` directly.
 
 Images only — no text, numbers or logos in them, same as every sheet.
