@@ -26,7 +26,7 @@ P=[
 Draw a CHARACTER MODEL SHEET for a short Thai family comedy set in an old wooden-house kitchen. 2 characters standing side by side, side view facing right, same scale:
 1 A (son, about 25) — CHUBBY with a big round belly; a plain bright ORANGE t-shirt (no print), faded blue denim shorts, red rubber flip-flops; a small messy tuft of hair; dreamy, over-excited get-rich-quick look.
 2 MOM (about 55) — a Thai housewife, a little shorter than A; a FLORAL-PATTERN APRON (red and pink flowers on cream) over a simple maroon blouse and a long dark-brown batik wrap skirt; hair in a low bun; holding a long-handled metal LADLE in one hand; calm, unimpressed look.
-A dark navy background is OK for this sheet only, like image 1.'''),
+Background: plain dark navy for this sheet only, like image 1.'''+'\n\n'+STYLE.replace('- Background: solid flat #00FF00 green with nothing else on it, exactly like the green reference sheet. No glow','- No glow')),
 ('02','ท่าทางเอ (9 ท่า)',['out-rc-01-model-sheet.png (ที่เพิ่งได้)','ref-dg-03-style-poses-sitting.png'],'out-rc-02-poses-A.png',
 '''Image 1 = the cast (draw A exactly like this). Image 2 = how my pose sheets look: flat #00FF00 green background, clean figures, no glow.
 
