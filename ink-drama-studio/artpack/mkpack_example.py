@@ -1,7 +1,8 @@
+# copy into episodes/<slug>/ with README-src.md beside it, edit P, run from there -> out/artpack/*.zip
 import os,shutil,zipfile
-S='/tmp/claude-0/-home-claude/997fe572-c1fe-5910-8749-bc5d8a1111b3/scratchpad/dragonpack/'
+S='out/artpack/'
 B=S+'dragon-art-pack';shutil.rmtree(B,ignore_errors=True);os.makedirs(B+'/refs');os.makedirs(B+'/prompts')
-R='/home/claude/mk2/raw/';RB='/home/claude/beer/raw/'
+R=RB='../../refs/'  # style sheets from earlier episodes, see refs/README.md
 refs={'ref-dg-00-style-cast.png':R+'out-mk-01-model-sheet.png','ref-dg-01-style-cast2.png':RB+'out-beer-01-model-sheet.png','ref-dg-02-style-poses.png':RB+'out-beer-02-poses-A.png',
 'ref-dg-03-style-poses-sitting.png':R+'out-mk-04-poses-TON-TAN.png','ref-dg-04-style-faces.png':R+'out-mk-05-faces.png','ref-dg-05-style-props.png':RB+'out-beer-05-props.png',
 'ref-dg-06-style-props2.png':RB+'out-beer-06-props-gags.png','ref-dg-07-style-bg.png':R+'out-mk-11-bg-classroom.png','ref-dg-08-style-bg-night.png':R+'out-mk-08-bg-shop.png'}
@@ -96,7 +97,7 @@ for n,th,att,out,body in P:
     open(f'{B}/prompts/{n}-prompt.txt','w').write(txt);allmd.append(txt.replace('----- คัดลอกตั้งแต่บรรทัดนี้ -----','```').rstrip()+'\n```\n')
     rows.append(f"| {n} | {th} | {atts} | {out} |")
 open(f'{B}/ALL-PROMPTS.md','w').write('\n'.join(allmd))
-open(f'{B}/README.md','w').write(open(S+'README-src.md').read().replace('{{ROWS}}','\n'.join(rows)))
+open(f'{B}/README.md','w').write(open('README-src.md',encoding='utf-8').read().replace('{{ROWS}}','\n'.join(rows)))
 z=zipfile.ZipFile(S+'dragon-ep1-art-pack.zip','w',zipfile.ZIP_DEFLATED)
 for r,d,fs in os.walk(B):
     for f in sorted(fs):p=os.path.join(r,f);z.write(p,os.path.relpath(p,S))

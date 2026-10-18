@@ -1,11 +1,12 @@
-import asyncio
+# python3 ../../tests/voice_test.py out/<slug>.html   every clip decodes, and fires on time
+import asyncio,sys,os
 from playwright.async_api import async_playwright
 async def main():
   async with async_playwright() as p:
     b=await p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'])
     pg=await b.new_page();errs=[]
     pg.on('pageerror',lambda e:errs.append(str(e)));pg.on('console',lambda m:m.type=='error' and errs.append(m.text))
-    await pg.goto('file:///home/claude/dragon-ep1.html');await pg.wait_for_function('window.__ready',timeout=60000)
+    await pg.goto('file://'+os.path.abspath(sys.argv[1]));await pg.wait_for_function('window.__ready',timeout=60000)
 
     await pg.click('#bigplay');await pg.wait_for_timeout(4000);print(await pg.evaluate('[typeof AU, !!(window.__VOICE)]'))
     print(await pg.evaluate("[__VOICE.ready,__VOICE.buf.filter(Boolean).length]"))

@@ -1,7 +1,7 @@
 import numpy as np,json,os
 from PIL import Image
 from scipy import ndimage as ndi
-RAW='raw/';OUT='crops/'
+RAW='raw/';OUT='crops/';os.makedirs('check',exist_ok=True)
 def cells(f,boxes,name,amin=170,keepfrac=.02):
     a=np.array(Image.open(RAW+f).convert('RGBA'));res=[]
     for i,(x0,y0,x1,y1) in enumerate(boxes):
@@ -27,4 +27,4 @@ for i,t in enumerate(ims):
     t=t.copy();t.thumbnail((170,200))
     if x+t.width>1600:x=0;y+=rh+20;rh=0
     sh.paste(t,(x,y+16),t);ImageDraw.Draw(sh).text((x,y),str(i),fill=(255,255,0));x+=t.width+10;rh=max(rh,t.height)
-sh.save('/tmp/claude-0/-home-claude/997fe572-c1fe-5910-8749-bc5d8a1111b3/scratchpad/csd_g.png')
+sh.save('check/csd_g.png')

@@ -1,0 +1,21 @@
+# Ink Drama Studio — per-episode working files.
+#
+# Everything an episode needs to be rebuilt IS committed: script, lines.json,
+# voices.json, durs.json, envs.json, enc/*.mp3 (paid Cartesia audio),
+# raw/*.png (the owner's ChatGPT images — hand work, not reproducible),
+# crops.json / heads.json / mouths.json (mouth spots are hand-fixed),
+# episode.js, build.py and any cut script copied into the episode.
+#
+# What is ignored below is either too big to keep or rebuilt by a script.
+
+# raw Cartesia wav, ~5 MB a minute. enc/ is the kept copy, and tools/gen.py
+# will not buy a line again while its enc/*.mp3 exists.
+episodes/*/vo/
+# regenerated from raw/ by the episode's cut scripts
+episodes/*/crops/
+# contact sheets, head/mouth overlays, screenshots — for looking at, not keeping
+episodes/*/check/
+# the built page and the art-pack zip — rebuilt by build.py / mkpack.py
+episodes/*/out/
+# base64 sprites, rebuilt by assets.py
+episodes/*/assets*.js

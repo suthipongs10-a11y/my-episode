@@ -1,5 +1,7 @@
-import re,json,base64
-L=open('/home/claude/khao-niao-ep7.html',encoding='utf-8').read().split('\n')
+# run from the episode folder:  python3 build.py   ->  out/<slug>.html
+import re,json,base64,os
+ENGINE=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','..','engine')
+L=open(os.path.join(ENGINE,'base-template.html'),encoding='utf-8').read().split('\n')
 def idx(p,start=0):
     for i in range(start,len(L)):
         if L[i].startswith(p):return i
@@ -30,9 +32,9 @@ audio=audio.replace('function audioInit(){','var audioInit=function(){',1)
 juice='\n'.join(L[ju:hs+1])
 stage='\n'.join(L[st:st+5])
 tail='\n'.join(L[pb:])
-main=open('assetsb.js').read()+'\n'+open('beer.js').read().replace('__LINES__',json.dumps(lines,ensure_ascii=False)).replace('__DURS__',json.dumps(durs)).replace('__ENVS__',json.dumps(envs))
+main=open('assetsb.js').read()+'\n'+open('episode.js').read().replace('__LINES__',json.dumps(lines,ensure_ascii=False)).replace('__DURS__',json.dumps(durs)).replace('__ENVS__',json.dumps(envs))
 V=[base64.b64encode(open(f'enc/l{i:02d}.mp3','rb').read()).decode() for i in range(1,len(lines)+1)]
-rend=open('voice.js').read().replace('__VOICE__',json.dumps(V))
+rend=open(os.path.join(ENGINE,'voice.js')).read().replace('__VOICE__',json.dumps(V))
 tail=tail.replace("function pushTrails(){const r=J(Hh,T);","function pushTrails(){return;const r=J(Hh,T);").replace('khao-niao-ep7','beer-foam').replace('(82 วินาที)','(ราว 4 นาที)')
 tail=tail.replace("q.F===M?'m':q.F===Hh?'h':q.F===RV?'r':'b'","q.F===A?'h':'m'")
 tail=tail.replace("เอาไปใส่เสียงพากย์ต่อได้เลย","พร้อมเสียงพากย์แล้ว")
@@ -42,4 +44,4 @@ assert "seekEl.max=END" in tail and "tog('voice'" in tail
 src='\n'.join(['<script>',consts,rng,juice,audio,main,stage,rend,tail])
 src=src.replace('rng(seed){','rng(seed){',1)
 out=head+'\n'+src
-open('/home/claude/beer-foam.html','w',encoding='utf-8').write(out);print(len(out))
+os.makedirs('out',exist_ok=True);open('out/beer-foam.html','w',encoding='utf-8').write(out);print(len(out))

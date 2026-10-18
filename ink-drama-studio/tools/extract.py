@@ -1,12 +1,12 @@
 import sys,os,json,numpy as np
 from PIL import Image,ImageDraw
 from scipy import ndimage as ndi
-RAW='/home/claude/dragon/raw/';OUT='/home/claude/dragon/crops/';os.makedirs(OUT,exist_ok=True)
+RAW='raw/';OUT='crops/';os.makedirs(OUT,exist_ok=True);os.makedirs('check',exist_ok=True)
 def load(f,green=False):
     im=Image.open(RAW+f).convert('RGBA');a=np.array(im).astype(np.int16)
     if green:
         r,g,b=a[...,0],a[...,1],a[...,2]
-        key=(g>150)&(r<120)&(b<120)
+        key=(g>200)&(r<130)&(b<110)&(g-r>110)  # strict, so green costume parts survive
         # soft edge: greenish pixels partially
         spill=(g>r+40)&(g>b+40)
         a[...,3]=np.where(key,0,255)
@@ -47,10 +47,10 @@ def extract(name,f,green=False,amin=200,minarea=800,merge=18,close=3):
         pos.append((x,y,t2));x+=t2.width+12;rowh=max(rowh,t2.height)
     sh=Image.new('RGB',(W,y+rowh+30),(60,60,90));d=ImageDraw.Draw(sh)
     for i,(x,y,t2) in enumerate(pos):sh.paste(t2,(x,y+20),t2);d.text((x,y+2),str(i),fill=(255,255,0))
-    sh.save(f'/tmp/claude-0/-home-claude/997fe572-c1fe-5910-8749-bc5d8a1111b3/scratchpad/csd_{name}.png')
+    sh.save(f'check/csd_{name}.png')
     return out
     return out
-if __name__=='__main__':
+if __name__=='__main__':  # the sheets of one episode (mk): copy this file into the episode and edit
     J={}
     J['B']=extract('B','out-mk-02-poses-B.png',merge=10)
     J['A']=extract('A','out-mk-03-poses-A.png',merge=14)
@@ -58,5 +58,5 @@ if __name__=='__main__':
     J['faces']=extract('faces','out-mk-05-faces.png',green=True,merge=10)
     J['props']=extract('props','out-mk-09-props-shop.png',merge=8)
     J['gags']=extract('gags','out-mk-10-props-gags.png',merge=10)
-    json.dump(J,open('/home/claude/mk2/crops.json','w'))
+    json.dump(J,open('crops.json','w'))
     print({k:len(v) for k,v in J.items()})

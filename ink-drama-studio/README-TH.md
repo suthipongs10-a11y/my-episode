@@ -1,15 +1,31 @@
 # Ink Drama Studio · คู่มือเริ่มต้น
 
-## ติดตั้ง (ครั้งเดียว)
-1. แตกไฟล์โฟลเดอร์นี้ไว้ในเครื่อง แล้วเปิดด้วย Claude Code
-2. ติดตั้ง: `pip install playwright numpy scipy opencv-python pillow` แล้วรัน `playwright install chromium`, ติดตั้ง ffmpeg
-3. ตั้งคีย์ Cartesia (สร้างคีย์ใหม่ อย่าใช้คีย์ที่เคยพิมพ์ในแชท): `export CARTESIA_API_KEY=sk_car_...`
+โปรเจ็คนี้อยู่ในโฟลเดอร์ `ink-drama-studio/` ของ repo `my-episode` แยกจากโปรเจ็คเซิร์ฟเวอร์ RO และ `shorts-factory/` โดยสิ้นเชิง
+
+## ตั้งค่า (ครั้งเดียว)
+
+**ถ้าใช้ Claude Code บนเว็บ/แอป (cloud)** ตั้ง 2 อย่างใน environment settings (เมนู environment บนแถบชื่อ session → Edit):
+1. **Network access** → เพิ่ม `api.cartesia.ai` ใน Allowed domains (ตอนนี้ยังถูกบล็อก ทำเสียงพากย์ไม่ได้จนกว่าจะเพิ่ม)
+2. เพิ่มคีย์ Cartesia ชื่อ `CARTESIA_API_KEY` (เป็น network secret หรือ environment variable) **สร้างคีย์ใหม่ อย่าใช้คีย์ที่เคยพิมพ์ในแชท และอย่าวางคีย์ในแชท** แล้วเปิด session ใหม่
+
+ส่วนการติดตั้งโปรแกรม (`pip install -r ink-drama-studio/requirements.txt`) Claude ทำเองได้ทุกครั้ง
+
+**ถ้าใช้ในเครื่องตัวเอง:**
+1. clone repo แล้วเปิดโฟลเดอร์ `ink-drama-studio/` ด้วย Claude Code
+2. `pip install -r requirements.txt` แล้ว `playwright install chromium` และติดตั้ง ffmpeg
+3. `export CARTESIA_API_KEY=sk_car_...`
+
+## ภาพอ้างอิงลายเส้น (ยังขาด)
+ชุดคำสั่งสร้างรูปทุกชุดต้องแนบภาพตัวอย่างจากตอนก่อนๆ ให้ ChatGPT วาดลายเส้นเดิม แต่ไฟล์ zip ไม่ได้ให้ภาพเหล่านี้มา
+ส่งภาพ model sheet / pose / หน้าโคลสอัพ / พร็อพ / ฉาก จากเรื่องก่อนๆ มาได้เลย รายชื่อไฟล์ที่ต้องการอยู่ใน `refs/README.md`
 
 ## ทำตอนใหม่ (สั่ง Claude ทีละขั้น)
-1. "ทำเรื่องใหม่ ชื่อ <slug> บทอยู่ที่ไฟล์นี้" → Claude วิเคราะห์บท ทำเสียงพากย์ แล้วส่งชุดคำสั่งสร้างรูป
-2. คุณเอาคำสั่งไปสร้างรูปใน ChatGPT (ห้องเดียว ทำข้อ 01 ก่อน) แล้วโยนรูปลง `episodes/<slug>/raw/`
+1. "ทำเรื่องใหม่ ชื่อ <slug> บทอยู่ที่ไฟล์นี้" → Claude วิเคราะห์บท ทำเสียงพากย์ แล้วส่งชุดคำสั่งสร้างรูป (zip)
+2. คุณเอาคำสั่งไปสร้างรูปใน ChatGPT (ห้องเดียว ทำข้อ 01 ก่อน) แล้วส่งรูปกลับมาในแชท หรือใส่ลง `episodes/<slug>/raw/`
 3. "รูปมาแล้ว ประกอบคลิปได้เลย" → Claude ตัดรูป ประกอบฉาก ตรวจภาพ แล้วส่งหน้าเล่นคลิป
 4. เปิดหน้าคลิป กด "บันทึกเป็นวิดีโอ" ได้ไฟล์ mp4/webm พร้อมเสียงพากย์
+
+ทุกตอนเก็บไว้ใน `episodes/<slug>/` และ push ขึ้น repo เสมอ (บท เสียงพากย์ที่จ่ายเงินแล้ว รูปจาก ChatGPT) เปิด session ใหม่ก็ทำต่อได้โดยไม่ต้องเสียเครดิตซ้ำ
 
 ## เคล็ดลับ
 - บทยิ่งระบุอารมณ์/ท่าทางชัด ภาพยิ่งตรง

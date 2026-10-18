@@ -1,4 +1,4 @@
-import json,numpy as np,cv2
+import json,os,numpy as np,cv2
 from PIL import Image,ImageDraw
 J=json.load(open('crops.json'));H={}
 def head(fn,top):
@@ -30,4 +30,4 @@ for g in ['G','W','Z','F','faces']:
         bg.thumbnail((200,240));ims.append(bg)
 sh=Image.new('RGB',(1800,720),(0,0,0))
 for i,t in enumerate(ims):sh.paste(t,((i%9)*200,(i//9)*240))
-sh.save('/tmp/claude-0/-home-claude/997fe572-c1fe-5910-8749-bc5d8a1111b3/scratchpad/heads.png')
+os.makedirs('check',exist_ok=True);sh.save('check/heads.png')

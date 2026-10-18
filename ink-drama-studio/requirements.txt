@@ -1,0 +1,10 @@
+# Ink Drama Studio tools and tests. Also needs ffmpeg/ffprobe on PATH.
+#   pip install -r ink-drama-studio/requirements.txt
+numpy
+scipy
+pillow
+# headless build: same cv2 API as opencv-python, no GUI libraries needed
+opencv-python-headless
+# tests/. Pinned to the release whose Chromium (1194) a Claude Code cloud session
+# has preinstalled — there, skip `playwright install`. Locally: `playwright install chromium`.
+playwright==1.56.0
